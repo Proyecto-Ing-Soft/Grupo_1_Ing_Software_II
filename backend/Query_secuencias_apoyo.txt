@@ -1,0 +1,29 @@
+DO $$
+DECLARE
+  seq RECORD;
+  tbl TEXT;
+  col TEXT;
+  max_id BIGINT;
+BEGIN
+  FOR seq IN
+    SELECT c.oid::regclass::text AS seqname,
+           n.nspname AS schema,
+           t.relname AS tablename,
+           a.attname AS columnname
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_depend d ON d.objid = c.oid
+    JOIN pg_class t ON d.refobjid = t.oid
+    JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = d.refobjsubid
+    WHERE c.relkind = 'S'
+  LOOP
+    EXECUTE format('SELECT COALESCE(MAX(%I), 0) FROM %I', seq.columnname, seq.tablename)
+    INTO max_id;
+
+    EXECUTE format('SELECT setval(%L, %s)', seq.seqname, max_id + 1);
+    RAISE NOTICE 'Secuencia % actualizada a %', seq.seqname, max_id + 1;
+  END LOOP;
+END $$;
+
+
+PONER SIEMPRE ESTO CUANDO SE HACEN INSERCIONES MANUALES DESDE EL POSTGRE
