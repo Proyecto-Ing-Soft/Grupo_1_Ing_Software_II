@@ -1,0 +1,79 @@
+.detalle-orden-container {
+  padding: 2rem;
+  min-height: 90vh;
+  color: #fff;
+}
+
+.info-orden {
+  background-color: #222;
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  animation: fadeIn 0.6s ease-out;
+
+}
+
+.tabla-detalle {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #222;
+  margin-bottom: 1rem;
+  animation: fadeIn 0.6s ease-out;
+
+}
+
+.tabla-detalle th, .tabla-detalle td {
+  padding: 1rem;
+  text-align: center;
+  border-bottom: 1px solid #444;
+}
+
+.total-orden {
+  text-align: right;
+  font-size: 1.2rem;
+  margin-top: 1rem;
+}
+
+.acciones-orden {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn-cancelar {
+  background: #e74c3c;
+  border: none;
+  color: #fff;
+  padding: 0.6rem 1.5rem;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.btn-volver {
+  background: #3498db;
+  border: none;
+  color: #fff;
+  padding: 0.6rem 1.5rem;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.mensaje-vacio {
+  text-align: center;
+  padding: 3rem;
+  background-color: #181818;
+  border-radius: 10px;
+  box-shadow: 0 0 20px #000;
+  margin-top: 2rem;
+}
+
+
+.etiqueta-cancelado {
+  background-color: #dc3545;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  display: inline-block;
+}

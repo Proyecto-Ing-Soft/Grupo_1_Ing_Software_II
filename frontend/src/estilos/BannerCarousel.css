@@ -1,0 +1,97 @@
+.banner-carousel {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+  background: #fff;
+  min-height: 330px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.banner-img-container {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 330px;
+  position: relative;
+}
+
+.banner-img {
+  width: 100%;
+  max-width: 1200px;
+  height: 330px;
+  object-fit: cover;
+  border-radius: 28px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+  user-select: none;
+  pointer-events: none;
+}
+
+.banner-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 10;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+.banner-arrow.left {
+  left: 18px;
+}
+.banner-arrow.right {
+  right: 18px;
+}
+.banner-arrow:focus {
+  outline: 2px solid #FFD700;
+}
+.banner-arrow:hover {
+  opacity: 1;
+  filter: brightness(1.2);
+}
+
+.banner-dots {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 11;
+}
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  cursor: pointer;
+  border: 2px solid #e5e5e5;
+  transition: background 0.3s, border 0.3s;
+}
+.dot.active {
+  background: #FFD700;
+  border-color: #FFD700;
+}
+.dot:hover {
+  background: #ffe066;
+}
+@media (max-width: 700px) {
+  .banner-carousel, .banner-img, .banner-img-container {
+    height: 180px;
+    min-height: 180px;
+    max-width: 98vw;
+    border-radius: 18px;
+  }
+}
+

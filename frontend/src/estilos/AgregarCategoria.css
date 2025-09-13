@@ -1,0 +1,91 @@
+.agregar-categoria-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  font-family: 'Segoe UI', sans-serif;
+  box-sizing: border-box;
+}
+
+.agregar-categoria-form {
+  background-color: #181818;
+  padding: 2.5rem 3rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  animation: fadeIn 0.6s ease-out;
+
+}
+
+.agregar-categoria-form h2 {
+  text-align: center;
+  color: #fff;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.agregar-categoria-form input {
+  padding: 0.8rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background-color: #2b2b3c;
+  color: #e0e0e0;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.agregar-categoria-form input:focus {
+  outline: none;
+  border-color: #00c9ff;
+  background-color: #33334d;
+  box-shadow: 0 0 0 3px rgba(0, 201, 255, 0.15);
+}
+
+.agregar-categoria-form button {
+  padding: 0.9rem;
+  background: linear-gradient(to right, #00c6ff, #0072ff);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.agregar-categoria-form button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 114, 255, 0.3);
+}
+
+.mensaje-categoria {
+  text-align: center;
+  background-color: #ff4d4f;
+  color: white;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.btn-volver-inicio {
+  margin-top: 2rem;
+  padding: 0.8rem 1.5rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-volver-inicio:hover {
+  background-color: #218838;
+}

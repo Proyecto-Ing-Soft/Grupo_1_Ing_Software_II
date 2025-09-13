@@ -1,0 +1,226 @@
+.admin-dashboard-bg {
+  min-height: 100vh;
+  background-image: url('/src/assets/dashboard/bg-admin-dashboard.jpg');
+  background-size: cover;
+  background-position: top;
+  position: relative;
+  display: flex;
+  padding: 0;
+}
+
+.admin-dashboard-overlay {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 4rem;
+  transition: margin-left 0.3s;
+}
+
+.admin-dashboard-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 60px;
+  margin-bottom: 32px;
+}
+.admin-dashboard-logo {
+  width: 500px;
+  margin-bottom: 10px;
+  object-fit: contain;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.admin-dashboard-header h1 {
+  font-size: 2.7rem;
+  color: #fff;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-shadow: 0 2px 12px #0006;
+}
+.admin-dashboard-sub {
+  color: #FFEB3B;
+  font-size: 1.2rem;
+  letter-spacing: 1.3px;
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+.admin-dashboard-metricas {
+  width: 90vw;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 42px;
+  margin-top: 5px;
+  flex-wrap: nowrap;
+}
+.admin-dashboard-metrica-card {
+  color: #fff !important;
+  border: none;
+  border-radius: 20px;
+  min-width: 175px;
+  min-height: 75px;
+  font-size: 1.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 1.3rem 1.7rem 1.2rem 1.3rem;
+  box-shadow: 0 2px 16px #26323829;
+  background: #fff;
+  pointer-events: none; 
+  transition: none !important; 
+}
+.admin-dashboard-metrica-card img {
+  width: 43px;
+  height: 43px;
+  object-fit: contain;
+  border-radius: 13px;
+  background: #fafafc;
+  box-shadow: 0 2px 7px #0001;
+  margin-right: 10px;
+}
+.admin-dashboard-metrica-card span {
+  display: block;
+  font-size: 2.1rem;
+}
+.admin-dashboard-metrica-card p {
+  margin: 0;
+  font-size: 1.07rem;
+  font-weight: 600;
+  color: #4b4b4b;
+  letter-spacing: .2px;
+}
+.admin-dashboard-metrica-card:nth-child(1) {
+  background: #43a047 !important;
+}
+.admin-dashboard-metrica-card:nth-child(2) {
+  background: #E91E63 !important;
+}
+.admin-dashboard-metrica-card:nth-child(3) {
+  background: #009688 !important;
+}
+.admin-dashboard-metrica-card:nth-child(4) {
+  background: #FF9800 !important;
+}
+.admin-dashboard-metrica-card p {
+  color: #fff !important;
+}
+
+.admin-dashboard-metrica-card span {
+  color: #fff !important;
+}
+
+.admin-dashboard-cards {
+  width: 90vw;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 38px;
+  margin: 30px auto;
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 1200px) {
+  .admin-dashboard-cards {
+    gap: 24px;
+  }
+  .admin-dashboard-card {
+    min-width: 185px;
+    max-width: 220px;
+  }
+}
+@media (max-width: 950px) {
+  .admin-dashboard-metricas {
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+}
+@media (max-width: 950px) {
+  .admin-dashboard-cards {
+    flex-wrap: wrap; 
+    gap: 18px;
+  }
+  .admin-dashboard-card {
+    min-width: 160px;
+    max-width: 100%;
+  }
+}
+
+.admin-dashboard-card {
+  position: relative;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  border-radius: 2rem;
+  box-shadow: 0 2px 18px 0 #26323829;
+  padding: 2rem 1.2rem 1.6rem 1.2rem;
+  display: flex;
+  align-items: center;
+  min-height: 180px;
+  min-width: 230px;
+  max-width: 270px;
+  flex: 1 1 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+.admin-dashboard-card-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  background: rgba(0,0,0,0.75);
+  border-radius: 1.5rem;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 4px 14px #0002;
+}
+.admin-dashboard-card-content p {
+  color: white !important;
+}
+.admin-dashboard-card::before {  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 2rem;
+  background: linear-gradient(120deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.12) 100%);
+  z-index: 1;
+}
+.admin-dashboard-link {
+  display: flex;
+  align-items: center;
+  gap: 1.3rem;
+  text-decoration: none;
+}
+.admin-dashboard-icon {
+  width: 60px;
+  height: 60px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 8px #0002;
+  padding: 7px;
+  object-fit: contain;
+}
+.admin-dashboard-card h2 {
+  font-size: 1.3rem;
+  margin-bottom: 0.25rem;
+  margin-top: 0;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.admin-dashboard-card p {
+  margin: 0;
+  color: #333c;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}

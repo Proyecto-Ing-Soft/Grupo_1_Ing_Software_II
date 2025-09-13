@@ -1,0 +1,60 @@
+.camiseta-card {
+  background-color: #f6b827be;
+  border-radius: 12px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  padding: 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 180px;
+  animation: fadeIn 0.6s ease-out;
+
+}
+
+.camiseta-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+
+}
+
+
+.camiseta-img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 0.8rem;
+  background-color: #f5f5f5;
+}
+
+.camiseta-img-placeholder {
+  width: 100%;
+  max-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  margin-bottom: 0.8rem;
+  color: #666;
+  font-size: 0.9rem;
+  border: 2px dashed #ccc;
+}
+
+.camiseta-club {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #05182b;
+  margin-bottom: 0.5rem;
+}
+
+.camiseta-precio {
+  font-size: 1rem;
+  color: #2737ae;
+  font-weight: bold;
+}

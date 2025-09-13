@@ -1,0 +1,78 @@
+.checkout-container {
+  max-width: 900px;
+  margin: 40px auto;
+  background-color: #fff;
+  color: #222;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  font-family: "Montserrat", sans-serif;
+}
+
+.checkout-form h3 {
+  margin-top: 25px;
+  color: #222;
+  font-weight: 600;
+}
+
+.checkout-form input, .checkout-form select {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: "Montserrat", sans-serif;
+}
+
+.qr-box {
+  margin: 10px 0;
+  text-align: center;
+}
+
+.qr-box img {
+  width: 180px;
+  height: auto;
+  margin-top: 10px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+}
+
+.tarjeta-box input {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.resumen-lista {
+  list-style: none;
+  padding-left: 0;
+  margin: 15px 0;
+  color: #222
+}
+
+.resumen-lista li {
+  padding: 6px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.checkout-error {
+  color: red;
+  margin-top: 10px;
+}
+
+.btn-finalizar {
+  background-color: #2ecc71;
+  color: white;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s ease;
+}
+
+.btn-finalizar:hover {
+  background-color: #27ae60;
+}

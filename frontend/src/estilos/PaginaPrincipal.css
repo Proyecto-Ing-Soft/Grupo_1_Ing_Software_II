@@ -1,0 +1,63 @@
+.pagina-principal {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  animation: fadeIn 0.6s ease-out;
+
+}
+
+.titulo-seccion,
+.titulo-explorar-categoria {
+  color: #0bdb49;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 2rem 1rem 1rem;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+  text-align: center;
+  animation: fadeIn 0.6s ease-out;
+
+}
+
+.seccion-contenido {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.categorias-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3rem;
+  padding: 1rem 0;
+}
+
+.grid-camisetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  justify-items: center;
+  gap: 2rem;
+  padding: 1rem;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.2rem;
+}
+
+.loading {
+  color: #fff;
+}
+
+.error {
+  color: #ff4d4d;
+  background-color: #fff0f0;
+  border: 1px solid #ffcccc;
+  border-radius: 8px;
+  max-width: 600px;
+  margin: 2rem auto;
+}

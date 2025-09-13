@@ -1,0 +1,154 @@
+.admin-container, .user-container {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: 40px auto;
+  max-width: 900px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+h2, h3 {
+  color: #1a1a1a;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #0077cc;
+  padding-bottom: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.table th, .table td {
+  padding: 14px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.table th {
+  background-color: #0077cc;
+  color: white;
+}
+
+.table tr:hover {
+  background-color: #f1f1f1;
+}
+
+.btn {
+  background-color: #0077cc;
+  color: white;
+  padding: 10px 18px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+  background-color: #005fa3;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  margin-top: 15px;
+  font-weight: bold;
+}
+
+input, textarea, select {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-top: 5px;
+  font-size: 14px;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #0077cc;
+  outline: none;
+}
+
+.password-section {
+  background-color: #f8f8f8;
+  padding: 25px;
+  border-radius: 12px;
+  margin-top: 20px;
+}
+
+.order-detail {
+  background-color: #ffffff;
+  color: #1a1a1a;
+  padding: 30px;
+  border-radius: 12px;
+  margin: 40px auto;
+  border: 1px solid #e0e0e0;
+  max-width: 960px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.detalle-info p {
+  font-size: 16px;
+  margin: 6px 0;
+  color: #333333;
+}
+
+.table {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table th {
+  background-color: #0077cc;
+  color: white;
+}
+
+.table td {
+  color: #333333;
+}
+
+.btn {
+  background-color: #0077cc;
+  color: white;
+  font-weight: bold;
+  border-radius: 6px;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+  background-color: #005fa3;
+}
+.order-detail strong {
+  display: inline-block;
+  width: 120px;
+}
+
+.user-container {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin: 40px auto;
+  max-width: 500px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.success-message {
+  color: #155724;
+  background-color: #d4edda;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #c3e6cb;
+  margin-bottom: 20px;
+}

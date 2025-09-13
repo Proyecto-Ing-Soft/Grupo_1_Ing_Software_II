@@ -1,0 +1,113 @@
+.detalle-orden-admin {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: rgba(255, 255, 255, 0.97);
+  border-radius: 16px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+  font-family: 'Montserrat','Segoe UI', sans-serif;
+  color:#000000
+}
+
+.detalle-orden-admin h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #2e7d32;
+}
+
+.info-seccion {
+  margin-bottom: 2rem;
+}
+
+.info-seccion h3 {
+  color: #444;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.info-seccion p {
+  margin: 0.3rem 0;
+  font-size: 1rem;
+}
+
+.info-seccion table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.info-seccion th,
+.info-seccion td {
+  padding: 0.9rem;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+.info-seccion th {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.info-seccion tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.boton-volver {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.boton-volver button {
+  background-color: #1976D2;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.boton-volver button:hover {
+  background-color: #125ca1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .info-seccion table thead {
+    display: none;
+  }
+
+  .info-seccion table tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .info-seccion table td {
+    display: flex;
+    justify-content: space-between;
+    text-align: right;
+    padding: 0.5rem 0;
+  }
+
+  .info-seccion table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    text-align: left;
+  }
+}
+
+
+.boton-volver .cancelar {
+  background-color: #c62828;
+  margin-left: 1rem;
+}
+
+.boton-volver .cancelar:hover {
+  background-color: #a21919;
+}

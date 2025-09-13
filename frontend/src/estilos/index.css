@@ -1,0 +1,43 @@
+body, html, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background-image: url('../assets/imagenes/fondoprincipal.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: #fff;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+
+/* Para que el footer se mantenga en el fondo */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.layout-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.layout-main {
+  flex: 1;
+  padding-top: 0px; /* espacio si el TopBar es fijo */
+  padding-bottom: 0px; /* espacio para que el contenido no pegue al Footer */
+}

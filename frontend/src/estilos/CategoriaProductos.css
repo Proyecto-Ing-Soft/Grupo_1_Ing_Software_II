@@ -1,0 +1,70 @@
+.contenedor-principal {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  padding: 2rem;
+  flex-wrap: wrap;
+}
+
+.contenedor-principal h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #ffffff;
+}
+
+.contenedor-principal h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+}
+
+.contenedor-principal select {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  transition: border-color 0.3s;
+}
+
+.contenedor-principal select:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.grid-camisetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.grid-camisetas .mensaje {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 1rem;
+  color: #777;
+}
+
+@media screen and (max-width: 768px) {
+  .contenedor-principal {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .grid-camisetas {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .contenedor-principal h2,
+  .contenedor-principal h3 {
+    text-align: center;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .grid-camisetas {
+    grid-template-columns: 1fr;
+  }
+}
