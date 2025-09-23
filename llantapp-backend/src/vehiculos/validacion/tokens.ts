@@ -1,0 +1,1 @@
+export const VALIDADOR_VEHICULO = Symbol('VALIDADOR_VEHICULO');

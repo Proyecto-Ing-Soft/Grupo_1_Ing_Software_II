@@ -1,0 +1,6 @@
+export enum Rol {
+  ADMIN = 'ADMIN',
+  MECANICO = 'MECANICO',
+  ASISTENTE = 'ASISTENTE',
+  CONDUCTOR = 'CONDUCTOR',
+}
