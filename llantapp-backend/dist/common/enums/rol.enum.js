@@ -6,6 +6,7 @@ var Rol;
     Rol["ADMIN"] = "ADMIN";
     Rol["MECANICO"] = "MECANICO";
     Rol["ASISTENTE"] = "ASISTENTE";
-    Rol["CONDUCTOR"] = "CONDUCTOR";
+    Rol["CHOFER"] = "CHOFER";
+    Rol["EMPRESA"] = "EMPRESA";
 })(Rol || (exports.Rol = Rol = {}));
 //# sourceMappingURL=rol.enum.js.map

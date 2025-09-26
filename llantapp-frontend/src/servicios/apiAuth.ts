@@ -5,7 +5,7 @@
 // servicios/apiAuth.ts
 const BASE = import.meta.env.VITE_API_BASE_URL as string;
 
-type Rol = 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CONDUCTOR';
+type Rol = 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CHOFER' | 'EMPRESA';
 
 export interface Perfil {
   id: number;

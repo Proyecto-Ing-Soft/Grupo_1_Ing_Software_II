@@ -5,12 +5,19 @@ import { UsuarioService } from '../usuario/usuario.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { JwtEstrategias } from './estrategies/jwt';
 import { JwtPayloadAcceso } from './tipos';
+import { AuthService } from './auth.service';
+import { RegistrarUsuarioDto } from './dto/registrar-usuario.dto';
 
 @Controller('auth')
 export class AuthController {
   private jwt = new JwtEstrategias();
 
-  constructor(private readonly usuarios: UsuarioService) {}
+  constructor(private readonly usuarios: UsuarioService, private readonly auth: AuthService, ) {}
+
+  @Post('registrar')
+    registrar(@Body() dto: RegistrarUsuarioDto) {
+      return this.auth.registrar(dto);
+  }
 
   @Post('login')
   async login(

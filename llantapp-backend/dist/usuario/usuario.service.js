@@ -20,7 +20,7 @@ let UsuarioService = class UsuarioService {
     async crear(datos) {
         var _a;
         return this.prisma.usuario.create({
-            data: { ...datos, rol: (_a = datos.rol) !== null && _a !== void 0 ? _a : client_1.Rol.ASISTENTE },
+            data: { ...datos, rol: (_a = datos.rol) !== null && _a !== void 0 ? _a : client_1.Rol.CHOFER },
         });
     }
     async buscarPorCorreo(correo) {

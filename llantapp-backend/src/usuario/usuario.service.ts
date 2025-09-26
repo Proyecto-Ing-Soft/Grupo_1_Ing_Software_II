@@ -11,7 +11,7 @@ export class UsuarioService {
 
   async crear(datos: { nombreCompleto: string; correo: string; hashClave: string; rol?: Rol }): Promise<Usuario> {
     return this.prisma.usuario.create({
-      data: { ...datos, rol: datos.rol ?? Rol.ASISTENTE },
+      data: { ...datos, rol: datos.rol ?? Rol.CHOFER },
     });
   }
 

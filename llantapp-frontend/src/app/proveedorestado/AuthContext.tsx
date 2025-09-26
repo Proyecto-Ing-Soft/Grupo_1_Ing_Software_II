@@ -6,7 +6,7 @@ import { apiAuth } from '../../servicios/apiAuth';
 import { tokenMemoria } from '../../utils/storageMemoria';
 type Usuario = Perfil & { token: string };
 
-type Rol = 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CONDUCTOR';
+type Rol = 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CHOFER' | 'EMPRESA';
 type Perfil = { id: number; nombreCompleto: string; rol: Rol };
 
 type DatosSesion = {

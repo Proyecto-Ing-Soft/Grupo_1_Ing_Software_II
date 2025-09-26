@@ -17,10 +17,16 @@ const common_1 = require("@nestjs/common");
 const usuario_service_1 = require("../usuario/usuario.service");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const jwt_1 = require("./estrategies/jwt");
+const auth_service_1 = require("./auth.service");
+const registrar_usuario_dto_1 = require("./dto/registrar-usuario.dto");
 let AuthController = class AuthController {
-    constructor(usuarios) {
+    constructor(usuarios, auth) {
         this.usuarios = usuarios;
+        this.auth = auth;
         this.jwt = new jwt_1.JwtEstrategias();
+    }
+    registrar(dto) {
+        return this.auth.registrar(dto);
     }
     async login(body, res) {
         const u = await this.usuarios.buscarPorCorreo(body.correo);
@@ -68,6 +74,13 @@ let AuthController = class AuthController {
 };
 exports.AuthController = AuthController;
 __decorate([
+    (0, common_1.Post)('registrar'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [registrar_usuario_dto_1.RegistrarUsuarioDto]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "registrar", null);
+__decorate([
     (0, common_1.Post)('login'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Res)({ passthrough: true })),
@@ -92,6 +105,6 @@ __decorate([
 ], AuthController.prototype, "perfil", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
-    __metadata("design:paramtypes", [usuario_service_1.UsuarioService])
+    __metadata("design:paramtypes", [usuario_service_1.UsuarioService, auth_service_1.AuthService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

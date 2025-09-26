@@ -3,7 +3,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../app/proveedorestado/AuthContext';
 
-type Rol = 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CONDUCTOR';
+type Rol = 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CHOFER' | 'EMPRESA';
 
 export const RutaProtegidaPorRol: React.FC<{
   rolesPermitidos: Rol[];

@@ -4,6 +4,7 @@ import LoginPagina from '../paginas/LoginPagina';
 import RegistroPagina from '../paginas/RegistroPagina';
 import InicioProtegido from '../paginas/InicioProtegido';
 import RegistrarVehiculoPagina from '../paginas/RegistrarVehiculoPagina';
+import NotificacionesTallerPagina from '../paginas/NotificacionesLeerPagina';
 import { RutaProtegidaPorRol } from '../componentes/RutaProtegidaPorRol';
 import { RutaProtegida } from '../componentes/RutaProtegida';
 
@@ -22,7 +23,16 @@ const router = createBrowserRouter(
         </RutaProtegidaPorRol>
       ),
     },
-    
+
+    {
+      path: '/notificaciones',
+      element: (
+        <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA']}>
+          <NotificacionesTallerPagina />
+        </RutaProtegidaPorRol>
+      ),
+    },
+
     { path: '*', element: <LoginPagina /> },
   ],
   { basename: '/llantapp' }

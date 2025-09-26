@@ -23,13 +23,22 @@ export default function InicioProtegido() {
   }, [sesion.accessToken]);
 
   return (
-    <><div>
-      <h1>Zona protegida</h1>
-      <pre>{JSON.stringify(perfil, null, 2)}</pre>
-    </div><HelperText>
-        registrar vehiculos<TextLink to="/vehiculos/registrar">registravehiculos</TextLink>
-      </HelperText></>
-  );
+    <>
+      <div>
+        <h1>Zona protegida</h1>
+        <pre>{JSON.stringify(perfil, null, 2)}</pre>
+      </div>
 
-  
+      {/* Enlaces útiles */}
+      <HelperText>
+        Registrar vehículos{" "}
+        <TextLink to="/vehiculos/registrar">Ir a registrar</TextLink>
+      </HelperText>
+
+      <HelperText>
+        Mis notificaciones{" "}
+        <TextLink to="/notificaciones">Ir a notificaciones</TextLink>
+      </HelperText>
+    </>
+  );
 }

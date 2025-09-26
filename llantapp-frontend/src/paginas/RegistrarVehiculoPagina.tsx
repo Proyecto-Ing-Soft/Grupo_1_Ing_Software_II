@@ -3,20 +3,25 @@ import React, { useState } from 'react';
 import { useAuth } from '../app/proveedorestado/AuthContext';
 import { apiVehiculos } from '../servicios/apiVehiculos';
 import { esquemaVehiculo, FormVehiculo } from '../validaciones/vehiculoEsquemas';
+import {
+  VehiculoContainer,
+  VehiculoHeading,
+  VehiculoForm,
+  FormGroup,
+  Label,
+  Input,
+  SubmitButton,
+  ErrorMessage,
+  SuccessMessage
+} from '../estilos/registroVehiculo';
 
-/**
- * SRP: página que registra vehículos.
- * KISS: formulario simple con estado local.
- * DRY: validaciones compartidas desde esquema zod.
- * YAGNI: no agregamos tabla/listado aquí; solo registro.
- */
 export default function RegistrarVehiculoPagina() {
   const { usuario } = useAuth();
   const [form, setForm] = useState<FormVehiculo>({
     placa: '',
     marca: '',
     modelo: '',
-    anio: '2024' as unknown as number, // se normaliza en submit
+    anio: '2024' as unknown as number,
     color: '',
     vin: '',
   } as any);
@@ -33,14 +38,12 @@ export default function RegistrarVehiculoPagina() {
     setError(null);
     setOk(null);
 
-    // 1) Validación (front) — DRY con esquema zod
     const ver = esquemaVehiculo.safeParse(form);
     if (!ver.success) {
       setError(ver.error.issues[0]?.message ?? 'Datos inválidos');
       return;
     }
 
-    // 2) Llamada a la Fachada
     if (!usuario?.token) {
       setError('No autenticado');
       return;
@@ -54,7 +57,7 @@ export default function RegistrarVehiculoPagina() {
           placa: dto.placa,
           marca: dto.marca,
           modelo: dto.modelo,
-          anio: dto.anio as unknown as number, // ya viene como número tras transform
+          anio: dto.anio as unknown as number,
           color: dto.color,
           vin: dto.vin || undefined,
         },
@@ -63,7 +66,6 @@ export default function RegistrarVehiculoPagina() {
       setOk(`Vehículo ${res.placa} creado correctamente`);
       setForm({ placa: '', marca: '', modelo: '', anio: '' as any, color: '', vin: '' } as any);
     } catch (err: any) {
-      // Conflicto de placa o validación del backend
       setError(err?.message ?? 'No se pudo registrar el vehículo');
     } finally {
       setCargando(false);
@@ -71,49 +73,78 @@ export default function RegistrarVehiculoPagina() {
   };
 
   return (
-    <div style={{ maxWidth: 520, margin: '0 auto' }}>
-      <h2>Registrar vehículo</h2>
-      <form onSubmit={enviar}>
-        <div>
-          <label>Placa</label>
-          <input name="placa" value={form.placa} onChange={onChange} placeholder="ABC-123" />
-        </div>
-        <div>
-          <label>Marca</label>
-          <input name="marca" value={form.marca} onChange={onChange} placeholder="Toyota" />
-        </div>
-        <div>
-          <label>Modelo</label>
-          <input name="modelo" value={form.modelo} onChange={onChange} placeholder="Corolla" />
-        </div>
-        <div>
-          <label>Año</label>
-          <input name="anio" value={String(form.anio ?? '')} onChange={onChange} placeholder="2022" />
-        </div>
-        <div>
-          <label>Color</label>
-          <input name="color" value={form.color} onChange={onChange} placeholder="Rojo" />
-        </div>
-        <div>
-          <label>VIN (opcional)</label>
-          <input name="vin" value={form.vin ?? ''} onChange={onChange} placeholder="1HGCM82633A..." />
-        </div>
+    <VehiculoContainer>
+      <VehiculoHeading>Registrar vehículo</VehiculoHeading>
+      <VehiculoForm onSubmit={enviar}>
+        <FormGroup>
+          <Label>Placa</Label>
+          <Input 
+            name="placa" 
+            value={form.placa} 
+            onChange={onChange} 
+            placeholder="ABC-123" 
+          />
+        </FormGroup>
 
-        <button type="submit" disabled={cargando}>
+        <FormGroup>
+          <Label>Marca</Label>
+          <Input 
+            name="marca" 
+            value={form.marca} 
+            onChange={onChange} 
+            placeholder="Toyota" 
+          />
+        </FormGroup>
+
+        <FormGroup>
+          <Label>Modelo</Label>
+          <Input 
+            name="modelo" 
+            value={form.modelo} 
+            onChange={onChange} 
+            placeholder="Corolla" 
+          />
+        </FormGroup>
+
+        <FormGroup>
+          <Label>Año</Label>
+          <Input 
+            name="anio" 
+            value={String(form.anio ?? '')} 
+            onChange={onChange} 
+            placeholder="2022" 
+          />
+        </FormGroup>
+
+        <FormGroup>
+          <Label>Color</Label>
+          <Input 
+            name="color" 
+            value={form.color} 
+            onChange={onChange} 
+            placeholder="Rojo" 
+          />
+        </FormGroup>
+
+        <FormGroup>
+          <Label>VIN (opcional)</Label>
+          <Input 
+            name="vin" 
+            value={form.vin ?? ''} 
+            onChange={onChange} 
+            placeholder="1HGCM82633A..." 
+          />
+        </FormGroup>
+
+        <SubmitButton type="submit" $loading={cargando} disabled={cargando}>
           {cargando ? 'Guardando...' : 'Registrar'}
-        </button>
+        </SubmitButton>
 
-        {error && <p style={{ color: 'crimson' }}>{error}</p>}
-        {ok && <p style={{ color: 'green' }}>{ok}</p>}
-      </form>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+        {ok && <SuccessMessage>{ok}</SuccessMessage>}
+      </VehiculoForm>
 
-      {/* Comentarios de principios:
-         - SRP: esta página solo registra vehículos.
-         - OCP: si agregamos nuevos campos, extendemos esquema y UI sin romper lo demás.
-         - DRY: validación en una sola fuente (esquemaVehiculo).
-         - KISS: sin lógica innecesaria; solo submit + feedback.
-         - YAGNI: no listamos ni editamos aquí; se hará en otro caso de uso.
-      */}
-    </div>
+      {/* Comentarios de principios se mantienen */}
+    </VehiculoContainer>
   );
 }
