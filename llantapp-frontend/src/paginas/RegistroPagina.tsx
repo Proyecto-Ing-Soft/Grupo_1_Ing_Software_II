@@ -1,19 +1,15 @@
-import React, { useState } from 'react';
-import { esquemaRegistro } from '../validaciones/usuarioSchemas';
-import { apiAuth } from '../servicios/apiAuth';
-import {
-  Page, Split, Left, Right, RightInner,
-  LogoWrap, Brand, Heading, Sub,
-  Form, FormGroup, Label, InputWrap, IconBox, Input,
-  Button, HelperText, ErrorMessage, SuccessMessage, TextLink
-} from '../estilos/authStyles';
+import React, { useState } from "react";
+import { esquemaRegistro } from "../validaciones/usuarioSchemas";
+import { apiAuth } from "../servicios/apiAuth";
+import { Link } from "react-router-dom";
+import "../estilos/authRegister.css";
 
-import logo from '../imagenes/logo.jpg';
-import fondo from '../imagenes/taller.jpeg';
+import logo from "../imagenes/logo.jpg";
+import fondo from "../imagenes/taller.jpeg";
 
 export default function RegistroPagina() {
-  const [form, setForm] = useState({ nombreCompleto: '', correo: '', clave: '' });
-  const [fieldErr, setFieldErr] = useState<Record<string,string>>({});
+  const [form, setForm] = useState({ nombreCompleto: "", correo: "", clave: "" });
+  const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
 
@@ -29,108 +25,141 @@ export default function RegistroPagina() {
     setOk(false); setFormErr(null); setFieldErr({});
     const p = esquemaRegistro.safeParse(form);
     if (!p.success) {
-      const fe: Record<string,string> = {};
+      const fe: Record<string, string> = {};
       for (const issue of p.error.issues) {
-        const k = String(issue.path?.[0] ?? '');
+        const k = String(issue.path?.[0] ?? "");
         if (k) fe[k] = issue.message;
       }
       setFieldErr(fe);
-      setFormErr(Object.values(fe)[0] ?? 'Datos inválidos');
+      setFormErr(Object.values(fe)[0] ?? "Datos inválidos");
       return;
     }
     try {
       await apiAuth.registrar(form);
       setOk(true);
     } catch (err: unknown) {
-      setFormErr(err instanceof Error ? err.message : 'No se pudo registrar');
+      setFormErr(err instanceof Error ? err.message : "No se pudo registrar");
     }
   };
 
   return (
-    <Page>
-      <Split>
-        <Left>
-          <LogoWrap>
+    <main className="auth-page">
+      <section className="auth-split" role="region" aria-label="Formulario de registro">
+        {/* Izquierda: Logo + Form */}
+        <div className="auth-left">
+          <div className="logo-wrap" aria-label="Marca Llantapp">
             <img src={logo} alt="Llantapp" />
             <span>Llantapp</span>
-          </LogoWrap>
+          </div>
 
-          <Brand style={{ marginTop: 16 }}>Crear cuenta</Brand>
-          <Sub>Regístrate para empezar a gestionar tus vehículos y servicios.</Sub>
+          <h1 className="brand">Crear cuenta</h1>
+          <p className="sub">Regístrate para empezar a gestionar tus vehículos y servicios.</p>
 
-          <Form onSubmit={enviar}>
-            <FormGroup>
-              <Label>Nombre completo</Label>
-              <InputWrap $error={!!fieldErr['nombreCompleto']}>
-                <IconBox className="fa-regular fa-user" aria-hidden="true" />
-                <Input
+          <form className="form" onSubmit={enviar} noValidate>
+            {/* Nombre completo */}
+            <div className="form-group">
+              <label className="label" htmlFor="nombreCompleto">Nombre completo</label>
+              <div className={`input-wrap ${fieldErr["nombreCompleto"] ? "has-error" : ""}`}>
+                <span className="iconbox fa-regular fa-user" aria-hidden="true" />
+                <input
+                  id="nombreCompleto"
+                  className="input"
                   name="nombreCompleto"
+                  type="text"
                   placeholder="Tu nombre"
                   value={form.nombreCompleto}
                   onChange={onChange}
                   autoComplete="name"
+                  aria-invalid={!!fieldErr["nombreCompleto"]}
+                  aria-describedby={fieldErr["nombreCompleto"] ? "err-nombre" : undefined}
                 />
-              </InputWrap>
-              {fieldErr['nombreCompleto'] && <ErrorMessage>{fieldErr['nombreCompleto']}</ErrorMessage>}
-            </FormGroup>
+              </div>
+              {fieldErr["nombreCompleto"] && (
+                <div id="err-nombre" className="error-message" role="alert">
+                  {fieldErr["nombreCompleto"]}
+                </div>
+              )}
+            </div>
 
-            <FormGroup>
-              <Label>Correo</Label>
-              <InputWrap $error={!!fieldErr['correo']}>
-                <IconBox className="fa-regular fa-envelope" aria-hidden="true" />
-                <Input
+            {/* Correo */}
+            <div className="form-group">
+              <label className="label" htmlFor="correo">Correo</label>
+              <div className={`input-wrap ${fieldErr["correo"] ? "has-error" : ""}`}>
+                <span className="iconbox fa-regular fa-envelope" aria-hidden="true" />
+                <input
+                  id="correo"
+                  className="input"
                   name="correo"
                   type="email"
                   placeholder="tucorreo@dominio.com"
                   value={form.correo}
                   onChange={onChange}
                   autoComplete="email"
+                  aria-invalid={!!fieldErr["correo"]}
+                  aria-describedby={fieldErr["correo"] ? "err-correo" : undefined}
                 />
-              </InputWrap>
-              {fieldErr['correo'] && <ErrorMessage>{fieldErr['correo']}</ErrorMessage>}
-            </FormGroup>
+              </div>
+              {fieldErr["correo"] && (
+                <div id="err-correo" className="error-message" role="alert">
+                  {fieldErr["correo"]}
+                </div>
+              )}
+            </div>
 
-            <FormGroup>
-              <Label>Contraseña</Label>
-              <InputWrap $error={!!fieldErr['clave']}>
-                <IconBox className="fa-solid fa-lock" aria-hidden="true" />
-                <Input
+            {/* Contraseña */}
+            <div className="form-group">
+              <label className="label" htmlFor="clave">Contraseña</label>
+              <div className={`input-wrap ${fieldErr["clave"] ? "has-error" : ""}`}>
+                <span className="iconbox fa-solid fa-lock" aria-hidden="true" />
+                <input
+                  id="clave"
+                  className="input"
                   name="clave"
                   type="password"
                   placeholder="••••••••"
                   value={form.clave}
                   onChange={onChange}
                   autoComplete="new-password"
+                  aria-invalid={!!fieldErr["clave"]}
+                  aria-describedby={fieldErr["clave"] ? "err-clave" : undefined}
                 />
-              </InputWrap>
-              {fieldErr['clave'] && <ErrorMessage>{fieldErr['clave']}</ErrorMessage>}
-            </FormGroup>
+              </div>
+              {fieldErr["clave"] && (
+                <div id="err-clave" className="error-message" role="alert">
+                  {fieldErr["clave"]}
+                </div>
+              )}
+            </div>
 
-            <Button type="submit" $fullWidth>Registrarme</Button>
-            {formErr && <ErrorMessage style={{ marginTop: 8 }}>{formErr}</ErrorMessage>}
-            {ok && <SuccessMessage style={{ marginTop: 8 }}>Registro exitoso. Ahora puedes iniciar sesión.</SuccessMessage>}
-          </Form>
+            <button type="submit" className="btn">Registrarme</button>
 
-          <HelperText>
-            ¿Ya tienes cuenta? <TextLink to="/login">Inicia sesión aquí</TextLink>
-          </HelperText>
-        </Left>
+            {formErr && <div className="error-message" style={{ marginTop: 8 }} role="alert">{formErr}</div>}
+            {ok && <div className="success-message" style={{ marginTop: 8 }} role="status">
+              Registro exitoso. Ahora puedes iniciar sesión.
+            </div>}
+          </form>
 
-        <Right $bg={fondo}>
-          <RightInner>
-            <Heading style={{ color: 'white', marginBottom: 18 }}>
-              Crea tu cuenta en minutos
-            </Heading>
-            <div style={{
-              display:'inline-flex', alignItems:'center', gap:10,
-              background:'rgba(0,0,0,.18)', borderRadius: 999, padding: '10px 14px', fontWeight: 600
-            }}>
+          <p className="helper">
+            ¿Ya tienes cuenta?{" "}
+            <Link to="/login" className="textlink">Inicia sesión aquí</Link>
+          </p>
+        </div>
+
+        {/* Derecha: Imagen de fondo + texto */}
+        <aside
+          className="auth-right"
+          style={{ backgroundImage: `url(${fondo})` }}
+          aria-hidden="true"
+        >
+          <div className="auth-right-inner">
+            <h2 className="hero-title">Crea tu cuenta en minutos</h2>
+            <div className="hero-pill">
               <span className="fa-solid fa-user-shield" aria-hidden="true" />
               <span>Perfiles por rol y trazabilidad</span>
             </div>
-          </RightInner>
-        </Right>
-      </Split>
-    </Page>
+          </div>
+        </aside>
+      </section>
+    </main>
   );
 }

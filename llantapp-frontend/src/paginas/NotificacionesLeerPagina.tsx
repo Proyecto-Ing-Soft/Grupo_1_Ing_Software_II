@@ -4,30 +4,7 @@ import { api } from "../servicios/apiNotificacion";
 import { useAuth } from "../app/proveedorestado/AuthContext";
 import type { NotificacionDTO } from "../tipos/notificacion";
 import { etiquetaTipo } from "../tipos/notificacion";
-import {theme} from "../estilos/authStyles"
-import {
-  NotificacionContainer,
-  NotificacionHeader,
-  NotificacionTitle,
-  NotificacionSubtitle,
-  RefreshButton,
-  NotificacionGrid,
-  NotificacionCard,
-  CardHeader,
-  PrioridadBadge,
-  EstadoBadge,
-  CardContent,
-  TipoNotificacion,
-  MensajeNotificacion,
-  MetaInfo,
-  MetaItem,
-  CardFooter,
-  FechaLimite,
-  ActionButton,
-  EmptyState,
-  LoadingState,
-  ErrorMessage,
-} from '../estilos/notificacionesStyles';
+import "../estilos/notificaciones.css";
 
 export default function NotificacionesTallerPagina() {
   const { usuario } = useAuth();
@@ -39,7 +16,7 @@ export default function NotificacionesTallerPagina() {
   const ordenadas = useMemo(() => {
     const p = { ALTA: 0, MEDIA: 1, BAJA: 2 } as const;
     return [...items].sort((a, b) => {
-      if (a.estado !== b.estado) return a.estado === 'PENDIENTE' ? -1 : 1;
+      if (a.estado !== b.estado) return a.estado === "PENDIENTE" ? -1 : 1;
       if (a.prioridad !== b.prioridad) return p[a.prioridad] - p[b.prioridad];
       return new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime();
     });
@@ -58,116 +35,177 @@ export default function NotificacionesTallerPagina() {
     }
   }
 
-  useEffect(() => { if (token) cargar(); }, [token]);
+  useEffect(() => {
+    if (token) cargar();
+  }, [token]);
 
   async function marcarLeidaOptimista(id: number) {
     const anterior = [...items];
-    setItems(prev => prev.map(n => n.id === id ? { ...n, estado: 'LEIDA' } : n));
+    setItems((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, estado: "LEIDA" } : n))
+    );
     try {
-      await api.marcarNotificacionLeida<{ok: true}>(id, token);
+      await api.marcarNotificacionLeida<{ ok: true }>(id, token);
     } catch (e: any) {
       setItems(anterior);
       setError(e.message || "No se pudo marcar como leída");
     }
   }
 
-  // Función para determinar si una fecha es urgente (menos de 3 días)
+  // Urgente si faltan <= 3 días
   const esUrgente = (fechaLimite: string) => {
     const ahora = new Date();
     const limite = new Date(fechaLimite);
-    const diffDias = Math.ceil((limite.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDias = Math.ceil(
+      (limite.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24)
+    );
     return diffDias <= 3;
   };
 
+  const fmtFecha = (s: string) =>
+    new Date(s).toLocaleString("es-PE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+  const fmtFechaCorta = (s: string) =>
+    new Date(s).toLocaleDateString("es-PE", { dateStyle: "medium" });
+
   if (!usuario) {
     return (
-      <NotificacionContainer>
-        <ErrorMessage>Debes iniciar sesión para ver tus notificaciones.</ErrorMessage>
-      </NotificacionContainer>
+      <div className="notif__container">
+        <div className="state" role="alert">
+          Debes iniciar sesión para ver tus notificaciones.
+        </div>
+      </div>
     );
   }
 
   return (
-    <NotificacionContainer>
-      <NotificacionHeader>
+    <div className="notif__container">
+      <header className="notif__header">
         <div>
-          <NotificacionTitle>Mis notificaciones</NotificacionTitle>
-          <NotificacionSubtitle>Alertas automáticas de mantenimiento y vencimiento de llantas</NotificacionSubtitle>
+          <h1 className="notif__title">Mis notificaciones</h1>
+          <p className="notif__subtitle">
+            Alertas automáticas de mantenimiento y vencimiento de llantas
+          </p>
         </div>
-        <RefreshButton onClick={cargar}>
+        <button
+          type="button"
+          className="notif__refresh"
+          onClick={cargar}
+          aria-label="Actualizar notificaciones"
+          title="Actualizar"
+        >
           🔄 Actualizar
-        </RefreshButton>
-      </NotificacionHeader>
+        </button>
+      </header>
 
-      {cargando && <LoadingState>Cargando notificaciones...</LoadingState>}
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-      
-      {!cargando && ordenadas.length === 0 && (
-        <EmptyState>
-          <div style={{fontSize: "3rem", marginBottom: "1rem"}}>📋</div>
-          <h3 style={{margin: "0 0 0.5rem 0", color: theme.on}}>No hay notificaciones</h3>
+      {cargando && (
+        <div className="state state--loading" aria-busy="true">
+          Cargando notificaciones…
+        </div>
+      )}
+
+      {error && !cargando && (
+        <div className="state" role="alert">
+          {error}
+        </div>
+      )}
+
+      {!cargando && !error && ordenadas.length === 0 && (
+        <div className="state" role="status">
+          <div style={{ fontSize: "3rem", marginBottom: "0.75rem" }}>📋</div>
+          <h3>Sin notificaciones</h3>
           <p>No tienes tareas asignadas en este momento.</p>
-        </EmptyState>
+        </div>
       )}
 
-      {!cargando && ordenadas.length > 0 && (
-        <NotificacionGrid>
-          {ordenadas.map(notificacion => (
-            <NotificacionCard 
-              key={notificacion.id} 
-              $prioridad={notificacion.prioridad}
-              $estado={notificacion.estado}
-            >
-              <CardHeader>
-                <PrioridadBadge $prioridad={notificacion.prioridad}>
-                  {notificacion.prioridad}
-                </PrioridadBadge>
-                <EstadoBadge $estado={notificacion.estado}>
-                  {notificacion.estado === 'PENDIENTE' ? 'Pendiente' : 'Leída'}
-                </EstadoBadge>
-              </CardHeader>
+      {!cargando && !error && ordenadas.length > 0 && (
+        <section className="notif__grid">
+          {ordenadas.map((n) => {
+            const urgente = !!(n.fechaLimite && esUrgente(n.fechaLimite));
+            return (
+              <article
+                key={n.id}
+                className="notif__card"
+                aria-live="polite"
+                aria-label={`Notificación ${n.prioridad} - ${n.estado}`}
+              >
+                <div className="notif__cardHeader">
+                  <div className="badges">
+                    <span
+                      className="badge badge--prioridad"
+                      data-p={n.prioridad}
+                      title={`Prioridad: ${n.prioridad}`}
+                    >
+                      {n.prioridad}
+                    </span>
+                    <span
+                      className="badge badge--estado"
+                      data-e={n.estado}
+                      title={`Estado: ${n.estado}`}
+                    >
+                      {n.estado === "PENDIENTE" ? "Pendiente" : "Leída"}
+                    </span>
+                  </div>
+                </div>
 
-              <CardContent>
-                <TipoNotificacion>
-                  {etiquetaTipo[notificacion.tipo]}
-                </TipoNotificacion>
-                <MensajeNotificacion>
-                  {notificacion.mensaje}
-                </MensajeNotificacion>
-                
-                <MetaInfo>
-                  {notificacion.vehiculoId && (
-                    <MetaItem>Vehículo ID: {notificacion.vehiculoId}</MetaItem>
-                  )}
-                  <MetaItem>
-                    Creado: {new Date(notificacion.creadoEn).toLocaleDateString()}
-                  </MetaItem>
-                </MetaInfo>
-              </CardContent>
+                <div className="notif__content">
+                  <div className="notif__tipo">{etiquetaTipo[n.tipo]}</div>
+                  <div className="notif__msg">{n.mensaje}</div>
 
-              <CardFooter>
-                <FechaLimite $urgente={!!(notificacion.fechaLimite && esUrgente(notificacion.fechaLimite))}>
-                  {notificacion.fechaLimite ? (
-                    <>
-                      📅 {new Date(notificacion.fechaLimite).toLocaleString()}
-                      {esUrgente(notificacion.fechaLimite) && " ⚠️ Urgente"}
-                    </>
-                  ) : (
-                    "Sin fecha límite"
-                  )}
-                </FechaLimite>
-                
-                <ActionButton 
-                  $estado={notificacion.estado}
-                  onClick={() => notificacion.estado === 'PENDIENTE' && marcarLeidaOptimista(notificacion.id)}
-                >
-                  {notificacion.estado === 'PENDIENTE' ? '✅ Marcar como realizada' : '✅ Realizada'}
-                </ActionButton>
-              </CardFooter>
-            </NotificacionCard>
-          ))}
-        </NotificacionGrid>
+                  <div className="notif__meta">
+                    {n.vehiculoId && (
+                      <span className="metaItem">
+                        Vehículo ID:&nbsp;{n.vehiculoId}
+                      </span>
+                    )}
+                    <span className="metaItem">
+                      Creado:&nbsp;{fmtFechaCorta(n.creadoEn)}
+                    </span>
+                  </div>
+                </div>
+
+                <footer className="notif__footer">
+                  <div className={`fecha ${urgente ? "fecha--urgente" : ""}`}>
+                    {n.fechaLimite ? (
+                      <>
+                        <span aria-hidden>📅</span>
+                        <span>{fmtFecha(n.fechaLimite)}</span>
+                        {urgente && <span>&nbsp;⚠️ Urgente</span>}
+                      </>
+                    ) : (
+                      <span>Sin fecha límite</span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btnAction"
+                    disabled={n.estado !== "PENDIENTE"}
+                    onClick={() =>
+                      n.estado === "PENDIENTE" && marcarLeidaOptimista(n.id)
+                    }
+                    aria-label={
+                      n.estado === "PENDIENTE"
+                        ? "Marcar como realizada"
+                        : "Notificación ya realizada"
+                    }
+                    title={
+                      n.estado === "PENDIENTE"
+                        ? "Marcar como realizada"
+                        : "Ya realizada"
+                    }
+                  >
+                    ✅ {n.estado === "PENDIENTE" ? "Marcar como realizada" : "Realizada"}
+                  </button>
+                </footer>
+              </article>
+            );
+          })}
+        </section>
       )}
-    </NotificacionContainer>
+    </div>
   );
 }

@@ -1,0 +1,158 @@
+/* ========= Notificaciones – LlantApp =========
+   - Diseño limpio y responsive
+   - Variables + modo oscuro automático
+   - Badges por prioridad/estado
+   - Animaciones suaves y accesibles
+   ============================================ */
+
+:root{
+  --bg: #0b0f14;
+  --surface: #11161d;
+  --card: #121923;
+  --on: #e8eef6;
+  --muted: #9fb1c6;
+  --brand: #3aa0ff;
+  --brand-600:#2487e6;
+  --ok: #10b981;
+  --warn:#f59e0b;
+  --danger:#ef4444;
+  --border: 1px solid rgba(255,255,255,.08);
+  --ring: 0 0 0 .25rem rgba(58,160,255,.25);
+  --shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+
+/* Claro por defecto si el SO está en claro */
+@media (prefers-color-scheme: light){
+  :root{
+    --bg: #f7f9fc;
+    --surface:#ffffff;
+    --card:#ffffff;
+    --on:#111826;
+    --muted:#536173;
+    --brand:#2563eb;
+    --brand-600:#1e40af;
+    --border: 1px solid rgba(0,0,0,.06);
+    --shadow: 0 6px 18px rgba(17,24,39,.08);
+  }
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; color:var(--on); background:linear-gradient(180deg, var(--bg), #0a0d12 40%, var(--bg));}
+
+.notif__container{
+  max-width:1100px; margin:40px auto; padding:24px;
+}
+
+.notif__header{
+  display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px;
+}
+.notif__title{font-size: clamp(22px, 2.6vw, 32px); margin:0; letter-spacing:.2px}
+.notif__subtitle{margin:.35rem 0 0; color:var(--muted); font-size:.98rem}
+
+.notif__refresh{
+  border:var(--border); background:linear-gradient(180deg, var(--surface), transparent);
+  color:var(--on); padding:10px 14px; border-radius:12px; cursor:pointer;
+  transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
+  box-shadow: var(--shadow);
+}
+.notif__refresh:hover{ transform: translateY(-1px); border-color: transparent; box-shadow: 0 10px 22px rgba(58,160,255,.18); }
+.notif__refresh:focus-visible{ outline:none; box-shadow: var(--ring); }
+
+.notif__grid{
+  display:grid; grid-template-columns: repeat(12, 1fr); gap:16px;
+}
+@media (max-width: 1100px){ .notif__grid{ grid-template-columns: repeat(8, 1fr); } }
+@media (max-width: 780px){ .notif__grid{ grid-template-columns: repeat(4, 1fr); } }
+
+.notif__card{
+  grid-column: span 4;
+  background:linear-gradient(180deg, var(--card), transparent);
+  border:var(--border); border-radius:18px; overflow:hidden;
+  transition: transform .18s ease, box-shadow .2s ease, border-color .2s ease;
+  position:relative;
+}
+@media (max-width: 780px){ .notif__card{ grid-column: span 4; } }
+.notif__card:hover{ transform: translateY(-2px); border-color: transparent; box-shadow: 0 14px 28px rgba(0,0,0,.28); }
+
+.notif__cardHeader{
+  display:flex; align-items:center; justify-content:space-between; padding:14px 16px 8px 16px;
+}
+
+.badges{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+
+.badge{
+  font-size:.75rem; font-weight:600; letter-spacing:.3px;
+  border-radius:999px; padding:6px 10px; line-height:1;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04);
+}
+
+.badge--prioridad[data-p="ALTA"]{ color:#fff; background:linear-gradient(180deg, rgba(239,68,68,.22), rgba(239,68,68,.08)); border-color:rgba(239,68,68,.35) }
+.badge--prioridad[data-p="MEDIA"]{ color:#fff; background:linear-gradient(180deg, rgba(245,158,11,.22), rgba(245,158,11,.08)); border-color:rgba(245,158,11,.35) }
+.badge--prioridad[data-p="BAJA"]{ color:#d1fae5; background:linear-gradient(180deg, rgba(16,185,129,.20), rgba(16,185,129,.06)); border-color:rgba(16,185,129,.30) }
+
+.badge--estado[data-e="PENDIENTE"]{ color:#93c5fd; background:linear-gradient(180deg, rgba(37,99,235,.20), rgba(37,99,235,.06)); border-color: rgba(37,99,235,.35) }
+.badge--estado[data-e="LEIDA"]{ color:#a7f3d0; background:linear-gradient(180deg, rgba(16,185,129,.18), rgba(16,185,129,.06)); border-color: rgba(16,185,129,.30) }
+
+.notif__content{ padding:8px 16px 14px 16px; display:flex; flex-direction:column; gap:8px }
+.notif__tipo{ font-weight:700; font-size:.92rem; color: var(--on) }
+.notif__msg{ color:var(--muted); font-size:.98rem; line-height:1.4 }
+
+.notif__meta{
+  display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;
+}
+.metaItem{
+  font-size:.8rem; color:var(--muted);
+  border:var(--border); border-radius:10px; padding:4px 8px; background: rgba(255,255,255,.03);
+}
+
+.notif__footer{
+  padding:12px 16px 16px 16px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  border-top: var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,.02), transparent);
+}
+.fecha{
+  font-size:.86rem; color:var(--muted);
+  display:flex; align-items:center; gap:6px;
+}
+.fecha--urgente{ color: #ffd166; font-weight:600; text-shadow: 0 0 8px rgba(255,209,102,.25); }
+
+.btnAction{
+  appearance:none; border:none; cursor:pointer; border-radius:12px;
+  padding:10px 12px; font-weight:700; letter-spacing:.2px;
+  color:#0a111a; background: linear-gradient(180deg, #6ee7b7, #34d399);
+  box-shadow: 0 10px 18px rgba(16,185,129,.25);
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease, opacity .2s ease;
+}
+.btnAction:hover{ transform: translateY(-1px); box-shadow: 0 14px 24px rgba(16,185,129,.30); }
+.btnAction:focus-visible{ outline:none; box-shadow: var(--ring); }
+.btnAction:disabled{
+  cursor:default; opacity:.6; filter: grayscale(.2);
+  background: linear-gradient(180deg, #9ca3af, #6b7280); color:#fff;
+  box-shadow: 0 6px 10px rgba(99,102,241,.12);
+}
+
+.state{
+  border:var(--border); border-radius:16px; padding:36px 24px; text-align:center;
+  background:linear-gradient(180deg, var(--surface), transparent);
+  color:var(--muted); box-shadow: var(--shadow); margin-top:16px;
+}
+.state h3{ margin:0 0 6px 0; color:var(--on) }
+
+.state--loading{
+  position:relative; overflow:hidden;
+}
+.state--loading::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+  transform: translateX(-100%); animation: shimmer 1.6s infinite;
+}
+@keyframes shimmer{ to{ transform: translateX(100%); } }
+
+/* Mejoras de accesibilidad / reduce motion */
+@media (prefers-reduced-motion: reduce){
+  .notif__card, .notif__refresh, .btnAction, .state--loading::after,
+  .notif__card:hover { transition: none !important; animation: none !important; }
+}

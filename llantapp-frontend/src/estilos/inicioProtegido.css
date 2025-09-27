@@ -1,0 +1,176 @@
+/* ====== Inicio Protegido – LlantApp ======
+   - Modo claro/oscuro automático
+   - Tipografía del sistema
+   - Grid responsivo
+   - Badges por rol
+   - Botones accesibles
+   - Animaciones suaves
+   ======================================== */
+
+:root{
+  --bg:#0b0f14;
+  --surface:#11161d;
+  --card:#121923;
+  --on:#e8eef6;
+  --muted:#9fb1c6;
+  --border:1px solid rgba(255,255,255,.08);
+  --shadow:0 10px 30px rgba(0,0,0,.25);
+  --ring:0 0 0 .25rem rgba(58,160,255,.25);
+  --brand:#3aa0ff;
+  --brand-600:#2487e6;
+
+  --good:#10b981;
+  --warn:#f59e0b;
+  --danger:#ef4444;
+
+  --btn-grad-start:#6ee7b7;
+  --btn-grad-end:#34d399;
+}
+
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f7f9fc;
+    --surface:#ffffff;
+    --card:#ffffff;
+    --on:#111826;
+    --muted:#536173;
+    --border:1px solid rgba(0,0,0,.06);
+    --shadow:0 6px 18px rgba(17,24,39,.08);
+    --ring:0 0 0 .25rem rgba(37,99,235,.22);
+  }
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:linear-gradient(180deg, var(--bg), #0a0d12 40%, var(--bg));
+  color:var(--on);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+}
+
+/* ====== Contenedor principal ====== */
+.inicio-container{
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 24px;
+}
+
+/* ====== Header ====== */
+.inicio-header{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  margin-bottom: 18px;
+}
+.inicio-header h1{
+  margin:0; font-size: clamp(22px, 2.8vw, 34px);
+  letter-spacing:.2px;
+}
+
+/* ====== Badge de Rol ====== */
+.rol-badge{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:6px 10px; border-radius:999px; font-weight:700; font-size:.8rem; letter-spacing:.3px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.05);
+}
+.rol-admin{ color:#fde68a; border-color:rgba(245,158,11,.35); background:linear-gradient(180deg, rgba(245,158,11,.18), rgba(245,158,11,.06)); }
+.rol-mecanico{ color:#a7f3d0; border-color:rgba(16,185,129,.3); background:linear-gradient(180deg, rgba(16,185,129,.18), rgba(16,185,129,.06)); }
+.rol-asistente{ color:#c4b5fd; border-color:rgba(139,92,246,.35); background:linear-gradient(180deg, rgba(139,92,246,.18), rgba(139,92,246,.06)); }
+.rol-conductor{ color:#93c5fd; border-color:rgba(37,99,235,.35); background:linear-gradient(180deg, rgba(37,99,235,.18), rgba(37,99,235,.06)); }
+.rol-default{ color:var(--muted); }
+
+/* ====== Card contenedora ====== */
+.card{
+  background:linear-gradient(180deg, var(--card), transparent);
+  border:var(--border);
+  border-radius:18px;
+  box-shadow: var(--shadow);
+  padding: 18px 18px 22px 18px;
+}
+.card h2{
+  margin: 2px 0 12px 0;
+  font-size: clamp(18px, 2vw, 24px);
+}
+
+/* ====== Estados ====== */
+.loading, .error{
+  margin: 8px 0 0 0;
+  padding: 10px 12px; border-radius:12px; font-weight:600;
+}
+.loading{ color: var(--muted); background: rgba(255,255,255,.04); border: var(--border); position:relative; overflow:hidden; }
+.loading::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+  transform: translateX(-100%); animation: shimmer 1.6s infinite;
+}
+@keyframes shimmer{ to { transform: translateX(100%); } }
+
+.error{ color:#fecaca; background: linear-gradient(180deg, rgba(239,68,68,.14), rgba(239,68,68,.06)); border:1px solid rgba(239,68,68,.35); }
+
+/* ====== Grid de perfil ====== */
+.perfil-grid{
+  display:grid; gap:12px;
+  grid-template-columns: repeat(12, 1fr);
+  margin-top: 12px;
+}
+.perfil-item{
+  grid-column: span 6;
+  background: linear-gradient(180deg, rgba(255,255,255,.02), transparent);
+  border: var(--border);
+  border-radius:14px; padding:12px 14px;
+}
+@media (max-width: 780px){
+  .perfil-item{ grid-column: span 12; }
+}
+.label{
+  display:block; font-size:.78rem; color:var(--muted); margin-bottom:4px; letter-spacing:.25px;
+}
+.value{
+  display:inline-flex; align-items:center; gap:6px;
+  font-weight:700; font-size: .98rem;
+}
+
+/* ====== Acciones ====== */
+.acciones{
+  display:flex; gap:12px; flex-wrap:wrap;
+  margin-top:16px;
+}
+.btn-primary, .btn-secondary{
+  text-decoration:none; font-weight:800; letter-spacing:.25px;
+  padding:10px 14px; border-radius:12px; display:inline-flex; align-items:center; gap:8px;
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+}
+.btn-primary{
+  color:#0a111a; background: linear-gradient(180deg, var(--btn-grad-start), var(--btn-grad-end));
+  box-shadow: 0 10px 18px rgba(16,185,129,.25);
+}
+.btn-primary:hover{ transform: translateY(-1px); box-shadow: 0 14px 24px rgba(16,185,129,.30); }
+.btn-primary:focus-visible{ outline:none; box-shadow: var(--ring); }
+
+.btn-secondary{
+  color: var(--on);
+  border: var(--border);
+  background: linear-gradient(180deg, var(--surface), transparent);
+}
+.btn-secondary:hover{ transform: translateY(-1px); box-shadow: 0 10px 18px rgba(58,160,255,.18); border-color: transparent; }
+.btn-secondary:focus-visible{ outline:none; box-shadow: var(--ring); }
+
+/* ====== JSON debug ====== */
+.json-debug{
+  margin-top:14px;
+  border: var(--border);
+  border-radius:14px;
+  background: linear-gradient(180deg, var(--surface), transparent);
+  overflow:hidden;
+}
+.json-debug summary{
+  cursor:pointer; padding:12px 14px; font-weight:700; color:var(--on);
+}
+.json-debug pre{
+  margin:0; padding: 12px 14px; color: var(--muted); overflow:auto;
+  border-top: var(--border);
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce){
+  .btn-primary, .btn-secondary, .loading::after{ transition: none !important; animation: none !important; }
+}
