@@ -1,18 +1,28 @@
 // src/notificaciones/repos/inotificacion.repo.ts
-import { Notificacion } from '@prisma/client';
+export type Prioridad = 'BAJA' | 'MEDIA' | 'ALTA';
+export type Estado = 'PENDIENTE' | 'LEIDA';
 
-export interface CrearNotificacionDatos {
+export interface CrearNotificacion {
   usuarioId: number;
-  vehiculoId?: number;
-  tipo: 'MANTENIMIENTO_KM'|'MANTENIMIENTO_FECHA'|'VENCIMIENTO_LLANTA';
   mensaje: string;
-  prioridad: 'BAJA'|'MEDIA'|'ALTA';
-  fechaLimite?: Date;
+  prioridad?: Prioridad;
+  vehiculoId?: number | null;
+  citaId?: number | null;
+}
+
+export interface NotificacionEntidad {
+  id: number;
+  usuarioId: number;
+  mensaje: string;
+  prioridad: Prioridad;
+  estado: Estado;
+  creadoEn: Date;
+  vehiculoId?: number | null;
+  citaId?: number | null;
 }
 
 export interface INotificacionRepo {
-  crear(data: CrearNotificacionDatos): Promise<Notificacion>;
-  listarPorUsuario(usuarioId: number): Promise<Notificacion[]>;
+  crear(data: CrearNotificacion): Promise<void>;
+  listarPorUsuario(usuarioId: number): Promise<NotificacionEntidad[]>;
   marcarLeida(id: number, usuarioId: number): Promise<void>;
-  existePendienteIgual(usuarioId: number, vehiculoId: number|undefined, tipo: string, mensaje: string): Promise<boolean>;
 }

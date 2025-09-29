@@ -8,34 +8,30 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Notificador = void 0;
 const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../../prisma/prisma.service");
 let Notificador = class Notificador {
-    constructor(repo) {
-        this.repo = repo;
+    constructor(prisma) {
+        this.prisma = prisma;
     }
-    async enviar(resultado) {
-        const existe = await this.repo.existePendienteIgual(resultado.usuarioId, resultado.vehiculoId, resultado.tipo, resultado.mensaje);
-        if (existe)
-            return;
-        await this.repo.crear({
-            usuarioId: resultado.usuarioId,
-            vehiculoId: resultado.vehiculoId,
-            tipo: resultado.tipo,
-            mensaje: resultado.mensaje,
-            prioridad: resultado.prioridad,
-            fechaLimite: resultado.fechaLimite,
+    async enviar(n) {
+        var _a, _b, _c;
+        await this.prisma.notificacion.create({
+            data: {
+                usuarioId: n.usuarioId,
+                vehiculoId: (_a = n.vehiculoId) !== null && _a !== void 0 ? _a : null,
+                citaId: (_b = n.citaId) !== null && _b !== void 0 ? _b : null,
+                mensaje: n.mensaje,
+                prioridad: ((_c = n.prioridad) !== null && _c !== void 0 ? _c : 'MEDIA'),
+            },
         });
     }
 };
 exports.Notificador = Notificador;
 exports.Notificador = Notificador = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, common_1.Inject)('INotificacionRepo')),
-    __metadata("design:paramtypes", [Object])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], Notificador);
 //# sourceMappingURL=notificador.js.map

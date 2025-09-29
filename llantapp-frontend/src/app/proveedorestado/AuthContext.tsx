@@ -74,6 +74,7 @@ export const ProveedorAuth: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const cerrar = () => {
+    apiAuth.logout().catch(() => {});
     tokenMemoria.limpiar();
     setSesion({ accessToken: null, cargando: false, perfil: null });
   };

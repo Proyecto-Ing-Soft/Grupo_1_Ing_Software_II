@@ -72,4 +72,15 @@ export class AuthController {
     if (!u) throw new UnauthorizedException('Usuario no encontrado');
     return this.usuarios.aPublico(u);
   }
+
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('rt', {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/auth',
+    });
+    return { ok: true };
+  }
 }

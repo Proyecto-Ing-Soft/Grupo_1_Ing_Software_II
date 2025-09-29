@@ -14,19 +14,21 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificacionesController = void 0;
 const common_1 = require("@nestjs/common");
-const notificaciones_service_1 = require("./servicio/notificaciones.service");
+const notificaciones_service_1 = require("./notificaciones.service");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 let NotificacionesController = class NotificacionesController {
     constructor(servicio) {
         this.servicio = servicio;
     }
-    mias(req) {
-        return this.servicio.listarMias(req.user.id);
-    }
-    async marcar(id, req) {
+    async mias(req) {
         var _a, _b, _c;
-        const uid = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.sub;
-        return this.servicio.marcarLeida(id, Number(uid));
+        const uid = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.sub) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
+        return this.servicio.listarPorUsuario(uid);
+    }
+    async marcarLeida(id, req) {
+        var _a, _b, _c;
+        const uid = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.sub) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
+        return this.servicio.marcarLeida(id, uid);
     }
 };
 exports.NotificacionesController = NotificacionesController;
@@ -35,7 +37,7 @@ __decorate([
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], NotificacionesController.prototype, "mias", null);
 __decorate([
     (0, common_1.Post)(':id/marcar-leida'),
@@ -44,10 +46,10 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", Promise)
-], NotificacionesController.prototype, "marcar", null);
+], NotificacionesController.prototype, "marcarLeida", null);
 exports.NotificacionesController = NotificacionesController = __decorate([
-    (0, common_1.Controller)('notificaciones'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Controller)('notificaciones'),
     __metadata("design:paramtypes", [notificaciones_service_1.NotificacionesService])
 ], NotificacionesController);
 //# sourceMappingURL=notificaciones.controller.js.map

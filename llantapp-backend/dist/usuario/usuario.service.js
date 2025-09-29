@@ -29,6 +29,13 @@ let UsuarioService = class UsuarioService {
     async buscarPorId(id) {
         return this.prisma.usuario.findUnique({ where: { id } });
     }
+    async listarPorRol(rol) {
+        return this.prisma.usuario.findMany({
+            where: { rol: rol },
+            select: { id: true, nombreCompleto: true },
+            orderBy: { nombreCompleto: 'asc' },
+        });
+    }
     aPublico(u) {
         const { hashClave, ...resto } = u;
         return resto;

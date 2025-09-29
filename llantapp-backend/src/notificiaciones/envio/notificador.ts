@@ -1,29 +1,29 @@
-// src/notificaciones/envio/notificador.ts
-import { Injectable, Inject } from '@nestjs/common';
-import { INotificacionRepo } from '../repos/inotificacion.repo';
-import { ResultadoRegla } from '../reglas/iregla-notificacion';
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+
+export type Prioridad = 'BAJA' | 'MEDIA' | 'ALTA';
+
+export interface CrearNotificacion {
+  usuarioId: number;
+  mensaje: string;
+  prioridad?: Prioridad;
+  vehiculoId?: number | null;
+  citaId?: number | null;
+}
 
 @Injectable()
 export class Notificador {
-  constructor(@Inject('INotificacionRepo') private readonly repo: INotificacionRepo) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async enviar(resultado: ResultadoRegla) {
-    // Evitar duplicados idénticos pendientes (idempotencia básica)
-    const existe = await this.repo.existePendienteIgual(
-      resultado.usuarioId,
-      resultado.vehiculoId,
-      resultado.tipo,
-      resultado.mensaje,
-    );
-    if (existe) return;
-
-    await this.repo.crear({
-      usuarioId: resultado.usuarioId,
-      vehiculoId: resultado.vehiculoId,
-      tipo: resultado.tipo,
-      mensaje: resultado.mensaje,
-      prioridad: resultado.prioridad,
-      fechaLimite: resultado.fechaLimite,
+  async enviar(n: CrearNotificacion) {
+    await this.prisma.notificacion.create({
+      data: {
+        usuarioId: n.usuarioId,
+        vehiculoId: n.vehiculoId ?? null,
+        citaId: n.citaId ?? null,
+        mensaje: n.mensaje,
+        prioridad: (n.prioridad ?? 'MEDIA') as any,
+      },
     });
   }
 }

@@ -1,0 +1,86 @@
+/* ===== Layout Protegido: fondo con viñeta + topbar glass ===== */
+:root{
+  --bg-light: #e9edf3;           /* gris claro superior/inferior */
+  --bg-dark:  #1c212a;           /* gris oscuro centro */
+  --surface:  rgba(255,255,255,.86);
+  --border:   1px solid rgba(0, 0, 0, 0.28);
+  --on:       #0f172a;           /* texto cards */
+  --muted:    #6b7280;
+  --radius:   16px;
+  --shadow:   0 22px 60px rgba(0,0,0,.25);
+  --primary:  #16a34a;           /* verde botón */
+  --primary-2:#22c55e;
+}
+
+.lp__wrap{
+  min-height:100dvh;
+  display:flex; flex-direction:column;
+  /* Fondo tipo “túnel” (claro → oscuro → claro) + viñeta suave */
+  background:
+    radial-gradient(1200px 600px at 50% 45%, rgba(0,0,0,.20), transparent 60%),
+    linear-gradient(180deg, var(--bg-light) 0%, var(--bg-dark) 45%, var(--bg-light) 100%);
+  color: var(--on);
+}
+
+.lp__topbar{
+  height:60px; display:flex; align-items:center; justify-content:space-between;
+  padding:0 18px;
+  background: rgba(255,255,255,.7);
+  backdrop-filter: blur(8px) saturate(1.1);
+  border-bottom: 1px solid rgba(255,255,255,.35);
+  position:sticky; top:0; z-index:10;
+  box-shadow: 0 6px 20px rgba(0,0,0,.12);
+}
+
+.lp__brand{ display:flex; align-items:center; gap:10px; font-weight:800; color:#111827; }
+.lp__logo{ font-size:1.25rem; }
+.lp__title{ font-size:1.05rem; letter-spacing:.2px; }
+
+.lp__actions{ display:flex; align-items:center; gap:10px; }
+
+.lp__main{
+  flex:1; padding:22px;
+  background: transparent; /* no repintar, evita choques */
+}
+
+/* ===== Botón Cerrar Sesión ===== */
+.logout-btn {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;          /* pill shape */
+  padding: 8px 18px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  /* glass + gris oscuro */
+  background: rgba(255, 255, 255, 0.85);
+  color: #1f2937;
+  border: 1px solid rgba(17, 24, 39, 0.15);
+
+  backdrop-filter: blur(6px) saturate(1.1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  transition: background .2s, color .2s, transform .08s;
+}
+
+.logout-btn::before {
+  content: "⎋";                  /* ícono de salida */
+  font-size: 1rem;
+}
+
+.logout-btn:hover {
+  background: linear-gradient(180deg, #ef4444, #b91c1c); /* rojo alerta */
+  color: #fff;
+  border-color: transparent;
+  transform: translateY(-1px);
+}
+
+.logout-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}

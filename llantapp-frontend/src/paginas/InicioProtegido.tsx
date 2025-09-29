@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../app/proveedorestado/AuthContext";
 import "../estilos/inicioProtegido.css";
+import BotonCerrarSesion from '../componentes/BotonCerrarSesion';
 
 function RolBadge({ rol }: { rol?: string }) {
   const clase = useMemo(() => {
@@ -100,6 +101,7 @@ export default function InicioProtegido() {
 
         <div className="acciones">
           <Link to="/vehiculos/registrar" className="btn-primary">Registrar vehículo</Link>
+          <Link to="/citas/agendar" className="btn-primary" >Agendar cita</Link>
           <Link to="/notificaciones" className="btn-secondary">Mis notificaciones</Link>
         </div>
       </section>

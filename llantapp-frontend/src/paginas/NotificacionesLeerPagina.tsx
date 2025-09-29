@@ -1,14 +1,12 @@
-// src/paginas/NotificacionesTallerPagina.tsx
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../servicios/apiNotificacion";
+import { apiNotificacion } from "../servicios/apiNotificacion";
 import { useAuth } from "../app/proveedorestado/AuthContext";
 import type { NotificacionDTO } from "../tipos/notificacion";
-import { etiquetaTipo } from "../tipos/notificacion";
 import "../estilos/notificaciones.css";
 
-export default function NotificacionesTallerPagina() {
-  const { usuario } = useAuth();
-  const token = usuario?.token ?? "";
+export default function NotificacionesLeerPagina() {
+  const { sesion, usuario } = useAuth();               // <-- incluye usuario
+  const accessToken = sesion?.accessToken ?? "";
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string>();
   const [items, setItems] = useState<NotificacionDTO[]>([]);
@@ -22,10 +20,10 @@ export default function NotificacionesTallerPagina() {
     });
   }, [items]);
 
-  async function cargar() {
+  const cargar = async () => {
     try {
       setCargando(true);
-      const data = await api.getMisNotificaciones<NotificacionDTO[]>(token);
+      const data = await apiNotificacion.mias(accessToken);
       setItems(data);
       setError(undefined);
     } catch (e: any) {
@@ -33,40 +31,22 @@ export default function NotificacionesTallerPagina() {
     } finally {
       setCargando(false);
     }
-  }
+  };
 
   useEffect(() => {
-    if (token) cargar();
-  }, [token]);
+    if (accessToken) cargar();
+  }, [accessToken]);
 
-  async function marcarLeidaOptimista(id: number) {
+  const marcarLeidaOptimista = async (id: number) => {
     const anterior = [...items];
-    setItems((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, estado: "LEIDA" } : n))
-    );
+    setItems(prev => prev.map(n => (n.id === id ? { ...n, estado: "LEIDA" } : n)));
     try {
-      await api.marcarNotificacionLeida<{ ok: true }>(id, token);
+      await apiNotificacion.marcarLeida(id, accessToken);
     } catch (e: any) {
       setItems(anterior);
       setError(e.message || "No se pudo marcar como leída");
     }
-  }
-
-  // Urgente si faltan <= 3 días
-  const esUrgente = (fechaLimite: string) => {
-    const ahora = new Date();
-    const limite = new Date(fechaLimite);
-    const diffDias = Math.ceil(
-      (limite.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return diffDias <= 3;
   };
-
-  const fmtFecha = (s: string) =>
-    new Date(s).toLocaleString("es-PE", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
 
   const fmtFechaCorta = (s: string) =>
     new Date(s).toLocaleDateString("es-PE", { dateStyle: "medium" });
@@ -86,9 +66,7 @@ export default function NotificacionesTallerPagina() {
       <header className="notif__header">
         <div>
           <h1 className="notif__title">Mis notificaciones</h1>
-          <p className="notif__subtitle">
-            Alertas automáticas de mantenimiento y vencimiento de llantas
-          </p>
+          <p className="notif__subtitle">Cambios en tus citas de mantenimiento</p>
         </div>
         <button
           type="button"
@@ -107,103 +85,59 @@ export default function NotificacionesTallerPagina() {
         </div>
       )}
 
-      {error && !cargando && (
-        <div className="state" role="alert">
-          {error}
-        </div>
-      )}
+      {error && !cargando && <div className="state" role="alert">{error}</div>}
 
       {!cargando && !error && ordenadas.length === 0 && (
         <div className="state" role="status">
           <div style={{ fontSize: "3rem", marginBottom: "0.75rem" }}>📋</div>
           <h3>Sin notificaciones</h3>
-          <p>No tienes tareas asignadas en este momento.</p>
+          <p>No tienes cambios de cita por ahora.</p>
         </div>
       )}
 
       {!cargando && !error && ordenadas.length > 0 && (
         <section className="notif__grid">
-          {ordenadas.map((n) => {
-            const urgente = !!(n.fechaLimite && esUrgente(n.fechaLimite));
-            return (
-              <article
-                key={n.id}
-                className="notif__card"
-                aria-live="polite"
-                aria-label={`Notificación ${n.prioridad} - ${n.estado}`}
-              >
-                <div className="notif__cardHeader">
-                  <div className="badges">
-                    <span
-                      className="badge badge--prioridad"
-                      data-p={n.prioridad}
-                      title={`Prioridad: ${n.prioridad}`}
-                    >
-                      {n.prioridad}
-                    </span>
-                    <span
-                      className="badge badge--estado"
-                      data-e={n.estado}
-                      title={`Estado: ${n.estado}`}
-                    >
-                      {n.estado === "PENDIENTE" ? "Pendiente" : "Leída"}
-                    </span>
-                  </div>
+          {ordenadas.map((n) => (
+            <article
+              key={n.id}
+              className="notif__card"
+              aria-live="polite"
+              aria-label={`Notificación ${n.prioridad} - ${n.estado}`}
+            >
+              <div className="notif__cardHeader">
+                <div className="badges">
+                  <span className="badge badge--prioridad" data-p={n.prioridad} title={`Prioridad: ${n.prioridad}`}>
+                    {n.prioridad}
+                  </span>
+                  <span className="badge badge--estado" data-e={n.estado} title={`Estado: ${n.estado}`}>
+                    {n.estado === "PENDIENTE" ? "Pendiente" : "Leída"}
+                  </span>
                 </div>
+              </div>
 
-                <div className="notif__content">
-                  <div className="notif__tipo">{etiquetaTipo[n.tipo]}</div>
-                  <div className="notif__msg">{n.mensaje}</div>
-
-                  <div className="notif__meta">
-                    {n.vehiculoId && (
-                      <span className="metaItem">
-                        Vehículo ID:&nbsp;{n.vehiculoId}
-                      </span>
-                    )}
-                    <span className="metaItem">
-                      Creado:&nbsp;{fmtFechaCorta(n.creadoEn)}
-                    </span>
-                  </div>
+              <div className="notif__content">
+                {/* Sin tipo */}
+                <div className="notif__msg">{n.mensaje}</div>
+                <div className="notif__meta">
+                  {n.vehiculoId && <span className="metaItem">Vehículo ID:&nbsp;{n.vehiculoId}</span>}
+                  <span className="metaItem">Creado:&nbsp;{fmtFechaCorta(n.creadoEn)}</span>
                 </div>
+              </div>
 
-                <footer className="notif__footer">
-                  <div className={`fecha ${urgente ? "fecha--urgente" : ""}`}>
-                    {n.fechaLimite ? (
-                      <>
-                        <span aria-hidden>📅</span>
-                        <span>{fmtFecha(n.fechaLimite)}</span>
-                        {urgente && <span>&nbsp;⚠️ Urgente</span>}
-                      </>
-                    ) : (
-                      <span>Sin fecha límite</span>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    className="btnAction"
-                    disabled={n.estado !== "PENDIENTE"}
-                    onClick={() =>
-                      n.estado === "PENDIENTE" && marcarLeidaOptimista(n.id)
-                    }
-                    aria-label={
-                      n.estado === "PENDIENTE"
-                        ? "Marcar como realizada"
-                        : "Notificación ya realizada"
-                    }
-                    title={
-                      n.estado === "PENDIENTE"
-                        ? "Marcar como realizada"
-                        : "Ya realizada"
-                    }
-                  >
-                    ✅ {n.estado === "PENDIENTE" ? "Marcar como realizada" : "Realizada"}
-                  </button>
-                </footer>
-              </article>
-            );
-          })}
+              <footer className="notif__footer">
+                <button
+                  type="button"
+                  className="btnAction"
+                  disabled={n.estado !== "PENDIENTE"}
+                  onClick={() => n.estado === "PENDIENTE" && marcarLeidaOptimista(n.id)}
+                  aria-label={n.estado === "PENDIENTE" ? "Marcar como leída" : "Notificación ya leída"}
+                  title={n.estado === "PENDIENTE" ? "Marcar como leída" : "Ya leída"}
+                >
+                  ✅ {n.estado === "PENDIENTE" ? "Marcar como leída" : "leída"}
+                </button>
+              </footer>
+            </article>
+          ))}
         </section>
       )}
     </div>

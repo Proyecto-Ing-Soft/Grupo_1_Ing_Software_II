@@ -8,8 +8,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// === Roles: añadimos CHOFER y EMPRESA ===
-// OCP: ampliamos el enum sin romper flujos existentes.
+// === Roles ===
 enum Rol {
   ADMIN
   MECANICO
@@ -18,7 +17,24 @@ enum Rol {
   EMPRESA
 }
 
-// === Usuarios ===
+enum TipoMantenimiento {
+  PREVENTIVO
+  CORRECTIVO
+  LEGAL_ITV
+  EXTRAS
+}
+
+enum EstadoCita {
+  SOLICITADA
+  EN_PROGRESO
+  TERMINADA
+}
+
+enum EstadoNotificacion {
+  PENDIENTE
+  LEIDA
+}
+
 model Usuario {
   id             Int      @id @default(autoincrement())
   nombreCompleto String
@@ -32,10 +48,16 @@ model Usuario {
   empresaId Int?
   empresa   Empresa? @relation(fields: [empresaId], references: [id])
 
-  // Relaciones
-  vehiculosCreados    Vehiculo[]     @relation("VehiculosCreados")
-  vehiculosComoChofer Vehiculo[]     @relation("ChoferVehiculo")
-  notificaciones      Notificacion[]
+  // Vehículos
+  vehiculosPropietario Vehiculo[] @relation("VehiculosPropietario")
+  vehiculosCreados     Vehiculo[] @relation("VehiculosCreados")
+
+  // Notificaciones recibidas
+  notificaciones Notificacion[]
+
+  // === NUEVO: Citas como cliente y como mecánico ===
+  citasComoCliente  CitaMantenimiento[] @relation("CitasCliente")
+  citasComoMecanico CitaMantenimiento[] @relation("CitasMecanico")
 }
 
 model Empresa {
@@ -47,7 +69,6 @@ model Empresa {
   vehiculos   Vehiculo[]
 }
 
-// === Vehículos con datos para reglas de notificación ===
 model Vehiculo {
   id     Int     @id @default(autoincrement())
   placa  String  @unique
@@ -57,7 +78,11 @@ model Vehiculo {
   color  String
   vin    String?
 
-  // Auditoría de creación
+  // propietario (obligatorio)
+  propietarioUsuarioId Int
+  propietario          Usuario @relation("VehiculosPropietario", fields: [propietarioUsuarioId], references: [id])
+
+  // auditoría de creación (obligatorio)
   creadoPorId Int
   creadoPor   Usuario @relation("VehiculosCreados", fields: [creadoPorId], references: [id])
 
@@ -65,23 +90,15 @@ model Vehiculo {
   empresaId Int?
   empresa   Empresa? @relation(fields: [empresaId], references: [id])
 
-  // Chofer principal (para notificar)
-  choferId Int?
-  chofer   Usuario? @relation("ChoferVehiculo", fields: [choferId], references: [id])
-
-  // --- Datos operativos para CU-03 ---
-  kms                       Int       @default(0) // odómetro actual
-  proximoMantenimientoKm    Int? // umbral por km
-  proximoMantenimientoFecha DateTime? // umbral por fecha
-
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  // Llantas asociadas (para vencimientos)
-  llantas      Llanta[]
-  Notificacion Notificacion[]
+  // === NUEVO: Citas de mantenimiento asociadas a este vehículo ===
+  citas CitaMantenimiento[]
 
-  @@index([choferId])
+  // Notificaciones ligadas al vehículo (si aplica)
+  notificaciones Notificacion[]
+
   @@index([empresaId])
 }
 
@@ -89,10 +106,10 @@ model Llanta {
   id               Int       @id @default(autoincrement())
   vehiculoId       Int
   vehiculo         Vehiculo  @relation(fields: [vehiculoId], references: [id])
-  posicion         String? // ej. "DI-IZQ", "TR-DR"
+  posicion         String?   // ej. "DI-IZQ", "TR-DR"
   fechaInstalacion DateTime?
-  fechaVencimiento DateTime // usado por la regla de vencimiento
-  vidaUtilKm       Int? // si luego deseas calcular por km
+  fechaVencimiento DateTime  // usado por la regla de vencimiento
+  vidaUtilKm       Int?      // si luego deseas calcular por km
 
   creadoEn DateTime @default(now())
 
@@ -100,39 +117,50 @@ model Llanta {
   @@index([fechaVencimiento])
 }
 
-// === Notificaciones In-App (historial y estado) ===
+model CitaMantenimiento {
+  id             Int               @id @default(autoincrement())
+  tipo           TipoMantenimiento
+  comentario     String            @db.Text
+  estado         EstadoCita        @default(SOLICITADA)
+  programadaPara DateTime?
+  creadoEn       DateTime          @default(now())
+  actualizadoEn  DateTime          @updatedAt
+
+  // Relaciones
+  clienteId Int
+  cliente   Usuario @relation("CitasCliente", fields: [clienteId], references: [id])
+
+  mecanicoId Int?
+  mecanico   Usuario? @relation("CitasMecanico", fields: [mecanicoId], references: [id])
+
+  vehiculoId Int
+  vehiculo   Vehiculo @relation(fields: [vehiculoId], references: [id])
+
+  // Notificaciones relacionadas (opcional)
+  notificaciones Notificacion[]
+
+  @@index([clienteId])
+  @@index([mecanicoId, estado])
+  @@index([vehiculoId])
+}
+
 model Notificacion {
-  id        Int     @id @default(autoincrement())
-  usuarioId Int
-  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+  id         Int     @id @default(autoincrement())
+  usuarioId  Int
+  usuario    Usuario @relation(fields: [usuarioId], references: [id])
 
   vehiculoId Int?
   vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id])
 
-  tipo        TipoNotificacion
-  mensaje     String
-  prioridad   PrioridadNotificacion @default(MEDIA)
-  estado      EstadoNotificacion    @default(PENDIENTE)
-  fechaLimite DateTime?
-  creadoEn    DateTime              @default(now())
+  citaId     Int?
+  cita       CitaMantenimiento? @relation(fields: [citaId], references: [id])
+
+  mensaje    String
+  prioridad  PrioridadNotificacion @default(MEDIA) // BAJA | MEDIA | ALTA
+  estado     EstadoNotificacion    @default(PENDIENTE) // PENDIENTE | LEIDA
+  creadoEn   DateTime              @default(now())
 
   @@index([usuarioId, estado])
   @@index([vehiculoId])
-}
-
-enum TipoNotificacion {
-  MANTENIMIENTO_KM
-  MANTENIMIENTO_FECHA
-  VENCIMIENTO_LLANTA
-}
-
-enum PrioridadNotificacion {
-  BAJA
-  MEDIA
-  ALTA
-}
-
-enum EstadoNotificacion {
-  PENDIENTE
-  LEIDA
+  @@index([citaId])
 }

@@ -1,32 +1,31 @@
 import { Module } from '@nestjs/common';
-import { VehiculosService } from './vehiculos.service';
 import { VehiculosController } from './vehiculos.controller';
+import { VehiculosService } from './vehiculos.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-import { IValidadorVehiculo } from './validacion/ivalidador-vehiculo';
+// Validadores (usar la misma carpeta en todos los imports)
 import { ValidadorCamposObligatorios } from './validacion/validador-campos-obligatorios';
 import { ValidadorFormatoPlaca } from './validacion/validador-formato-placa';
 import { ValidadorPlacaUnica } from './validacion/validador-placa-unica';
-import { VALIDADOR_VEHICULO } from './validacion/tokens';
-
-function construirCadena(prisma: PrismaService): IValidadorVehiculo {
-  const v1 = new ValidadorCamposObligatorios();
-  const v2 = v1.encadenar(new ValidadorFormatoPlaca());
-  v2.encadenar(new ValidadorPlacaUnica(prisma));
-  return v1;
-}
+import { VEHICULO_VALIDADORES } from './validacion/tokens';
 
 @Module({
   controllers: [VehiculosController],
   providers: [
     PrismaService,
     VehiculosService,
+
+    // Un solo provider que retorna el ARRAY de validadores
     {
-      provide: VALIDADOR_VEHICULO,
+      provide: VEHICULO_VALIDADORES,
+      useFactory: (prisma: PrismaService) => [
+        new ValidadorCamposObligatorios(),
+        new ValidadorFormatoPlaca(),
+        new ValidadorPlacaUnica(prisma),
+      ],
       inject: [PrismaService],
-      useFactory: (prisma: PrismaService) => construirCadena(prisma),
     },
   ],
- 
+  exports: [VehiculosService],
 })
-export class VehiculoModule {}
+export class VehiculosModule {}

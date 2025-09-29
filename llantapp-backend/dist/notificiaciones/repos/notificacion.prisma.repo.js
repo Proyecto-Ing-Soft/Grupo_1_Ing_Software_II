@@ -12,47 +12,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificacionPrismaRepo = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
-const client_1 = require("@prisma/client");
 let NotificacionPrismaRepo = class NotificacionPrismaRepo {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    crear(data) {
-        return this.prisma.notificacion.create({
-            data: {
-                usuarioId: data.usuarioId,
-                vehiculoId: data.vehiculoId,
-                tipo: data.tipo,
-                mensaje: data.mensaje,
-                prioridad: data.prioridad,
-                fechaLimite: data.fechaLimite,
-            },
-        });
-    }
-    listarPorUsuario(usuarioId) {
+    async listarPorUsuario(usuarioId) {
         return this.prisma.notificacion.findMany({
             where: { usuarioId },
-            orderBy: [{ estado: 'asc' }, { creadoEn: 'desc' }],
+            orderBy: [{ estado: 'asc' }, { prioridad: 'desc' }, { creadoEn: 'desc' }],
         });
     }
     async marcarLeida(id, usuarioId) {
-        await this.prisma.notificacion.update({
-            where: { id },
-            data: { estado: client_1.EstadoNotificacion.LEIDA },
-        });
-    }
-    async existePendienteIgual(usuarioId, vehiculoId, tipo, mensaje) {
-        const existe = await this.prisma.notificacion.findFirst({
-            where: {
-                usuarioId,
-                vehiculoId: vehiculoId !== null && vehiculoId !== void 0 ? vehiculoId : undefined,
-                tipo: tipo,
-                mensaje,
-                estado: client_1.EstadoNotificacion.PENDIENTE,
-            },
-            select: { id: true },
-        });
-        return !!existe;
+        const n = await this.prisma.notificacion.findUnique({ where: { id } });
+        if (!n)
+            throw new common_1.NotFoundException('No existe la notificación');
+        if (n.usuarioId !== usuarioId)
+            throw new common_1.ForbiddenException('No autorizado');
+        if (n.estado === 'LEIDA')
+            return;
+        await this.prisma.notificacion.update({ where: { id }, data: { estado: 'LEIDA' } });
     }
 };
 exports.NotificacionPrismaRepo = NotificacionPrismaRepo;

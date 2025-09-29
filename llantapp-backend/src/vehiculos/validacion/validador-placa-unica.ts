@@ -1,14 +1,17 @@
+import { Injectable } from '@nestjs/common';
 import { ValidadorBase } from './validador-base';
 import { CrearVehiculoDto } from '../dto/crear-vehiculo.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ConflictException } from '@nestjs/common';
 
+@Injectable()
 export class ValidadorPlacaUnica extends ValidadorBase {
-  constructor(private readonly prisma: PrismaService) { super(); }
+  constructor(private prisma: PrismaService) { super(); }
 
   async validar(dto: CrearVehiculoDto) {
-    const existe = await this.prisma.vehiculo.findUnique({ where: { placa: dto.placa } });
-    if (existe) throw new ConflictException('La placa ya está registrada');
-    await super.validar(dto);
+    const placa = dto.placa?.trim().toUpperCase();
+    if (!placa) return 'Placa inválida';
+    const existe = await this.prisma.vehiculo.findUnique({ where: { placa } });
+    if (existe) return 'La placa ya está registrada';
+    return null;
   }
 }

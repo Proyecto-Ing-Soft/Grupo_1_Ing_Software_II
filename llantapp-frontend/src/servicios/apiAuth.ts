@@ -1,8 +1,4 @@
-// SRP: Único responsable de llamar a endpoints de autenticación.
-// DRY: Reutiliza la misma instancia base para todas las llamadas.
-// KISS: fetch nativo; se puede cambiar a Axios sin tocar los consumidores (OCP).
-
-// servicios/apiAuth.ts
+// SRP: Endpoints de autenticación (nada más).
 const BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 type Rol = 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CHOFER' | 'EMPRESA';
@@ -14,50 +10,41 @@ export interface Perfil {
   rol: Rol;
 }
 
-// --- Helpers DRY --- //
-async function postJSON(ruta: string, cuerpo: unknown) {
+async function postJSON<T = any>(ruta: string, cuerpo: unknown): Promise<T> {
   const res = await fetch(`${BASE}${ruta}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // cookie httpOnly para refresh
-    body: JSON.stringify(cuerpo),
+    credentials: 'include', // cookies httpOnly (refresh)
+    body: JSON.stringify(cuerpo ?? {}),
   });
-  if (!res.ok) {
-    const texto = await res.text().catch(() => '');
-    throw new Error(texto || 'Error en la petición');
-  }
-  return res.json();
+  if (!res.ok) throw new Error((await res.text()) || 'Error en la petición');
+  return res.json() as Promise<T>;
 }
 
-async function getJSONAutorizado<T>(ruta: string, accessToken: string): Promise<T> {
+async function getJSONAutorizado<T = any>(ruta: string, accessToken: string): Promise<T> {
   const res = await fetch(`${BASE}${ruta}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`, // JWT en Authorization
+      Authorization: `Bearer ${accessToken}`,
     },
     credentials: 'include',
   });
-  if (!res.ok) {
-    const texto = await res.text().catch(() => '');
-    throw new Error(texto || 'Error en la petición');
-  }
-  return res.json();
+  if (!res.ok) throw new Error((await res.text()) || 'Error en la petición');
+  return res.json() as Promise<T>;
 }
 
-// --- Fachada de Auth --- //
 export const apiAuth = {
   registrar: (datos: { nombreCompleto: string; correo: string; clave: string }) =>
     postJSON('/auth/registrar', datos),
 
   login: (datos: { correo: string; clave: string }) =>
-    postJSON('/auth/login', datos) as Promise<{ accessToken: string }>,
+    postJSON<{ accessToken: string }>('/auth/login', datos),
 
-  refresh: () =>
-    postJSON('/auth/refresh', {}) as Promise<{ accessToken: string }>,
+  refresh: () => postJSON<{ accessToken: string }>('/auth/refresh', {}),
 
-  // 👇 Nuevo: obtener perfil del usuario autenticado
   perfil: (accessToken: string) =>
     getJSONAutorizado<Perfil>('/auth/perfil', accessToken),
-};
 
+  logout: () => postJSON<{ ok: true }>('/auth/logout', {}),
+};

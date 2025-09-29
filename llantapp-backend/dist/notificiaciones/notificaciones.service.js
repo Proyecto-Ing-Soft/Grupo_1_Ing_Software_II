@@ -8,24 +8,30 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificacionesService = void 0;
 const common_1 = require("@nestjs/common");
+const notificacion_prisma_repo_1 = require("./repos/notificacion.prisma.repo");
 let NotificacionesService = class NotificacionesService {
     constructor(repo) {
         this.repo = repo;
     }
-    listarMias(usuarioId) {
-        return this.repo.listarPorUsuario(usuarioId);
+    async listarPorUsuario(usuarioId) {
+        const filas = await this.repo.listarPorUsuario(usuarioId);
+        return filas.map(n => {
+            var _a, _b;
+            return ({
+                id: n.id,
+                mensaje: n.mensaje,
+                prioridad: n.prioridad,
+                estado: n.estado,
+                creadoEn: n.creadoEn.toISOString(),
+                vehiculoId: (_a = n.vehiculoId) !== null && _a !== void 0 ? _a : null,
+                citaId: (_b = n.citaId) !== null && _b !== void 0 ? _b : null,
+            });
+        });
     }
     async marcarLeida(id, usuarioId) {
-        const lista = await this.repo.listarPorUsuario(usuarioId);
-        if (!lista.find(n => n.id === id)) {
-            throw new common_1.ForbiddenException('No puedes cambiar esta notificación');
-        }
         await this.repo.marcarLeida(id, usuarioId);
         return { ok: true };
     }
@@ -33,7 +39,6 @@ let NotificacionesService = class NotificacionesService {
 exports.NotificacionesService = NotificacionesService;
 exports.NotificacionesService = NotificacionesService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, common_1.Inject)('INotificacionRepo')),
-    __metadata("design:paramtypes", [Object])
+    __metadata("design:paramtypes", [notificacion_prisma_repo_1.NotificacionPrismaRepo])
 ], NotificacionesService);
 //# sourceMappingURL=notificaciones.service.js.map

@@ -17,19 +17,51 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const tokens_1 = require("./validacion/tokens");
 let VehiculosService = class VehiculosService {
-    constructor(prisma, validador) {
+    constructor(prisma, validadores) {
         this.prisma = prisma;
-        this.validador = validador;
+        this.validadores = validadores;
     }
-    async crear(dto, usuarioId) {
-        await this.validador.validar(dto);
-        return this.prisma.vehiculo.create({ data: { ...dto, creadoPorId: usuarioId } });
+    listarDelPropietario(usuarioId) {
+        return this.prisma.vehiculo.findMany({
+            where: { propietarioUsuarioId: usuarioId },
+            select: { id: true, placa: true, marca: true, modelo: true },
+            orderBy: { id: 'desc' },
+        });
+    }
+    async crear(dto, creadorId) {
+        var _a, _b;
+        const errores = [];
+        for (const v of this.validadores) {
+            const msg = await v.validar(dto);
+            if (msg)
+                errores.push(...(Array.isArray(msg) ? msg : [msg]));
+        }
+        if (errores.length)
+            throw new common_1.BadRequestException(errores.join(' | '));
+        const usuario = await this.prisma.usuario.findUnique({
+            where: { id: creadorId },
+            select: { empresaId: true },
+        });
+        return this.prisma.vehiculo.create({
+            data: {
+                placa: dto.placa.trim().toUpperCase(),
+                marca: dto.marca.trim(),
+                modelo: dto.modelo.trim(),
+                anio: dto.anio,
+                color: dto.color.trim(),
+                vin: ((_a = dto.vin) === null || _a === void 0 ? void 0 : _a.trim()) || null,
+                propietarioUsuarioId: creadorId,
+                creadoPorId: creadorId,
+                empresaId: (_b = usuario === null || usuario === void 0 ? void 0 : usuario.empresaId) !== null && _b !== void 0 ? _b : null,
+            },
+            select: { id: true, placa: true, marca: true, modelo: true },
+        });
     }
 };
 exports.VehiculosService = VehiculosService;
 exports.VehiculosService = VehiculosService = __decorate([
     (0, common_1.Injectable)(),
-    __param(1, (0, common_1.Inject)(tokens_1.VALIDADOR_VEHICULO)),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService, Object])
+    __param(1, (0, common_1.Inject)(tokens_1.VEHICULO_VALIDADORES)),
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService, Array])
 ], VehiculosService);
 //# sourceMappingURL=vehiculos.service.js.map

@@ -15,29 +15,33 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VehiculosController = void 0;
 const common_1 = require("@nestjs/common");
 const vehiculos_service_1 = require("./vehiculos.service");
-const crear_vehiculo_dto_1 = require("./dto/crear-vehiculo.dto");
-const rol_requerido_decorator_1 = require("../common/decorators/rol-requerido.decorator");
-const rol_enum_1 = require("../common/enums/rol.enum");
-const roles_guard_1 = require("../common/guards/roles.guard");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
+const crear_vehiculo_dto_1 = require("./dto/crear-vehiculo.dto");
 let VehiculosController = class VehiculosController {
-    constructor(servicio) {
-        this.servicio = servicio;
+    constructor(svc) {
+        this.svc = svc;
+    }
+    async mios(req) {
+        var _a, _b, _c;
+        const uid = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.sub) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
+        return this.svc.listarDelPropietario(uid);
     }
     async crear(dto, req) {
         var _a, _b, _c;
-        const uidRaw = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.sub) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
-        const uid = Number(uidRaw);
-        if (!Number.isFinite(uid)) {
-            throw new common_1.UnauthorizedException('Token sin id válido');
-        }
-        return this.servicio.crear(dto, uid);
+        const uid = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.sub) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
+        return this.svc.crear(dto, uid);
     }
 };
 exports.VehiculosController = VehiculosController;
 __decorate([
+    (0, common_1.Get)('mios'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], VehiculosController.prototype, "mios", null);
+__decorate([
     (0, common_1.Post)(),
-    (0, rol_requerido_decorator_1.RolRequerido)(rol_enum_1.Rol.ADMIN, rol_enum_1.Rol.MECANICO),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -45,8 +49,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], VehiculosController.prototype, "crear", null);
 exports.VehiculosController = VehiculosController = __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('vehiculos'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [vehiculos_service_1.VehiculosService])
 ], VehiculosController);
 //# sourceMappingURL=vehiculos.controller.js.map

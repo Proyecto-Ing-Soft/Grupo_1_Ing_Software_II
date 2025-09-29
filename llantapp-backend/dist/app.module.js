@@ -14,6 +14,7 @@ const usuario_module_1 = require("./usuario/usuario.module");
 const prisma_module_1 = require("./prisma/prisma.module");
 const vehiculo_module_1 = require("./vehiculos/vehiculo.module");
 const notificaciones_module_1 = require("./notificiaciones/notificaciones.module");
+const citas_module_1 = require("./citas/citas.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -24,8 +25,9 @@ exports.AppModule = AppModule = __decorate([
             prisma_module_1.PrismaModule,
             usuario_module_1.UsuarioModule,
             auth_module_1.AuthModule,
-            vehiculo_module_1.VehiculoModule,
-            notificaciones_module_1.NotificacionesModule
+            vehiculo_module_1.VehiculosModule,
+            notificaciones_module_1.NotificacionesModule,
+            citas_module_1.CitasModule
         ]
     })
 ], AppModule);

@@ -14,11 +14,7 @@ export const esquemaVehiculo = z.object({
     .transform((s) => s.toUpperCase().trim()),
   marca: z.string().min(1, 'La marca es obligatoria'),
   modelo: z.string().min(1, 'El modelo es obligatorio'),
-  anio: z
-    .string()
-    .refine((v) => /^\d{4}$/.test(v), 'Coloca un año válido de 4 dígitos')
-    .transform((v) => Number(v))
-    .refine((n) => n >= 1950 && n <= new Date().getFullYear() + 1, 'Año fuera de rango'),
+  anio: z.number().int().min(1950).max(new Date().getFullYear() + 1),
   color: z.string().min(1, 'El color es obligatorio'),
   vin: z.string().min(8, 'VIN mínimo 8').max(30, 'VIN máximo 30').optional().or(z.literal('')),
 });

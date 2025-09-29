@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards, NotFoundException, Query } from '@nestjs/common';
 import { UsuarioService } from './usuario.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 export class UsuarioController {
   constructor(private usuarios: UsuarioService) {}
 
+  // ✅ Endpoint existente: devuelve el perfil del usuario autenticado
   @UseGuards(JwtAuthGuard)
   @Get('yo')
   async yo(@Req() req: any) {
@@ -18,5 +19,15 @@ export class UsuarioController {
     }
 
     return this.usuarios.aPublico(usuario); // ahora es 100% Usuario
+  }
+
+  // ✅ Nuevo endpoint: lista usuarios por rol para el agendamiento de citas
+  //    GET /usuarios?rol=MECANICO  → [{ id, nombreCompleto }]
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async porRol(@Query('rol') rol?: string) {
+    // YAGNI: si no envían rol, devolvemos arreglo vacío sin complicarnos
+    if (!rol) return [];
+    return this.usuarios.listarPorRol(rol);
   }
 }

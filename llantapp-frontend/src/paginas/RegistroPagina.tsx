@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { esquemaRegistro } from "../validaciones/usuarioSchemas";
 import { apiAuth } from "../servicios/apiAuth";
 import { Link } from "react-router-dom";
@@ -12,6 +13,15 @@ export default function RegistroPagina() {
   const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+  const navigate = useNavigate();
+  const LOGIN_PATH = "/login";
+   const REDIRECT_DELAY = 1200;
+   const timeoutRef = useRef<number | null>(null);
+
+   useEffect(() => {
+     return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+   }, []);
+
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -37,6 +47,7 @@ export default function RegistroPagina() {
     try {
       await apiAuth.registrar(form);
       setOk(true);
+      timeoutRef.current = window.setTimeout(() => navigate(LOGIN_PATH, { replace: true }), REDIRECT_DELAY);
     } catch (err: unknown) {
       setFormErr(err instanceof Error ? err.message : "No se pudo registrar");
     }

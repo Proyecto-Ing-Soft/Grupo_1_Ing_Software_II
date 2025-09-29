@@ -1,0 +1,182 @@
+/* ========= Registrar Vehículo – LlantApp =========
+   - Consistente con: inicioProtegido.css / authLogin.css / authRegister.css
+   - Modo claro/oscuro automático
+   - Card + formulario con grid responsivo
+   - Estados (loading, error, success)
+   ================================================ */
+
+:root{
+  --bg:#0b0f14;
+  --surface:#11161d;
+  --card:#121923;
+  --on:#e8eef6;
+  --muted:#9fb1c6;
+  --border:1px solid rgba(255,255,255,.08);
+  --shadow:0 10px 30px rgba(0,0,0,.25);
+  --ring:0 0 0 .25rem rgba(58,160,255,.25);
+
+  --brand:#3aa0ff;
+  --brand-600:#2487e6;
+
+  --primary-1:#6ee7b7;
+  --primary-2:#34d399;
+
+  --danger-1:#ef4444;
+  --danger-2:#fecaca;
+  --success-1:#22c55e;
+  --success-2:#bbf7d0;
+}
+
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f7f9fc;
+    --surface:#ffffff;
+    --card:#ffffff;
+    --on:#111826;
+    --muted:#536173;
+    --border:1px solid rgba(0,0,0,.06);
+    --shadow:0 6px 18px rgba(17,24,39,.08);
+    --ring:0 0 0 .25rem rgba(37,99,235,.22);
+    --brand:#2563eb;
+    --brand-600:#1e40af;
+  }
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; color:var(--on);
+  background:linear-gradient(180deg, var(--bg), #0a0d12 40%, var(--bg));
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+}
+
+/* ====== Contenedor ====== */
+.rv__container{
+  max-width: 980px;
+  margin: 38px auto;
+  padding: 24px;
+}
+
+/* ====== Encabezado ====== */
+.rv__header{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  margin-bottom: 16px;
+}
+.rv__title{
+  margin:0; font-size: clamp(22px, 2.6vw, 30px); letter-spacing:.2px; font-weight:900;
+}
+.rv__subtitle{
+  margin:0; color: var(--muted); font-size: .98rem;
+}
+
+/* ====== Card ====== */
+.rv__card{
+  background:linear-gradient(180deg, var(--card), transparent);
+  border: var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+/* ====== Form ====== */
+.rv__form{
+  margin-top: 10px;
+  display:grid; gap: 14px;
+}
+
+.rv__grid{
+  display:grid; gap:12px;
+  grid-template-columns: repeat(12, 1fr);
+}
+.rv__col-6{ grid-column: span 6; }
+.rv__col-4{ grid-column: span 4; }
+.rv__col-3{ grid-column: span 3; }
+.rv__col-12{ grid-column: span 12; }
+@media (max-width: 820px){
+  .rv__col-6, .rv__col-4, .rv__col-3{ grid-column: span 12; }
+}
+
+.rv__group{ display:grid; gap:8px; }
+.rv__label{
+  font-size:.88rem; font-weight:700; letter-spacing:.2px; color: var(--muted);
+}
+.rv__input{
+  width:100%;
+  background: linear-gradient(180deg, var(--surface), transparent);
+  color: var(--on);
+  border: var(--border);
+  border-radius: 12px;
+  padding: 12px 12px;
+  outline:none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.rv__input::placeholder{ color: color-mix(in oklab, var(--muted) 80%, transparent); }
+.rv__input:focus{ border-color: transparent; box-shadow: var(--ring); }
+
+.rv__row{
+  display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:flex-end;
+  margin-top: 6px;
+}
+.rv__btn{
+  appearance:none; border:none; cursor:pointer;
+  border-radius: 12px; padding: 12px 14px; font-weight:900; letter-spacing:.3px;
+  color:#07131b;
+  background: linear-gradient(180deg, var(--primary-1), var(--primary-2));
+  box-shadow: 0 12px 22px rgba(16,185,129,.28);
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease, opacity .2s ease;
+}
+.rv__btn:hover{ transform: translateY(-1px); box-shadow: 0 16px 28px rgba(16,185,129,.32); }
+.rv__btn:focus-visible{ outline:none; box-shadow: var(--ring); }
+.rv__btn:disabled{
+  opacity:.6; filter: grayscale(.2);
+  background: linear-gradient(180deg, #9ca3af, #6b7280); color:#fff;
+  box-shadow: 0 6px 10px rgba(99,102,241,.12);
+}
+
+/* ====== Estados ====== */
+.rv__error, .rv__success{
+  margin-top:4px;
+  border-radius:10px; padding:8px 10px; font-weight:700;
+}
+.rv__error{
+  color: var(--danger-2);
+  background: linear-gradient(180deg, rgba(239,68,68,.14), rgba(239,68,68,.06));
+  border: 1px solid rgba(239,68,68,.35);
+}
+.rv__success{
+  color: var(--success-2);
+  background: linear-gradient(180deg, rgba(34,197,94,.16), rgba(34,197,94,.06));
+  border: 1px solid rgba(34,197,94,.35);
+}
+
+/* ====== Help line ====== */
+.rv__help{
+  margin-top:6px; color: var(--muted); font-size:.9rem;
+}
+
+/* ====== Shimmer loading ====== */
+.rv__loading{
+  position:relative; overflow:hidden;
+  border: var(--border); border-radius: 14px; padding: 14px;
+  background: linear-gradient(180deg, var(--surface), transparent);
+  color: var(--muted); font-weight:700;
+}
+.rv__loading::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+  transform: translateX(-100%); animation: rv-shimmer 1.6s infinite;
+}
+@keyframes rv-shimmer{ to{ transform: translateX(100%); } }
+
+/* ====== Debug (opcional) ====== */
+.rv__debug{
+  margin-top:12px; border: var(--border); border-radius:14px; overflow:hidden;
+  background: linear-gradient(180deg, var(--surface), transparent);
+}
+.rv__debug summary{ cursor:pointer; padding:10px 12px; font-weight:800; }
+.rv__debug pre{ margin:0; padding: 10px 12px; color: var(--muted); border-top: var(--border); }
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce){
+  .rv__btn, .rv__loading::after { transition: none !important; animation: none !important; }
+}

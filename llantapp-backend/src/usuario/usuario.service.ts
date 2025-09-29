@@ -20,7 +20,17 @@ export class UsuarioService {
   }
 
   async buscarPorId(id: number) {
-  return this.prisma.usuario.findUnique({ where: { id } });
+    return this.prisma.usuario.findUnique({ where: { id } });
+  }
+
+  // ✅ Nuevo caso de uso: listar por rol (ej. MECANICO) para que el cliente elija a quién agendar
+  async listarPorRol(rol: string) {
+    // KISS: casteamos al enum de Prisma; si el rol no existe, simplemente devolverá []
+    return this.prisma.usuario.findMany({
+      where: { rol: rol as Rol },
+      select: { id: true, nombreCompleto: true },
+      orderBy: { nombreCompleto: 'asc' },
+    });
   }
 
   aPublico(u: Usuario) {

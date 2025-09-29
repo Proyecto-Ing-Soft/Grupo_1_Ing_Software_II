@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NotificacionRespuestaDto = void 0;
-class NotificacionRespuestaDto {
+exports.NotificacionRespuestaDTO = void 0;
+class NotificacionRespuestaDTO {
 }
-exports.NotificacionRespuestaDto = NotificacionRespuestaDto;
+exports.NotificacionRespuestaDTO = NotificacionRespuestaDTO;
 //# sourceMappingURL=notificacion-respuesta.dto.js.map
