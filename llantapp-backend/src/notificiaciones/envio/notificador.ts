@@ -22,7 +22,6 @@ export class Notificador {
         vehiculoId: n.vehiculoId ?? null,
         citaId: n.citaId ?? null,
         mensaje: n.mensaje,
-        prioridad: (n.prioridad ?? 'MEDIA') as any,
       },
     });
   }

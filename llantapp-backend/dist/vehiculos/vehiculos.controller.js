@@ -17,6 +17,9 @@ const common_1 = require("@nestjs/common");
 const vehiculos_service_1 = require("./vehiculos.service");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const crear_vehiculo_dto_1 = require("./dto/crear-vehiculo.dto");
+const roles_guard_1 = require("../common/guards/roles.guard");
+const rol_requerido_decorator_1 = require("../common/decorators/rol-requerido.decorator");
+const rol_enum_1 = require("../common/enums/rol.enum");
 let VehiculosController = class VehiculosController {
     constructor(svc) {
         this.svc = svc;
@@ -41,6 +44,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], VehiculosController.prototype, "mios", null);
 __decorate([
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, rol_requerido_decorator_1.RolRequerido)(rol_enum_1.Rol.ADMIN, rol_enum_1.Rol.MECANICO),
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),

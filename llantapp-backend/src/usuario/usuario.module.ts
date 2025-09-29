@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
   providers: [
-    PrismaService,  // ✅ necesario para que el service pueda consultar la BD
+    PrismaService, 
     UsuarioService,
   ],
   controllers: [UsuarioController],

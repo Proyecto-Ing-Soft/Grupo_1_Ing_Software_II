@@ -19,7 +19,7 @@ let NotificacionPrismaRepo = class NotificacionPrismaRepo {
     async listarPorUsuario(usuarioId) {
         return this.prisma.notificacion.findMany({
             where: { usuarioId },
-            orderBy: [{ estado: 'asc' }, { prioridad: 'desc' }, { creadoEn: 'desc' }],
+            orderBy: [{ estado: 'asc' }, { creadoEn: 'desc' }],
         });
     }
     async marcarLeida(id, usuarioId) {

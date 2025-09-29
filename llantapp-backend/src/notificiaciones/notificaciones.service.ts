@@ -10,7 +10,6 @@ export class NotificacionesService {
     return filas.map(n => ({
       id: n.id,
       mensaje: n.mensaje,
-      prioridad: n.prioridad,
       estado: n.estado,
       creadoEn: n.creadoEn.toISOString(),
       vehiculoId: n.vehiculoId ?? null,

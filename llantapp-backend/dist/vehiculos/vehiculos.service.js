@@ -38,10 +38,12 @@ let VehiculosService = class VehiculosService {
         }
         if (errores.length)
             throw new common_1.BadRequestException(errores.join(' | '));
-        const usuario = await this.prisma.usuario.findUnique({
-            where: { id: creadorId },
-            select: { empresaId: true },
+        const propietario = await this.prisma.usuario.findUnique({
+            where: { id: dto.propietarioUsuarioId },
+            select: { id: true, empresaId: true },
         });
+        if (!propietario)
+            throw new common_1.BadRequestException('Propietario no existe');
         return this.prisma.vehiculo.create({
             data: {
                 placa: dto.placa.trim().toUpperCase(),
@@ -50,9 +52,9 @@ let VehiculosService = class VehiculosService {
                 anio: dto.anio,
                 color: dto.color.trim(),
                 vin: ((_a = dto.vin) === null || _a === void 0 ? void 0 : _a.trim()) || null,
-                propietarioUsuarioId: creadorId,
+                propietarioUsuarioId: propietario.id,
                 creadoPorId: creadorId,
-                empresaId: (_b = usuario === null || usuario === void 0 ? void 0 : usuario.empresaId) !== null && _b !== void 0 ? _b : null,
+                empresaId: (_b = propietario.empresaId) !== null && _b !== void 0 ? _b : null,
             },
             select: { id: true, placa: true, marca: true, modelo: true },
         });

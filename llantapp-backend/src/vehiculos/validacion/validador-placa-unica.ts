@@ -3,6 +3,11 @@ import { ValidadorBase } from './validador-base';
 import { CrearVehiculoDto } from '../dto/crear-vehiculo.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 
+// ValidadorPlacaUnica.ts
+// - SRP: valida SOLO contra la BD si la placa existe.
+// - DIP: usa PrismaService inyectado; el servicio de vehículos no sabe cómo lo hace.
+// - Alterno 3a: emite "La placa ya está registrada".
+
 @Injectable()
 export class ValidadorPlacaUnica extends ValidadorBase {
   constructor(private prisma: PrismaService) { super(); }

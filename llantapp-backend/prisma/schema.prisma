@@ -12,7 +12,6 @@ generator client {
 enum Rol {
   ADMIN
   MECANICO
-  ASISTENTE
   CHOFER
   EMPRESA
 }
@@ -40,7 +39,7 @@ model Usuario {
   nombreCompleto String
   correo         String   @unique
   hashClave      String
-  rol            Rol      @default(ASISTENTE)
+  rol            Rol      @default(CHOFER)
   creadoEn       DateTime @default(now())
   actualizadoEn  DateTime @updatedAt
 
@@ -102,21 +101,6 @@ model Vehiculo {
   @@index([empresaId])
 }
 
-model Llanta {
-  id               Int       @id @default(autoincrement())
-  vehiculoId       Int
-  vehiculo         Vehiculo  @relation(fields: [vehiculoId], references: [id])
-  posicion         String?   // ej. "DI-IZQ", "TR-DR"
-  fechaInstalacion DateTime?
-  fechaVencimiento DateTime  // usado por la regla de vencimiento
-  vidaUtilKm       Int?      // si luego deseas calcular por km
-
-  creadoEn DateTime @default(now())
-
-  @@index([vehiculoId])
-  @@index([fechaVencimiento])
-}
-
 model CitaMantenimiento {
   id             Int               @id @default(autoincrement())
   tipo           TipoMantenimiento
@@ -156,7 +140,6 @@ model Notificacion {
   cita       CitaMantenimiento? @relation(fields: [citaId], references: [id])
 
   mensaje    String
-  prioridad  PrioridadNotificacion @default(MEDIA) // BAJA | MEDIA | ALTA
   estado     EstadoNotificacion    @default(PENDIENTE) // PENDIENTE | LEIDA
   creadoEn   DateTime              @default(now())
 
@@ -164,3 +147,4 @@ model Notificacion {
   @@index([vehiculoId])
   @@index([citaId])
 }
+

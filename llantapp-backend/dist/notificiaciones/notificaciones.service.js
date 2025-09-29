@@ -23,7 +23,6 @@ let NotificacionesService = class NotificacionesService {
             return ({
                 id: n.id,
                 mensaje: n.mensaje,
-                prioridad: n.prioridad,
                 estado: n.estado,
                 creadoEn: n.creadoEn.toISOString(),
                 vehiculoId: (_a = n.vehiculoId) !== null && _a !== void 0 ? _a : null,

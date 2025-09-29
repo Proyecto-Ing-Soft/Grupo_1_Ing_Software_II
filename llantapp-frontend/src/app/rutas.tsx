@@ -2,19 +2,26 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
+//PAGINAS
 import LoginPagina from '../paginas/LoginPagina';
 import RegistroPagina from '../paginas/RegistroPagina';
 import InicioProtegido from '../paginas/InicioProtegido';
 import RegistrarVehiculoPagina from '../paginas/RegistrarVehiculoPagina';
 import NotificacionesLeerPagina from '../paginas/NotificacionesLeerPagina';
-
 import AgendarCitaPagina from '../paginas/AgendarCitaPagina';
 import MisCitasPagina from '../paginas/MisCitasPagina';
 import CitasMecanicoPagina from '../paginas/CitasMecanicoPagina';
 
+//ROL PROTEGIENDO PAGINAS
 import { RutaProtegidaPorRol } from '../componentes/RutaProtegidaPorRol';
 import { RutaProtegida } from '../componentes/RutaProtegida';
+
+//LAYOUT
 import LayoutProtegido from '../componentes/LayoutProtegido';
+
+// - Seguridad por capas: RutaProtegidaPorRol (UI) + RolesGuard (API).
+// - KISS + Ley de Demeter: el componente pregunta a AuthContext; no lee token/jwt directo.
+// - Facade: AuthContext "facadea" sesión/refresh/perfil para el resto de la UI.
 
 const router = createBrowserRouter(
   [
@@ -35,16 +42,16 @@ const router = createBrowserRouter(
         { path: 'inicio', element: <InicioProtegido /> },
 
         {
-          path: 'vehiculos/registrar', // ✅ relativo
+          path: 'vehiculos/registrar', // Solo puede ingresar ADMIN y MECANICO
           element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA']}>
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN', 'MECANICO']}>
               <RegistrarVehiculoPagina />
             </RutaProtegidaPorRol>
           ),
         },
 
         {
-          path: 'citas/agendar', // ✅ relativo (sin /)
+          path: 'citas/agendar', // Solo CHOFER o EMPRESA
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['CHOFER','EMPRESA']}>
               <AgendarCitaPagina />
@@ -52,7 +59,7 @@ const router = createBrowserRouter(
           ),
         },
         {
-          path: 'citas/mias', // ✅ relativo
+          path: 'citas/mias', // Solo CHOFER o EMPRESA
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['CHOFER','EMPRESA']}>
               <MisCitasPagina />
@@ -60,7 +67,7 @@ const router = createBrowserRouter(
           ),
         },
         {
-          path: 'citas/asignadas', // ✅ relativo
+          path: 'citas/asignadas', // Solo MECANICO
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
               <CitasMecanicoPagina />
@@ -68,7 +75,7 @@ const router = createBrowserRouter(
           ),
         },
         {
-          path: 'notificaciones', // ✅ relativo
+          path: 'notificaciones', // Solo CHOFER, EMPRESA o MECANICO
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA']}>
               <NotificacionesLeerPagina />
@@ -80,7 +87,7 @@ const router = createBrowserRouter(
 
     { path: '*', element: <LoginPagina /> },
   ],
-  { basename: '/llantapp' } // ok si tu app está servida bajo /llantapp
+  { basename: '/llantapp' } // para que la url diga llantapp xd
 );
 
 export function Rutas() {

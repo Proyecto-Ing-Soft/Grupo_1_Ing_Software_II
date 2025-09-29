@@ -15,6 +15,7 @@ const validador_campos_obligatorios_1 = require("./validacion/validador-campos-o
 const validador_formato_placa_1 = require("./validacion/validador-formato-placa");
 const validador_placa_unica_1 = require("./validacion/validador-placa-unica");
 const tokens_1 = require("./validacion/tokens");
+const validador_propietario_valido_1 = require("./validacion/validador-propietario-valido");
 let VehiculosModule = class VehiculosModule {
 };
 exports.VehiculosModule = VehiculosModule;
@@ -30,6 +31,7 @@ exports.VehiculosModule = VehiculosModule = __decorate([
                     new validador_campos_obligatorios_1.ValidadorCamposObligatorios(),
                     new validador_formato_placa_1.ValidadorFormatoPlaca(),
                     new validador_placa_unica_1.ValidadorPlacaUnica(prisma),
+                    new validador_propietario_valido_1.ValidadorPropietarioValido(prisma),
                 ],
                 inject: [prisma_service_1.PrismaService],
             },

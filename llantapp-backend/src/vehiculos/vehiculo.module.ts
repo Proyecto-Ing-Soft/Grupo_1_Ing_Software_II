@@ -8,6 +8,12 @@ import { ValidadorCamposObligatorios } from './validacion/validador-campos-oblig
 import { ValidadorFormatoPlaca } from './validacion/validador-formato-placa';
 import { ValidadorPlacaUnica } from './validacion/validador-placa-unica';
 import { VEHICULO_VALIDADORES } from './validacion/tokens';
+import { ValidadorPropietarioValido } from './validacion/validador-propietario-valido';
+
+// useFactory(...) → "mini Abstract Factory"
+// - Crea e inyecta un ARREGLO de IValidadorVehiculo.
+// - OCP/DIP: agregar/quitar validadores sin re-escribir el servicio.
+
 
 @Module({
   controllers: [VehiculosController],
@@ -22,6 +28,7 @@ import { VEHICULO_VALIDADORES } from './validacion/tokens';
         new ValidadorCamposObligatorios(),
         new ValidadorFormatoPlaca(),
         new ValidadorPlacaUnica(prisma),
+        new ValidadorPropietarioValido(prisma),
       ],
       inject: [PrismaService],
     },

@@ -9,28 +9,33 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Notificador = void 0;
+exports.ValidadorPropietarioValido = void 0;
 const common_1 = require("@nestjs/common");
+const validador_base_1 = require("./validador-base");
 const prisma_service_1 = require("../../prisma/prisma.service");
-let Notificador = class Notificador {
+let ValidadorPropietarioValido = class ValidadorPropietarioValido extends validador_base_1.ValidadorBase {
     constructor(prisma) {
+        super();
         this.prisma = prisma;
     }
-    async enviar(n) {
-        var _a, _b;
-        await this.prisma.notificacion.create({
-            data: {
-                usuarioId: n.usuarioId,
-                vehiculoId: (_a = n.vehiculoId) !== null && _a !== void 0 ? _a : null,
-                citaId: (_b = n.citaId) !== null && _b !== void 0 ? _b : null,
-                mensaje: n.mensaje,
-            },
+    async validar(dto) {
+        if (!dto.propietarioUsuarioId)
+            return 'Propietario inválido';
+        const u = await this.prisma.usuario.findUnique({
+            where: { id: dto.propietarioUsuarioId },
+            select: { id: true, rol: true, empresaId: true },
         });
+        if (!u)
+            return 'Propietario no existe';
+        if (u.rol !== 'CHOFER' && u.rol !== 'EMPRESA') {
+            return 'El propietario debe ser CHOFER o EMPRESA';
+        }
+        return null;
     }
 };
-exports.Notificador = Notificador;
-exports.Notificador = Notificador = __decorate([
+exports.ValidadorPropietarioValido = ValidadorPropietarioValido;
+exports.ValidadorPropietarioValido = ValidadorPropietarioValido = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])
-], Notificador);
-//# sourceMappingURL=notificador.js.map
+], ValidadorPropietarioValido);
+//# sourceMappingURL=validador-propietario-valido.js.map
