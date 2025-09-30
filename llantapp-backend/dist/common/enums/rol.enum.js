@@ -5,7 +5,6 @@ var Rol;
 (function (Rol) {
     Rol["ADMIN"] = "ADMIN";
     Rol["MECANICO"] = "MECANICO";
-    Rol["ASISTENTE"] = "ASISTENTE";
     Rol["CHOFER"] = "CHOFER";
     Rol["EMPRESA"] = "EMPRESA";
 })(Rol || (exports.Rol = Rol = {}));

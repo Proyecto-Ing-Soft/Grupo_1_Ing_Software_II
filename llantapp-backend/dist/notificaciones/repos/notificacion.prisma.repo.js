@@ -12,9 +12,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificacionPrismaRepo = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const client_1 = require("@prisma/client");
 let NotificacionPrismaRepo = class NotificacionPrismaRepo {
     constructor(prisma) {
         this.prisma = prisma;
+    }
+    async crear(data) {
+        var _a, _b;
+        return this.prisma.notificacion.create({
+            data: {
+                usuarioId: data.usuarioId,
+                mensaje: data.mensaje,
+                vehiculoId: (_a = data.vehiculoId) !== null && _a !== void 0 ? _a : null,
+                citaId: (_b = data.citaId) !== null && _b !== void 0 ? _b : null,
+            },
+        });
     }
     async listarPorUsuario(usuarioId) {
         return this.prisma.notificacion.findMany({
@@ -28,9 +40,12 @@ let NotificacionPrismaRepo = class NotificacionPrismaRepo {
             throw new common_1.NotFoundException('No existe la notificación');
         if (n.usuarioId !== usuarioId)
             throw new common_1.ForbiddenException('No autorizado');
-        if (n.estado === 'LEIDA')
+        if (n.estado === client_1.EstadoNotificacion.LEIDA)
             return;
-        await this.prisma.notificacion.update({ where: { id }, data: { estado: 'LEIDA' } });
+        await this.prisma.notificacion.update({
+            where: { id },
+            data: { estado: client_1.EstadoNotificacion.LEIDA },
+        });
     }
 };
 exports.NotificacionPrismaRepo = NotificacionPrismaRepo;

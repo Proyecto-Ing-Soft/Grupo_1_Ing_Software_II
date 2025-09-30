@@ -16,6 +16,15 @@ let NotificacionesService = class NotificacionesService {
     constructor(repo) {
         this.repo = repo;
     }
+    async enviar(data) {
+        const cuerpo = `${data.titulo}: ${data.mensaje}`;
+        await this.repo.crear({
+            usuarioId: data.usuarioId,
+            mensaje: cuerpo,
+            vehiculoId: data.vehiculoId,
+            citaId: data.citaId,
+        });
+    }
     async listarPorUsuario(usuarioId) {
         const filas = await this.repo.listarPorUsuario(usuarioId);
         return filas.map(n => {

@@ -14,98 +14,106 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CitasController = void 0;
 const common_1 = require("@nestjs/common");
-const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const citas_service_1 = require("./citas.service");
 const crear_cita_dto_1 = require("./dto/crear-cita.dto");
+const asignar_mecanico_dto_1 = require("./dto/asignar-mecanico.dto");
+const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 let CitasController = class CitasController {
-    constructor(servicio) {
-        this.servicio = servicio;
+    constructor(svc) {
+        this.svc = svc;
     }
-    async crear(dto, req) {
+    crear(dto, req) {
         var _a, _b, _c;
-        const uid = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.sub) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
-        return this.servicio.crear(dto, uid);
+        const userId = Number((_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.sub);
+        if (!Number.isFinite(userId))
+            throw new common_1.UnauthorizedException('Usuario no válido');
+        return this.svc.crear(dto, userId);
     }
-    async mias(req) {
+    asignar(id, dto, req) {
         var _a, _b, _c;
-        const uid = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.sub) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
-        return this.servicio.listarPorCliente(uid);
+        const adminId = Number((_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.sub);
+        if (!Number.isFinite(adminId))
+            throw new common_1.UnauthorizedException('Usuario no válido');
+        return this.svc.asignarMecanico(id, dto.mecanicoId, adminId);
     }
-    async asignadas(req) {
+    terminar(id, req) {
         var _a, _b, _c;
-        const mid = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.sub) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
-        return this.servicio.listarPorMecanico(mid);
+        const mecanicoId = Number((_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.sub);
+        if (!Number.isFinite(mecanicoId))
+            throw new common_1.UnauthorizedException('Usuario no válido');
+        return this.svc.terminar(id, mecanicoId);
     }
-    async aceptar(id, req) {
+    mias(req) {
         var _a, _b, _c;
-        const mid = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.sub) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
-        const permitidos = ['SOLICITADA'];
-        return this.servicio.cambiarEstado(id, mid, 'ACEPTADA', permitidos);
+        const clienteId = Number((_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.sub);
+        if (!Number.isFinite(clienteId))
+            throw new common_1.UnauthorizedException('Usuario no válido');
+        return this.svc.listarDelCliente(clienteId);
     }
-    async iniciar(id, req) {
+    asignadas(req) {
         var _a, _b, _c;
-        const mid = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.sub) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
-        const permitidos = ['ACEPTADA'];
-        return this.servicio.cambiarEstado(id, mid, 'EN_PROGRESO', permitidos);
+        const mecanicoId = Number((_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.sub);
+        if (!Number.isFinite(mecanicoId))
+            throw new common_1.UnauthorizedException('Usuario no válido');
+        return this.svc.listarDelMecanico(mecanicoId);
     }
-    async terminar(id, req) {
-        var _a, _b, _c;
-        const mid = (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.sub) !== null && _b !== void 0 ? _b : (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
-        const permitidos = ['EN_PROGRESO'];
-        return this.servicio.cambiarEstado(id, mid, 'TERMINADA', permitidos);
+    pendientes(req) {
+        var _a;
+        if (((_a = req.user) === null || _a === void 0 ? void 0 : _a.rol) !== 'ADMIN')
+            throw new common_1.ForbiddenException('Solo admin');
+        return this.svc.listarPendientes();
     }
 };
 exports.CitasController = CitasController;
 __decorate([
     (0, common_1.Post)(),
-    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [crear_cita_dto_1.CrearCitaDto, Object]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], CitasController.prototype, "crear", null);
 __decorate([
-    (0, common_1.Get)('mias'),
-    __param(0, (0, common_1.Req)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], CitasController.prototype, "mias", null);
-__decorate([
-    (0, common_1.Get)('asignadas'),
-    __param(0, (0, common_1.Req)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], CitasController.prototype, "asignadas", null);
-__decorate([
-    (0, common_1.Post)(':id/aceptar'),
+    (0, common_1.Post)(':id/asignar'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
-    __param(1, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object]),
-    __metadata("design:returntype", Promise)
-], CitasController.prototype, "aceptar", null);
-__decorate([
-    (0, common_1.Post)(':id/iniciar'),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
-    __param(1, (0, common_1.Req)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object]),
-    __metadata("design:returntype", Promise)
-], CitasController.prototype, "iniciar", null);
+    __metadata("design:paramtypes", [Number, asignar_mecanico_dto_1.AsignarMecanicoDto, Object]),
+    __metadata("design:returntype", void 0)
+], CitasController.prototype, "asignar", null);
 __decorate([
     (0, common_1.Post)(':id/terminar'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Object]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], CitasController.prototype, "terminar", null);
+__decorate([
+    (0, common_1.Get)('mias'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], CitasController.prototype, "mias", null);
+__decorate([
+    (0, common_1.Get)('asignadas'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], CitasController.prototype, "asignadas", null);
+__decorate([
+    (0, common_1.Get)('admin/pendientes'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], CitasController.prototype, "pendientes", null);
 exports.CitasController = CitasController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, common_1.Controller)('citas'),
+    (0, common_1.Controller)('citas-mantenimiento'),
     __metadata("design:paramtypes", [citas_service_1.CitasService])
 ], CitasController);
 //# sourceMappingURL=citas.controller.js.map

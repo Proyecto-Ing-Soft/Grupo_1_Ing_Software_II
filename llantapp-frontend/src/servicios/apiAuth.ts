@@ -1,7 +1,7 @@
-// SRP: Endpoints de autenticación (nada más).
-const BASE = import.meta.env.VITE_API_BASE_URL as string;
+// src/servicios/apiAuth.ts
+import { postJSON, getJSON } from './_http';
 
-type Rol = 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CHOFER' | 'EMPRESA';
+export type Rol = 'ADMIN'|'MECANICO'|'ASISTENTE'|'CHOFER'|'EMPRESA';
 
 export interface Perfil {
   id: number;
@@ -10,41 +10,27 @@ export interface Perfil {
   rol: Rol;
 }
 
-async function postJSON<T = any>(ruta: string, cuerpo: unknown): Promise<T> {
-  const res = await fetch(`${BASE}${ruta}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // cookies httpOnly (refresh)
-    body: JSON.stringify(cuerpo ?? {}),
-  });
-  if (!res.ok) throw new Error((await res.text()) || 'Error en la petición');
-  return res.json() as Promise<T>;
+export interface LoginResponse {
+  accessToken: string; // el backend debe devolverlo
+  perfil: Perfil;      // opcional, si quieres retornarlo ya listo
 }
 
-async function getJSONAutorizado<T = any>(ruta: string, accessToken: string): Promise<T> {
-  const res = await fetch(`${BASE}${ruta}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    credentials: 'include',
-  });
-  if (!res.ok) throw new Error((await res.text()) || 'Error en la petición');
-  return res.json() as Promise<T>;
+export interface RefreshResponse {
+  accessToken: string;
 }
 
 export const apiAuth = {
-  registrar: (datos: { nombreCompleto: string; correo: string; clave: string }) =>
+   registrar: (datos: { nombreCompleto: string; correo: string; clave: string }) =>
     postJSON('/auth/registrar', datos),
 
-  login: (datos: { correo: string; clave: string }) =>
-    postJSON<{ accessToken: string }>('/auth/login', datos),
+  login: (credenciales: { correo: string; clave: string }) =>
+    postJSON<LoginResponse>('/auth/login', credenciales),
 
-  refresh: () => postJSON<{ accessToken: string }>('/auth/refresh', {}),
+  // Usa Authorization: Bearer (lo mete _http.ts) + cookie httpOnly si tu backend la usa
+  perfil: (token?: string) => getJSON<Perfil>('/auth/perfil', token),
 
-  perfil: (accessToken: string) =>
-    getJSONAutorizado<Perfil>('/auth/perfil', accessToken),
+  refresh: () => postJSON<RefreshResponse>('/auth/refresh', {}),
 
   logout: () => postJSON<{ ok: true }>('/auth/logout', {}),
 };
+

@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiCitas } from '../servicios/apiCitas';
-import { useAuth } from '../app/proveedorestado/AuthContext';
 
 export default function MisCitasPagina() {
-  const { sesion } = useAuth();
-  const accessToken = sesion?.accessToken ?? undefined;
   const navigate = useNavigate();
-
   const [citas, setCitas] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -16,7 +12,7 @@ export default function MisCitasPagina() {
     (async () => {
       try {
         setCargando(true);
-        const data = await apiCitas.mias(accessToken);
+        const data = await apiCitas.mias();
         setCitas(data ?? []);
         setErr(null);
       } catch (e: any) {
@@ -25,7 +21,7 @@ export default function MisCitasPagina() {
         setCargando(false);
       }
     })();
-  }, [accessToken]);
+  }, []);
 
   if (cargando) return <p>Cargando…</p>;
   if (err) return <p className="text-red-600">{err}</p>;

@@ -1,10 +1,10 @@
-// KISS: almacenar el access token en memoria (no localStorage) para reducir riesgo XSS.
-// YAGNI: sin persistencia entre recargas por ahora.
-
-let accessTokenEnMemoria: string | null = null;
+// SRP: una sola responsabilidad (gestionar access token)
+// KISS: API mínima get/set/limpiar
+const KEY = 'access_token';
+let _mem: string | null = null;
 
 export const tokenMemoria = {
-  set(token: string | null) { accessTokenEnMemoria = token; },
-  get() { return accessTokenEnMemoria; },
-  limpiar() { accessTokenEnMemoria = null; }
+  get: () => _mem ?? localStorage.getItem(KEY),
+  set: (t: string) => { _mem = t; localStorage.setItem(KEY, t); },
+  limpiar: () => { _mem = null; localStorage.removeItem(KEY); },
 };

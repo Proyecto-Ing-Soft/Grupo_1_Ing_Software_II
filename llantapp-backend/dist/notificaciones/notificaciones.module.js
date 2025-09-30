@@ -19,12 +19,7 @@ exports.NotificacionesModule = NotificacionesModule;
 exports.NotificacionesModule = NotificacionesModule = __decorate([
     (0, common_1.Module)({
         controllers: [notificaciones_controller_1.NotificacionesController],
-        providers: [
-            prisma_service_1.PrismaService,
-            notificacion_prisma_repo_1.NotificacionPrismaRepo,
-            notificaciones_service_1.NotificacionesService,
-            notificador_1.Notificador,
-        ],
+        providers: [prisma_service_1.PrismaService, notificacion_prisma_repo_1.NotificacionPrismaRepo, notificaciones_service_1.NotificacionesService, notificador_1.Notificador],
         exports: [notificador_1.Notificador],
     })
 ], NotificacionesModule);

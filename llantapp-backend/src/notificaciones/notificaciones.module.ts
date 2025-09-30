@@ -7,12 +7,7 @@ import { Notificador } from './envio/notificador';
 
 @Module({
   controllers: [NotificacionesController],
-  providers: [
-    PrismaService,
-    NotificacionPrismaRepo,
-    NotificacionesService,
-    Notificador, // ← exportamos este para usarlo en Citas
-  ],
+  providers: [PrismaService, NotificacionPrismaRepo, NotificacionesService, Notificador],
   exports: [Notificador],
 })
 export class NotificacionesModule {}

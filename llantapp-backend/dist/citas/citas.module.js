@@ -11,7 +11,7 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const citas_service_1 = require("./citas.service");
 const citas_controller_1 = require("./citas.controller");
-const notificaciones_module_1 = require("../notificiaciones/notificaciones.module");
+const notificaciones_module_1 = require("../notificaciones/notificaciones.module");
 let CitasModule = class CitasModule {
 };
 exports.CitasModule = CitasModule;

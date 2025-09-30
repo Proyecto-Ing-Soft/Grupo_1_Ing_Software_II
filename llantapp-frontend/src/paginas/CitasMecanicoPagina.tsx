@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiCitas } from '../servicios/apiCitas';
-import { useAuth } from '../app/proveedorestado/AuthContext';
 
 export default function CitasMecanicoPagina() {
-  const { sesion } = useAuth();
-  const accessToken = sesion?.accessToken ?? undefined;
-
   const [citas, setCitas] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -13,7 +9,7 @@ export default function CitasMecanicoPagina() {
   const recargar = async () => {
     try {
       setCargando(true);
-      const data = await apiCitas.asignadas(accessToken);
+      const data = await apiCitas.asignadas();
       setCitas(data ?? []);
       setErr(null);
     } catch (e: any) {
@@ -23,16 +19,14 @@ export default function CitasMecanicoPagina() {
     }
   };
 
-  useEffect(() => { recargar(); }, [accessToken]);
+  useEffect(() => { recargar(); }, []);
 
-  const onAccion = async (id: number, accion: 'aceptar'|'iniciar'|'terminar') => {
+  const onTerminar = async (id: number) => {
     try {
-      if (accion === 'aceptar') await apiCitas.aceptar(id, accessToken);
-      if (accion === 'iniciar') await apiCitas.iniciar(id, accessToken);
-      if (accion === 'terminar') await apiCitas.terminar(id, accessToken);
-      recargar();
+      await apiCitas.terminar(id);
+      await recargar();
     } catch (e: any) {
-      setErr(e?.message || 'No se pudo actualizar la cita');
+      setErr(e?.message || 'No se pudo terminar la cita');
     }
   };
 
@@ -42,34 +36,41 @@ export default function CitasMecanicoPagina() {
   const fmtSoloFecha = (iso?: string) =>
     iso ? new Date(iso).toLocaleDateString('es-PE', { dateStyle: 'medium' }) : 'Sin fecha';
 
+  const hoyYMD = new Date().toISOString().slice(0,10);
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-semibold mb-4">Citas asignadas</h1>
       <div className="grid gap-3">
-        {citas.map((c) => (
-          <div key={c.id} className="border rounded p-3">
-            <div className="flex justify-between items-center">
-              <div className="font-medium">#{c.id} – {c.tipo} – {c.vehiculo?.placa}</div>
-              <span className="text-sm">{c.estado}</span>
+        {citas.map((c) => {
+          const programada = c.programadaPara ? new Date(c.programadaPara).toISOString().slice(0,10) : null;
+          const puedeTerminar = c.estado === 'EN_PROGRESO' && programada === hoyYMD;
+
+          return (
+            <div key={c.id} className="border rounded p-3">
+              <div className="flex justify-between items-center">
+                <div className="font-medium">#{c.id} – {c.tipo} – {c.vehiculo?.placa}</div>
+                <span className="text-sm">{c.estado}</span>
+              </div>
+              <div className="text-sm text-gray-600">
+                Cliente: {c.cliente?.nombreCompleto ?? '—'} / Fecha: {fmtSoloFecha(c.programadaPara)}
+              </div>
+              <p className="text-sm mt-2">{c.comentario}</p>
+
+              <div className="flex gap-2 mt-3">
+                <button
+                  className={`px-3 py-1 rounded ${puedeTerminar ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
+                  disabled={!puedeTerminar}
+                  onClick={() => onTerminar(c.id)}
+                  title={puedeTerminar ? 'Terminar mantenimiento' : 'Solo puede terminarse el día programado'}
+                >
+                  TERMINAR
+                </button>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">
-              Cliente: {c.cliente?.nombreCompleto ?? '—'} / Fecha: {fmtSoloFecha(c.programadaPara)}
-            </div>
-            <p className="text-sm mt-2">{c.comentario}</p>
-            <div className="flex gap-2 mt-3">
-              {c.estado === 'SOLICITADA' && (
-                <button className="btn-primary" onClick={() => onAccion(c.id,'aceptar')}>Aceptar</button>
-              )}
-              {c.estado === 'ACEPTADA' && (
-                <button className="btn-secondary" onClick={() => onAccion(c.id,'iniciar')}>Iniciar</button>
-              )}
-              {c.estado === 'EN_PROGRESO' && (
-                <button className="btn-success" onClick={() => onAccion(c.id,'terminar')}>Terminar</button>
-              )}
-            </div>
-          </div>
-        ))}
-        {citas.length === 0 && <p>No tienes citas pendientes.</p>}
+          );
+        })}
+        {citas.length === 0 && <p>No tienes citas asignadas.</p>}
       </div>
     </div>
   );

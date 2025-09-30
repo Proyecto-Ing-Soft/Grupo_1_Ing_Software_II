@@ -38,7 +38,12 @@
 
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; color:var(--on); background:linear-gradient(180deg, var(--bg), #0a0d12 40%, var(--bg));}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  color:var(--on);
+  background:linear-gradient(180deg, var(--bg), #0a0d12 40%, var(--bg));
+}
 
 .notif__container{
   max-width:1100px; margin:40px auto; padding:24px;
@@ -67,7 +72,7 @@ body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, R
 
 .notif__card{
   grid-column: span 4;
-  background:linear-gradient(180deg, var(--card), transparent);
+  background: var(--card);                 /* sólido para evitar "lavado" */
   border:var(--border); border-radius:18px; overflow:hidden;
   transition: transform .18s ease, box-shadow .2s ease, border-color .2s ease;
   position:relative;
@@ -88,12 +93,53 @@ body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, R
   background: rgba(255,255,255,.04);
 }
 
-.badge--prioridad[data-p="ALTA"]{ color:#fff; background:linear-gradient(180deg, rgba(239,68,68,.22), rgba(239,68,68,.08)); border-color:rgba(239,68,68,.35) }
-.badge--prioridad[data-p="MEDIA"]{ color:#fff; background:linear-gradient(180deg, rgba(245,158,11,.22), rgba(245,158,11,.08)); border-color:rgba(245,158,11,.35) }
-.badge--prioridad[data-p="BAJA"]{ color:#d1fae5; background:linear-gradient(180deg, rgba(16,185,129,.20), rgba(16,185,129,.06)); border-color:rgba(16,185,129,.30) }
+/* ===== Tonos por estado de la cita (no BD, solo clases) ===== */
+.notif--solicitada{ 
+  /* 🟠 */
+  --tone-bg: linear-gradient(180deg, rgba(245,158,11,.14), rgba(245,158,11,.05));
+  --tone-br: rgba(245,158,11,.35);
+  --tone-fg: #8a5d00;
+}
+.notif--progreso{ 
+  /* 🟡 */
+  --tone-bg: linear-gradient(180deg, rgba(234,179,8,.14), rgba(234,179,8,.05));
+  --tone-br: rgba(234,179,8,.35);
+  --tone-fg: #7a5e00;
+}
+.notif--terminada{ 
+  /* 🟢 */
+  --tone-bg: linear-gradient(180deg, rgba(16,185,129,.14), rgba(16,185,129,.05));
+  --tone-br: rgba(16,185,129,.35);
+  --tone-fg: #0f5f1a;
+}
 
-.badge--estado[data-e="PENDIENTE"]{ color:#93c5fd; background:linear-gradient(180deg, rgba(37,99,235,.20), rgba(37,99,235,.06)); border-color: rgba(37,99,235,.35) }
-.badge--estado[data-e="LEIDA"]{ color:#a7f3d0; background:linear-gradient(180deg, rgba(16,185,129,.18), rgba(16,185,129,.06)); border-color: rgba(16,185,129,.30) }
+/* Aplicar “accent” sin perder contraste */
+.notif__card.is-toned{
+  background: var(--card);
+  position: relative;
+}
+.notif__card.is-toned::before{
+  /* barra lateral del estado */
+  content:""; position:absolute; left:0; top:0; bottom:0; width:8px;
+  background: var(--tone-br); opacity:.9;
+}
+.notif__card.is-toned::after{
+  /* velo sutil para el mood */
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background: var(--tone-bg); opacity:.35;
+}
+
+/* Oculta badges vacíos */
+.badge:empty { display:none; }
+.badge--prioridad:not([data-p]){ display:none; }
+
+/* Estado de la NOTIFICACIÓN (pendiente/leída) */
+.badge--estado[data-e="PENDIENTE"]{
+  color:#93c5fd; background:linear-gradient(180deg, rgba(37,99,235,.20), rgba(37,99,235,.06)); border-color: rgba(37,99,235,.35)
+}
+.badge--estado[data-e="LEIDA"]{
+  color:#a7f3d0; background:linear-gradient(180deg, rgba(16,185,129,.18), rgba(16,185,129,.06)); border-color: rgba(16,185,129,.30)
+}
 
 .notif__content{ padding:8px 16px 14px 16px; display:flex; flex-direction:column; gap:8px }
 .notif__tipo{ font-weight:700; font-size:.92rem; color: var(--on) }
@@ -141,9 +187,7 @@ body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, R
 }
 .state h3{ margin:0 0 6px 0; color:var(--on) }
 
-.state--loading{
-  position:relative; overflow:hidden;
-}
+.state--loading{ position:relative; overflow:hidden; }
 .state--loading::after{
   content:""; position:absolute; inset:0;
   background:linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
@@ -156,3 +200,82 @@ body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, R
   .notif__card, .notif__refresh, .btnAction, .state--loading::after,
   .notif__card:hover { transition: none !important; animation: none !important; }
 }
+
+/* ============================================
+   EXTRA: badges y data-attrs que faltaban
+   ============================================ */
+
+/* 1) Badge por ESTADO DE LA CITA (usa los --tone de la card) */
+.badge--cita{
+  font-size:.75rem; font-weight:700; letter-spacing:.3px;
+  border-radius:999px; padding:6px 10px; line-height:1;
+  border: 1px solid var(--tone-br, rgba(255,255,255,.08));
+  background: var(--tone-bg, rgba(255,255,255,.04));
+  color: var(--tone-fg, var(--on));
+}
+
+/* 2) Badges por PRIORIDAD */
+.badge--prioridad[data-p="ALTA"]{
+  color:#fff;
+  background: linear-gradient(180deg, rgba(239,68,68,.22), rgba(239,68,68,.08));
+  border-color: rgba(239,68,68,.35);
+}
+.badge--prioridad[data-p="MEDIA"]{
+  color:#fff;
+  background: linear-gradient(180deg, rgba(245,158,11,.22), rgba(245,158,11,.08));
+  border-color: rgba(245,158,11,.35);
+}
+.badge--prioridad[data-p="BAJA"]{
+  color:#d1fae5;
+  background: linear-gradient(180deg, rgba(16,185,129,.20), rgba(16,185,129,.06));
+  border-color: rgba(16,185,129,.30);
+}
+
+/* 3) Activar tonos por atributo data-cita (si lo prefieres a las clases) */
+.notif__card[data-cita="SOLICITADA"]{
+  --tone-bg: linear-gradient(180deg, rgba(245,158,11,.14), rgba(245,158,11,.05));
+  --tone-br: rgba(247, 8, 8, 0.35);
+  --tone-fg: #f30a0a;
+}
+.notif__card[data-cita="EN_PROGRESO"]{
+  --tone-bg: linear-gradient(180deg, rgba(234,179,8,.14), rgba(234,179,8,.05));
+  --tone-br: rgba(234,179,8,.35);
+  --tone-fg: #7a5e00;
+}
+.notif__card[data-cita="TERMINADA"]{
+  --tone-bg: linear-gradient(180deg, rgba(16,185,129,.14), rgba(16,185,129,.05));
+  --tone-br: rgba(16,185,129,.35);
+  --tone-fg: #0f5f1a;
+}
+.notif__card[data-cita]{
+  background: var(--card);           /* base sólida */
+}
+.notif__card[data-cita]::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:8px;
+  background: var(--tone-br); opacity:.9;
+}
+.notif__card[data-cita]::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background: var(--tone-bg); opacity:.35;
+}
+
+/* Botón azul de marca para acción del mecánico */
+.btnBrand{
+  appearance:none; border:none; cursor:pointer; border-radius:12px;
+  padding:10px 12px; font-weight:700; letter-spacing:.2px;
+  color:#0a111a;
+  background: linear-gradient(180deg, #93c5fd, #60a5fa); /* azul */
+  box-shadow: 0 10px 18px rgba(96,165,250,.25);
+  transition: transform .12s ease, box-shadow .2s ease;
+}
+.btnBrand:hover{ transform: translateY(-1px); box-shadow: 0 14px 24px rgba(96,165,250,.30); }
+.btnBrand:focus-visible{ outline:none; box-shadow: var(--ring); }
+
+/* Botón fantasma (texto plano) */
+.btnGhost{
+  appearance:none; border:var(--border); background:transparent; cursor:pointer;
+  padding:10px 12px; font-weight:700; letter-spacing:.2px; border-radius:12px;
+  color:var(--on);
+}
+.btnGhost:hover{ background: rgba(255,255,255,.06); }
+.btnGhost:focus-visible{ outline:none; box-shadow: var(--ring); }

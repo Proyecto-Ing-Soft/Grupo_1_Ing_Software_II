@@ -4,7 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsuarioModule } from './usuario/usuario.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { VehiculosModule } from './vehiculos/vehiculo.module';
-import { NotificacionesModule } from './notificiaciones/notificaciones.module';
+import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { CitasModule } from './citas/citas.module';
 
 @Module({

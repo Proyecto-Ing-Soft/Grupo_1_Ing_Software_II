@@ -9,40 +9,51 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CrearCitaDto = exports.TipoMantenimiento = void 0;
+exports.CrearCitaDto = void 0;
 const class_validator_1 = require("class-validator");
-var TipoMantenimiento;
-(function (TipoMantenimiento) {
-    TipoMantenimiento["PREVENTIVO"] = "PREVENTIVO";
-    TipoMantenimiento["CORRECTIVO"] = "CORRECTIVO";
-    TipoMantenimiento["LEGAL_ITV"] = "LEGAL_ITV";
-    TipoMantenimiento["EXTRAS"] = "EXTRAS";
-})(TipoMantenimiento || (exports.TipoMantenimiento = TipoMantenimiento = {}));
+const client_1 = require("@prisma/client");
 class CrearCitaDto {
 }
 exports.CrearCitaDto = CrearCitaDto;
 __decorate([
-    (0, class_validator_1.IsEnum)(TipoMantenimiento),
+    (0, class_validator_1.IsEnum)(client_1.TipoMantenimiento),
     __metadata("design:type", String)
 ], CrearCitaDto.prototype, "tipo", void 0);
 __decorate([
-    (0, class_validator_1.IsInt)(),
-    (0, class_validator_1.Min)(1),
-    __metadata("design:type", Number)
-], CrearCitaDto.prototype, "vehiculoId", void 0);
-__decorate([
-    (0, class_validator_1.IsInt)(),
-    (0, class_validator_1.Min)(1),
-    __metadata("design:type", Number)
-], CrearCitaDto.prototype, "mecanicoId", void 0);
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CrearCitaDto.prototype, "placaPreliminar", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.Length)(5, 1000),
+    __metadata("design:type", String)
+], CrearCitaDto.prototype, "marcaPreliminar", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CrearCitaDto.prototype, "modeloPreliminar", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    __metadata("design:type", Number)
+], CrearCitaDto.prototype, "anioPreliminar", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CrearCitaDto.prototype, "colorPreliminar", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CrearCitaDto.prototype, "vinPreliminar", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(0),
     __metadata("design:type", String)
 ], CrearCitaDto.prototype, "comentario", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.Matches)(/^\d{4}-\d{2}-\d{2}$/, { message: 'programadaPara debe ser YYYY-MM-DD' }),
+    (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
 ], CrearCitaDto.prototype, "programadaPara", void 0);
 //# sourceMappingURL=crear-cita.dto.js.map

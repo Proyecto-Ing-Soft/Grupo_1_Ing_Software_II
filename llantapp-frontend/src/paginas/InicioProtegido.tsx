@@ -59,9 +59,17 @@ export default function InicioProtegido() {
           )}
 
           {/* Todos los roles pueden ver sus notificaciones */}
-          <Link to="/notificaciones" className="btn-secondary">
-            Mis notificaciones
+          {tieneRol(["CHOFER", "EMPRESA", "MECANICO"]) && (
+            <Link to="/notificaciones" className="btn-secondary">
+              Mis notificaciones
+            </Link>
+          )}
+
+          {tieneRol(["ADMIN"]) && (
+          <Link to="/admin/citas-pendientes" className="btn-primary">
+            Citas pendientes
           </Link>
+          )}
         </div>
       </div>
     </div>

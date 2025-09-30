@@ -11,14 +11,26 @@ const common_1 = require("@nestjs/common");
 const jwt = require("jsonwebtoken");
 let JwtAuthGuard = class JwtAuthGuard {
     canActivate(context) {
+        var _a;
         const req = context.switchToHttp().getRequest();
-        const cabecera = req.headers['authorization'];
-        if (!(cabecera === null || cabecera === void 0 ? void 0 : cabecera.startsWith('Bearer ')))
+        const auth = (_a = req.headers['authorization']) !== null && _a !== void 0 ? _a : '';
+        if (!auth.startsWith('Bearer ')) {
             throw new common_1.UnauthorizedException('Falta token');
-        const token = cabecera.substring('Bearer '.length);
+        }
+        const token = auth.slice('Bearer '.length).trim();
+        const secret = process.env.JWT_ACCESS_SECRET;
+        if (!secret) {
+            throw new common_1.UnauthorizedException('Config de token no disponible');
+        }
         try {
-            const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-            req.user = payload;
+            const payload = jwt.verify(token, secret);
+            const idNum = typeof payload.sub === 'string' ? Number(payload.sub) : payload.sub;
+            if (!Number.isFinite(idNum))
+                throw new common_1.UnauthorizedException('Token inválido');
+            req.user = {
+                ...payload,
+                id: idNum,
+            };
             return true;
         }
         catch {

@@ -1,51 +1,66 @@
 // src/citas/citas.controller.ts
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { CitasService, EstadoCita } from './citas.service';
+
+// PRINCIPIOS:
+// - SRP: solo orquesta HTTP ⇄ Service. Nada de reglas de negocio aquí.
+// - DRY: delega todo en CitasService, evitando duplicar validaciones.
+// - Demeter: el controller solo “conoce” a su Service (no navega por capas internas).
+// - Seguridad por capas: aquí puedes aplicar Jwt/RolesGuard sin tocar el Service (OCP).
+// src/citas/citas.controller.ts
+// src/citas/citas.controller.ts
+import { Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { CitasService } from './citas.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
+import { AsignarMecanicoDto } from './dto/asignar-mecanico.dto';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
-@Controller('citas')
+@Controller('citas-mantenimiento')
 export class CitasController {
-  constructor(private readonly servicio: CitasService) {}
+  constructor(private readonly svc: CitasService) {}
 
   @Post()
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
-  async crear(@Body() dto: CrearCitaDto, @Req() req: any) {
-    const uid = req.user?.sub ?? req.user?.id;
-    return this.servicio.crear(dto, uid);
+  crear(@Body() dto: CrearCitaDto, @Req() req: any) {
+    const userId = Number(req.user?.id ?? req.user?.sub); // 👈 lee id o sub
+    if (!Number.isFinite(userId)) throw new UnauthorizedException('Usuario no válido');
+    return this.svc.crear(dto, userId);
   }
 
-  @Get('mias')
-  async mias(@Req() req: any) {
-    const uid = req.user?.sub ?? req.user?.id;
-    return this.servicio.listarPorCliente(uid);
-  }
-
-  @Get('asignadas')
-  async asignadas(@Req() req: any) {
-    const mid = req.user?.sub ?? req.user?.id;
-    return this.servicio.listarPorMecanico(mid);
-  }
-
-  @Post(':id/aceptar')
-  async aceptar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    const mid = req.user?.sub ?? req.user?.id;
-    const permitidos: EstadoCita[] = ['SOLICITADA'];
-    return this.servicio.cambiarEstado(id, mid, 'ACEPTADA', permitidos);
-  }
-
-  @Post(':id/iniciar')
-  async iniciar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    const mid = req.user?.sub ?? req.user?.id;
-    const permitidos: EstadoCita[] = ['ACEPTADA'];
-    return this.servicio.cambiarEstado(id, mid, 'EN_PROGRESO', permitidos);
+  @Post(':id/asignar')
+  asignar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AsignarMecanicoDto,
+    @Req() req: any,
+  ) {
+    const adminId = Number(req.user?.id ?? req.user?.sub);
+    if (!Number.isFinite(adminId)) throw new UnauthorizedException('Usuario no válido');
+    return this.svc.asignarMecanico(id, dto.mecanicoId, adminId);
   }
 
   @Post(':id/terminar')
-  async terminar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    const mid = req.user?.sub ?? req.user?.id;
-    const permitidos: EstadoCita[] = ['EN_PROGRESO'];
-    return this.servicio.cambiarEstado(id, mid, 'TERMINADA', permitidos);
+  terminar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const mecanicoId = Number(req.user?.id ?? req.user?.sub);
+    if (!Number.isFinite(mecanicoId)) throw new UnauthorizedException('Usuario no válido');
+    return this.svc.terminar(id, mecanicoId);
   }
+
+  @Get('mias')
+  mias(@Req() req: any) {
+    const clienteId = Number(req.user?.id ?? req.user?.sub);
+    if (!Number.isFinite(clienteId)) throw new UnauthorizedException('Usuario no válido');
+    return this.svc.listarDelCliente(clienteId);
+  }
+
+  @Get('asignadas')
+  asignadas(@Req() req: any) {
+    const mecanicoId = Number(req.user?.id ?? req.user?.sub);
+    if (!Number.isFinite(mecanicoId)) throw new UnauthorizedException('Usuario no válido');
+    return this.svc.listarDelMecanico(mecanicoId);
+  }
+
+  @Get('admin/pendientes')
+    pendientes(@Req() req: any) {
+      if (req.user?.rol !== 'ADMIN') throw new ForbiddenException('Solo admin');
+      return this.svc.listarPendientes();
+    }
+
 }

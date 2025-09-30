@@ -1,19 +1,8 @@
-// SRP: consultas de usuarios (listar por rol, etc.)
-const BASE = import.meta.env.VITE_API_BASE_URL as string;
-
-export type UsuarioMin = { id: number; nombreCompleto: string };
+// src/servicios/apiUsuarios.ts
+import { getJSON } from './_http';
+import type { Perfil } from './apiAuth';
 
 export const apiUsuarios = {
-  async porRol(rol: 'MECANICO', accessToken?: string): Promise<UsuarioMin[]> {
-    const res = await fetch(`${BASE}/usuarios?rol=${encodeURIComponent(rol)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      },
-      credentials: 'include',
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-  },
+  listarPorRol: (rol: 'ADMIN'|'MECANICO'|'ASISTENTE'|'CHOFER'|'EMPRESA', token?: string) =>
+    getJSON<Perfil[]>(`/usuarios?rol=${rol}`, token),
 };

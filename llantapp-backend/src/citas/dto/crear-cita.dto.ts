@@ -1,31 +1,34 @@
 // src/citas/dto/crear-cita.dto.ts
-import { IsEnum, IsInt, IsOptional, IsString, Min, Max, Length, Matches } from 'class-validator';
 
-export enum TipoMantenimiento {
-  PREVENTIVO = 'PREVENTIVO',
-  CORRECTIVO = 'CORRECTIVO',
-  LEGAL_ITV = 'LEGAL_ITV',
-  EXTRAS = 'EXTRAS',
-}
+// PRINCIPIOS:
+// - SRP: el DTO solo define contrato/validación de entrada. Nada de lógica.
+// - KISS: tipos simples; validaciones declarativas con class-validator.
+// - OCP: si agregas campos, no tienes que cambiar a los consumidores (controller/service siguen igual).
+// src/citas/dto/crear-cita.dto.ts
+import { IsDateString, IsEnum, IsInt, IsOptional, IsString, MinLength } from 'class-validator';
+import { TipoMantenimiento } from '@prisma/client';
 
 export class CrearCitaDto {
   @IsEnum(TipoMantenimiento)
-  tipo!: TipoMantenimiento;
+  tipo!: TipoMantenimiento; // TS: definite assignment
 
-  @IsInt()
-  @Min(1)
-  vehiculoId!: number;
+  // 🆕 Datos preliminares del vehículo
+  @IsString() placaPreliminar!: string;
+  @IsString() marcaPreliminar!: string;
+  @IsString() modeloPreliminar!: string;
 
-  @IsInt()
-  @Min(1)
-  mecanicoId!: number;
+  @IsOptional() @IsInt()
+  anioPreliminar?: number;
 
-  @IsString()
-  @Length(5, 1000)
-  comentario!: string;
+  @IsOptional() @IsString()
+  colorPreliminar?: string;
 
-  // Fecha opcional en formato YYYY-MM-DD (sin hora)
-  @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'programadaPara debe ser YYYY-MM-DD' })
-  programadaPara?: string;
+  @IsOptional() @IsString()
+  vinPreliminar?: string;
+
+  @IsOptional() @IsString() @MinLength(0)
+  comentario?: string;
+
+  @IsDateString()
+  programadaPara!: string;
 }

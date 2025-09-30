@@ -2,7 +2,7 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-//PAGINAS
+// PAGINAS
 import LoginPagina from '../paginas/LoginPagina';
 import RegistroPagina from '../paginas/RegistroPagina';
 import InicioProtegido from '../paginas/InicioProtegido';
@@ -11,17 +11,18 @@ import NotificacionesLeerPagina from '../paginas/NotificacionesLeerPagina';
 import AgendarCitaPagina from '../paginas/AgendarCitaPagina';
 import MisCitasPagina from '../paginas/MisCitasPagina';
 import CitasMecanicoPagina from '../paginas/CitasMecanicoPagina';
+import AdminCitasPendientes from '../paginas/AdminCitasPendientes';
 
-//ROL PROTEGIENDO PAGINAS
+// ROL PROTEGIENDO PAGINAS
 import { RutaProtegidaPorRol } from '../componentes/RutaProtegidaPorRol';
 import { RutaProtegida } from '../componentes/RutaProtegida';
 
-//LAYOUT
+// LAYOUT
 import LayoutProtegido from '../componentes/LayoutProtegido';
 
-// - Seguridad por capas: RutaProtegidaPorRol (UI) + RolesGuard (API).
-// - KISS + Ley de Demeter: el componente pregunta a AuthContext; no lee token/jwt directo.
-// - Facade: AuthContext "facadea" sesión/refresh/perfil para el resto de la UI.
+// Seguridad por capas: RutaProtegidaPorRol (UI) + RolesGuard (API).
+// KISS + Demeter: el componente pregunta a AuthContext; no lee token/jwt directo.
+// Facade: AuthContext "facadea" sesión/refresh/perfil para el resto de la UI.
 
 const router = createBrowserRouter(
   [
@@ -41,8 +42,19 @@ const router = createBrowserRouter(
       children: [
         { path: 'inicio', element: <InicioProtegido /> },
 
+        // ADMIN: revisar y asignar citas pendientes
         {
-          path: 'vehiculos/registrar', // Solo puede ingresar ADMIN y MECANICO
+          path: 'admin/citas-pendientes',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+              <AdminCitasPendientes />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
+        // ADMIN y MECANICO: registrar vehículo
+        {
+          path: 'vehiculos/registrar',
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['ADMIN', 'MECANICO']}>
               <RegistrarVehiculoPagina />
@@ -50,34 +62,39 @@ const router = createBrowserRouter(
           ),
         },
 
+        // CHOFER o EMPRESA: agendar y ver sus citas
         {
-          path: 'citas/agendar', // Solo CHOFER o EMPRESA
+          path: 'citas/agendar',
           element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CHOFER','EMPRESA']}>
+            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA']}>
               <AgendarCitaPagina />
             </RutaProtegidaPorRol>
           ),
         },
         {
-          path: 'citas/mias', // Solo CHOFER o EMPRESA
+          path: 'citas/mias',
           element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CHOFER','EMPRESA']}>
+            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA']}>
               <MisCitasPagina />
             </RutaProtegidaPorRol>
           ),
         },
+
+        // MECANICO: ver citas asignadas
         {
-          path: 'citas/asignadas', // Solo MECANICO
+          path: 'citas/asignadas',
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
               <CitasMecanicoPagina />
             </RutaProtegidaPorRol>
           ),
         },
+
+        // CHOFER, EMPRESA o MECANICO: notificaciones
         {
-          path: 'notificaciones', // Solo CHOFER, EMPRESA o MECANICO
+          path: 'notificaciones',
           element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA']}>
+            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA', 'MECANICO']}>
               <NotificacionesLeerPagina />
             </RutaProtegidaPorRol>
           ),
@@ -87,7 +104,7 @@ const router = createBrowserRouter(
 
     { path: '*', element: <LoginPagina /> },
   ],
-  { basename: '/llantapp' } // para que la url diga llantapp xd
+  { basename: '/llantapp' }
 );
 
 export function Rutas() {

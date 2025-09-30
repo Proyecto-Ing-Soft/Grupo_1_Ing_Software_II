@@ -11,26 +11,25 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Notificador = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_service_1 = require("../../prisma/prisma.service");
+const notificacion_prisma_repo_1 = require("../repos/notificacion.prisma.repo");
 let Notificador = class Notificador {
-    constructor(prisma) {
-        this.prisma = prisma;
+    constructor(repo) {
+        this.repo = repo;
     }
-    async enviar(n) {
+    async enviar(data) {
         var _a, _b;
-        await this.prisma.notificacion.create({
-            data: {
-                usuarioId: n.usuarioId,
-                vehiculoId: (_a = n.vehiculoId) !== null && _a !== void 0 ? _a : null,
-                citaId: (_b = n.citaId) !== null && _b !== void 0 ? _b : null,
-                mensaje: n.mensaje,
-            },
+        const cuerpo = `${data.titulo}: ${data.mensaje}`;
+        await this.repo.crear({
+            usuarioId: data.usuarioId,
+            mensaje: cuerpo,
+            vehiculoId: (_a = data.vehiculoId) !== null && _a !== void 0 ? _a : null,
+            citaId: (_b = data.citaId) !== null && _b !== void 0 ? _b : null,
         });
     }
 };
 exports.Notificador = Notificador;
 exports.Notificador = Notificador = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [notificacion_prisma_repo_1.NotificacionPrismaRepo])
 ], Notificador);
 //# sourceMappingURL=notificador.js.map

@@ -101,6 +101,9 @@ model Vehiculo {
   @@index([empresaId])
 }
 
+// === CitaMantenimiento ahora guarda datos preliminares del vehículo ===
+// Principios: KISS (campos claros), SRP (persistimos snapshot), OCP (podemos añadir más campos)
+
 model CitaMantenimiento {
   id             Int               @id @default(autoincrement())
   tipo           TipoMantenimiento
@@ -110,23 +113,32 @@ model CitaMantenimiento {
   creadoEn       DateTime          @default(now())
   actualizadoEn  DateTime          @updatedAt
 
-  // Relaciones
   clienteId Int
   cliente   Usuario @relation("CitasCliente", fields: [clienteId], references: [id])
 
   mecanicoId Int?
   mecanico   Usuario? @relation("CitasMecanico", fields: [mecanicoId], references: [id])
 
-  vehiculoId Int
-  vehiculo   Vehiculo @relation(fields: [vehiculoId], references: [id])
+  // ← Debe ser opcional (nullable en DB)
+  vehiculoId Int?
+  vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id])
 
-  // Notificaciones relacionadas (opcional)
+  // ← Campos preliminares NUEVOS (deben existir en la tabla)
+  placaPreliminar  String
+  marcaPreliminar  String
+  modeloPreliminar String
+  anioPreliminar   Int?
+  colorPreliminar  String?
+  vinPreliminar    String?
+
   notificaciones Notificacion[]
 
   @@index([clienteId])
   @@index([mecanicoId, estado])
   @@index([vehiculoId])
+  @@index([placaPreliminar])
 }
+
 
 model Notificacion {
   id         Int     @id @default(autoincrement())

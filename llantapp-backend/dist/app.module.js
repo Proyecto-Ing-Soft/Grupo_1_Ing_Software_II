@@ -13,7 +13,7 @@ const auth_module_1 = require("./auth/auth.module");
 const usuario_module_1 = require("./usuario/usuario.module");
 const prisma_module_1 = require("./prisma/prisma.module");
 const vehiculo_module_1 = require("./vehiculos/vehiculo.module");
-const notificaciones_module_1 = require("./notificiaciones/notificaciones.module");
+const notificaciones_module_1 = require("./notificaciones/notificaciones.module");
 const citas_module_1 = require("./citas/citas.module");
 let AppModule = class AppModule {
 };
