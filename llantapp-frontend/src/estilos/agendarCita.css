@@ -3,43 +3,51 @@
 @tailwind utilities;
 
 @layer base {
-  html, body { @apply text-slate-800 bg-slate-50; }
+  html, body {
+    @apply text-slate-800 bg-slate-50;
+  }
   ::placeholder { @apply text-slate-400; }
 }
 
 @layer components {
   .mt8 { margin-top: 8px; }
 
-  .registrar { @apply max-w-6xl mx-auto px-3 sm:px-4 md:px-0 py-8; }
+  .agendar { @apply max-w-6xl mx-auto px-3 sm:px-4 md:px-0 py-8; }
 
-  .registrar__split{
+  .agendar__split{
     display:grid; grid-template-columns: 1.02fr .98fr; gap:22px;
   }
-  @media (max-width: 1024px){ .registrar__split{ grid-template-columns: 1fr; } }
+  @media (max-width: 1024px){
+    .agendar__split{ grid-template-columns: 1fr; }
+  }
 
-  .registrar__left{
+  .agendar__left{
     @apply bg-white rounded-2xl border border-slate-200;
     box-shadow: 0 16px 36px rgba(2,6,23,.08);
     padding: clamp(18px, 3vw, 28px);
   }
-  .registrar__title{
+  .agendar__title{
     @apply text-3xl md:text-4xl font-black tracking-tight text-slate-900;
     letter-spacing: -0.01em;
   }
-  .registrar__sub{ @apply text-slate-600 mt-1; }
+  .agendar__sub{ @apply text-slate-600 mt-1; }
 
-  /* Grid del form (como agendar .form) */
   .form{
     display:grid;
     grid-template-columns: 1fr 1fr;
     gap:16px;
     margin-top:14px;
   }
-  @media (max-width: 640px){ .form{ grid-template-columns: 1fr; } }
+  @media (max-width: 640px){
+    .form{ grid-template-columns: 1fr; }
+  }
 
   .form-group{ display:flex; flex-direction:column; gap:6px; }
-  /* primera fila y botón ocupan todo */
-  .form-group:nth-child(1){ grid-column: 1 / -1; }
+  .form-group:nth-child(1),
+  .form-group:nth-child(12),
+  .form-group:nth-child(13){
+    grid-column: 1 / -1;
+  }
 
   .label{ @apply text-sm font-semibold text-slate-800; }
 
@@ -54,7 +62,9 @@
     @apply text-[15px] text-slate-900 rounded-xl;
     transition: box-shadow .2s ease, transform .15s ease;
   }
-  .input:focus{ box-shadow: 0 0 0 4px rgba(14,165,233,.18); }
+  .input:focus{
+    box-shadow: 0 0 0 4px rgba(14,165,233,.18);
+  }
 
   select.input{
     appearance: none;
@@ -76,6 +86,8 @@
   .error-message{ @apply text-sm text-red-600; }
   .success-message{ @apply text-sm text-emerald-600; }
 
+  textarea.input{ resize: vertical; min-height: 96px; }
+
   .btn{
     grid-column: 1 / -1;
     @apply mt-1 inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-semibold text-white bg-sky-600 hover:bg-sky-700 focus:outline-none;
@@ -90,24 +102,28 @@
   .textlink{ @apply text-sky-700 font-semibold cursor-pointer; }
   .textlink:hover{ text-decoration: underline; }
 
-  .registrar__right{
+  .agendar__right{
     border-radius: 22px; overflow: hidden; position: relative;
     box-shadow: 0 24px 48px rgba(2,6,23,.14);
     min-height: 260px;
   }
-  .registrar__right::before{
+  .agendar__right::before{
     content:""; position:absolute; inset:0;
     background:
       radial-gradient(closest-side at 76% 42%, rgba(255,255,255,.55), rgba(255,255,255,.08) 60%, transparent 61%),
       radial-gradient(closest-side at 90% 78%, rgba(255,255,255,.35), rgba(255,255,255,.10) 70%, transparent 71%),
       linear-gradient(115deg,#0891b2 0%,#0ea5e9 45%,#22c9e9 70%,#22d3ee 100%);
   }
-  .registrar__hero{
+  .agendar__hero{
     position: relative; padding: clamp(18px, 4vw, 28px);
     height: 100%; display:flex; flex-direction:column; justify-content:center; gap:14px;
   }
-  .registrar__heroTitle{ @apply text-2xl md:text-3xl font-extrabold; color:#0b1220; }
-  .registrar__heroPill{
+  .agendar__heroTitle{
+    @apply text-2xl md:text-3xl font-extrabold;
+    color:#0b1220;
+    text-shadow: 0 1px 0 rgba(255,255,255,.35);
+  }
+  .agendar__heroPill{
     display:inline-flex; align-items:center; gap:10px;
     padding:10px 14px; border-radius:9999px;
     background: rgba(255,255,255,.88);
@@ -117,13 +133,13 @@
     width: max-content; font-weight: 700;
   }
 
-  /* Reveal animations (idéntico) */
   .reveal{
     will-change: transform, opacity;
     transition: transform .50s cubic-bezier(.2,.8,.2,1), opacity .50s ease;
   }
   .will-animate{ opacity: 0; transform: translateY(14px) scale(.985); }
   .animate-in{ opacity: 1; transform: none; }
+
   .animate-in[data-reveal="1"]{ transition-delay: .04s; }
   .animate-in[data-reveal="2"]{ transition-delay: .08s; }
   .animate-in[data-reveal="3"]{ transition-delay: .12s; }
@@ -135,18 +151,23 @@
   }
 }
 
-/* Fuerza modo claro (igual que agendar) */
-:root { color-scheme: light; }
+:root { color-scheme: light; } 
 
-/* Colores de texto en el panel izquierdo */
-.registrar__left { color:#0f172a; }
-.registrar__left .label { color:#0f172a; }
-.registrar__left .input { color:#0b1220; }
-.registrar__left .input::placeholder { color:#64748b; }
+.agendar__left { color:#0f172a; }
+.agendar__left .label { color:#0f172a; }
+.agendar__left .input { color:#0b1220; }
+.agendar__left .input::placeholder { color:#64748b; } 
 
-/* Autofill */
 input:-webkit-autofill,
-input:-webkit-autofill:focus {
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill {
   -webkit-text-fill-color:#0f172a !important;
   box-shadow: 0 0 0 1000px #fff inset !important;
 }
+
+.reveal.will-animate { opacity:0; transform: translateY(14px) scale(.985); }
+.reveal.animate-in { opacity:1; transform:none; }
+.will-animate:not(.reveal), .animate-in:not(.reveal) { opacity:1; transform:none; }
+
+.agendar__heroTitle { text-shadow:none; }
+

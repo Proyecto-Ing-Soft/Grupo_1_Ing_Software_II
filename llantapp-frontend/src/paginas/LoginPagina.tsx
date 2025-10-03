@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { esquemaLogin } from "../validaciones/usuarioSchemas";
 import { useAuth } from "../app/proveedorestado/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
@@ -7,7 +7,6 @@ import "../estilos/authLogin.css";
 import logo from "../imagenes/logo.jpg";
 import fondo from "../imagenes/taller.jpeg";
 
-/** Helpers de error (igual lógica que tu versión) */
 function parseJsonish(s: string) { try { return JSON.parse(s); } catch { return null; } }
 async function normalizarError(e: unknown): Promise<string> {
   if (e instanceof Response) {
@@ -38,8 +37,34 @@ export default function LoginPagina() {
   const [form, setForm] = useState({ correo: "", clave: "" });
   const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
+  const [showPass, setShowPass] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   const navigate = useNavigate();
   const { iniciar } = useAuth();
+
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
+
+    const obs = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        const el = e.target as HTMLElement;
+        if (e.isIntersecting) el.classList.add("animate-in");
+        else el.classList.remove("animate-in");
+      }
+    }, { threshold: 0.12 });
+
+    nodes.forEach((n, i) => {
+      n.dataset.reveal = String(Math.min(i + 1, 5));
+      obs.observe(n);
+    });
+
+    return () => {
+      window.clearTimeout(t);
+      nodes.forEach(n => obs.unobserve(n));
+      obs.disconnect();
+    };
+  }, []);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -63,28 +88,29 @@ export default function LoginPagina() {
       return;
     }
     try {
+      setEnviando(true);
       await iniciar(form.correo, form.clave);
       navigate("/inicio");
     } catch (err) {
       setFormErr(await normalizarError(err));
+    } finally {
+      setEnviando(false);
     }
   };
 
   return (
     <main className="auth-page">
       <section className="auth-split" role="region" aria-label="Formulario de inicio de sesión">
-        {/* Izquierda: Logo + Form */}
         <div className="auth-left">
-          <div className="logo-wrap" aria-label="Marca Llantapp">
-            <img src={logo} alt="Llantapp" />
-            <span>Llantapp</span>
+          <div className="logo-wrap reveal" data-reveal="1">
+            <img src={logo} alt="LlantApp" />
+            <span className="logo-title">LlantApp</span>
           </div>
 
-          <h1 className="brand">Bienvenido de nuevo</h1>
-          <p className="sub">Ingresa tus credenciales para acceder a tu cuenta</p>
+          <h1 className="brand reveal" data-reveal="2">Bienvenido de nuevo</h1>
+          <p className="sub reveal" data-reveal="2">Ingresa tus credenciales para acceder a tu cuenta</p>
 
-          <form className="form" onSubmit={enviar} noValidate>
-            {/* Correo */}
+          <form className="form reveal" data-reveal="3" onSubmit={enviar} noValidate>
             <div className="form-group">
               <label className="label" htmlFor="correo">Correo electrónico</label>
               <div className={`input-wrap ${fieldErr["correo"] ? "has-error" : ""}`}>
@@ -102,14 +128,9 @@ export default function LoginPagina() {
                   aria-describedby={fieldErr["correo"] ? "err-correo" : undefined}
                 />
               </div>
-              {fieldErr["correo"] && (
-                <div id="err-correo" className="error-message" role="alert">
-                  {fieldErr["correo"]}
-                </div>
-              )}
+              {fieldErr["correo"] && <div id="err-correo" className="error-message">{fieldErr["correo"]}</div>}
             </div>
 
-            {/* Contraseña */}
             <div className="form-group">
               <label className="label" htmlFor="clave">Contraseña</label>
               <div className={`input-wrap ${fieldErr["clave"] ? "has-error" : ""}`}>
@@ -118,44 +139,51 @@ export default function LoginPagina() {
                   id="clave"
                   className="input"
                   name="clave"
-                  type="password"
+                  type={showPass ? "text" : "password"}
                   placeholder="••••••••"
                   value={form.clave}
                   onChange={onChange}
                   autoComplete="current-password"
-                  aria-invalid={!!fieldErr["clave"]}
-                  aria-describedby={fieldErr["clave"] ? "err-clave" : undefined}
                 />
+                <button
+                  type="button"
+                  className="toggle-pass"
+                  onClick={() => setShowPass(s => !s)}
+                  aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  title={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  <span className={showPass ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"} aria-hidden="true" />
+                </button>
               </div>
-              {fieldErr["clave"] && (
-                <div id="err-clave" className="error-message" role="alert">
-                  {fieldErr["clave"]}
-                </div>
-              )}
+              {fieldErr["clave"] && <div id="err-clave" className="error-message">{fieldErr["clave"]}</div>}
             </div>
 
-            <button type="submit" className="btn">Iniciar sesión</button>
-            {formErr && <div className="error-message" style={{ marginTop: 8 }} role="alert">{formErr}</div>}
+            <button type="submit" className="btn" disabled={enviando}>
+              {enviando ? "Ingresando…" : "Iniciar sesión"}
+            </button>
+            {formErr && <div className="error-message" style={{ marginTop: 8 }}>{formErr}</div>}
           </form>
 
-          <p className="helper">
-            ¿No tienes cuenta?{" "}
-            <Link to="/registro" className="textlink">Regístrate aquí</Link>
+          <p className="helper reveal" data-reveal="4">
+            ¿No tienes cuenta? <Link to="/registro" className="textlink">Regístrate aquí</Link>
           </p>
         </div>
 
-        {/* Derecha: Imagen de fondo + texto */}
         <aside
           className="auth-right"
           style={{ backgroundImage: `url(${fondo})` }}
           aria-hidden="true"
         >
           <div className="auth-right-inner">
-            <h2 className="hero-title">Tu solución integral para neumáticos</h2>
-            <div className="hero-pill">
+            <h2 className="hero-title reveal" data-reveal="1">Tu solución integral para neumáticos</h2>
+            <div className="hero-pill reveal" data-reveal="2">
               <span className="fa-solid fa-truck" aria-hidden="true" />
               <span>Envío gratuito en compras superiores a $100</span>
             </div>
+          </div>
+
+          <div className="bg-bubbles">
+            <span></span><span></span><span></span>
           </div>
         </aside>
       </section>

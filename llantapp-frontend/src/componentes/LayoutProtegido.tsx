@@ -11,9 +11,10 @@ export default function LayoutProtegido() {
           <span className="lp__logo">🔨</span>
           <span className="lp__title">LlantApp</span>
         </div>
+
         <div className="lp__actions">
-          {/* Aquí puedes añadir más acciones comunes si quieres */}
-          <BotonCerrarSesion className="btn-secondary" />
+          {/* Usa la clase correcta del CSS (logout-btn) */}
+          <BotonCerrarSesion className="logout-btn" />
         </div>
       </header>
 

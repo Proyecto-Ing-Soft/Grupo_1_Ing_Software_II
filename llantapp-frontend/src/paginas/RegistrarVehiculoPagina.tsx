@@ -1,74 +1,23 @@
-// src/paginas/RegistrarVehiculoPagina.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../app/proveedorestado/AuthContext";
-
-/**
- * RegistrarVehiculoPagina
- *
- * Objetivo (CU-00): Registrar un vehículo a nombre de un CHOFER o EMPRESA,
- * con validaciones y auditoría del creador (ADMIN o MECÁNICO).
- *
- * Principios/patrones reflejados en este componente:
- * - KISS: lógica del form simple; helpers locales mínimos para fetch.
- * - Ley de Demeter: este componente solo "habla" con AuthContext y con la API.
- * - Cohesión alta: solo UI/UX + orquestar envío; la lógica de negocio vive en el backend.
- * - Facade: AuthContext expone perfil/token (oculta refresh/decoding).
- * - DRY: reuso de helpers (postJSON, getUsuariosPorRol).
- * - Seguridad por capas: la ruta está protegida por rol (rutas.tsx)
- *   y el backend refuerza autorización con RolesGuard + @RolRequerido.
- *
- * Relación con diagrama de secuencia (CU-00):
- * UI (este form) → POST /vehiculos → Controller → Service → [Validadores] → Prisma.create → 201/400.
- */
+import "../estilos/registrarVehiculo.css";
 
 type Rol = "ADMIN" | "MECANICO" | "ASISTENTE" | "CHOFER" | "EMPRESA";
-
 type UsuarioRolLite = { id: number; nombreCompleto: string };
 
 type FormVehiculo = {
   placa: string;
   marca: string;
   modelo: string;
-  anio: string; // lo guardamos como string para controlar input number
-  color: string;
+  anio?: number | "";
+  color?: string;
   vin?: string;
-  propietarioUsuarioId?: number;
+  propietarioUsuarioId?: number | "";
 };
 
+const REDIRECT_DELAY = 1200;
 const BASE = import.meta.env.VITE_API_BASE_URL as string;
-
-// ==== Helpers HTTP (KISS/DRY) ====
-async function postJSON<T>(
-  url: string,
-  body: unknown,
-  token?: string
-): Promise<T> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    credentials: "include",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    // intentamos leer mensaje útil del backend
-    const txt = await res.text().catch(() => "");
-    let msg = txt || `HTTP ${res.status}`;
-    // Nest ValidationPipe suele responder JSON con message[]
-    try {
-      const j = JSON.parse(txt);
-      if (Array.isArray(j?.message)) msg = j.message.join(" | ");
-      if (j?.message && typeof j.message === "string") msg = j.message;
-    } catch {
-      /* noop */
-    }
-    throw new Error(msg);
-  }
-  return res.json();
-}
 
 async function getUsuariosPorRol(
   rol: "CHOFER" | "EMPRESA",
@@ -85,11 +34,60 @@ async function getUsuariosPorRol(
   return res.json();
 }
 
-export default function RegistrarVehiculoPagina() {
-  const { usuario, tieneRol } = useAuth();
-  const navigate = useNavigate();
+async function postJSON<T>(url: string, body: unknown, token?: string): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    try {
+      const j = JSON.parse(txt);
+      // NestJS ValidationPipe suele devolver { message: [...] } o string
+      const msg = Array.isArray(j?.message) ? j.message.join(" | ") : (j?.message ?? txt);
+      throw new Error(msg || `HTTP ${res.status}`);
+    } catch {
+      throw new Error(txt || `HTTP ${res.status}`);
+    }
+  }
+  return res.json();
+}
 
-  // Bloqueo defensivo: si se llega sin rol válido, redirigir (UI cohesiva con reglas de rutas)
+export default function RegistrarVehiculoPagina() {
+  const navigate = useNavigate();
+  const { usuario, tieneRol } = useAuth();
+  const timeoutRef = useRef<number | null>(null);
+
+  // Animaciones reveal (idéntico a Agendar Cita)
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) e.target.classList.add("animate-in");
+          else e.target.classList.remove("animate-in");
+        }
+      },
+      { threshold: 0.12 }
+    );
+    nodes.forEach((n, i) => {
+      n.dataset.reveal = String(Math.min(i + 1, 5));
+      obs.observe(n);
+    });
+    return () => {
+      window.clearTimeout(t);
+      nodes.forEach(n => obs.unobserve(n));
+      obs.disconnect();
+    };
+  }, []);
+
+  // Guard de rol
   useEffect(() => {
     if (!tieneRol(["ADMIN", "MECANICO"])) {
       navigate("/inicio", { replace: true });
@@ -103,23 +101,23 @@ export default function RegistrarVehiculoPagina() {
     anio: "",
     color: "",
     vin: "",
-    propietarioUsuarioId: undefined,
+    propietarioUsuarioId: "",
   });
 
   const [propietarios, setPropietarios] = useState<UsuarioRolLite[]>([]);
   const [cargandoProp, setCargandoProp] = useState(false);
+  const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
+  const [formErr, setFormErr] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [okMsg, setOkMsg] = useState<string | null>(null);
 
-  // Cargar lista de propietarios (CHOFER + EMPRESA)
+  // Cargar choferes/empresas
   useEffect(() => {
     let cancel = false;
     (async () => {
       if (!usuario?.token) return;
-      setCargandoProp(true);
-      setError(null);
       try {
+        setCargandoProp(true);
         const [choferes, empresas] = await Promise.all([
           getUsuariosPorRol("CHOFER", usuario.token),
           getUsuariosPorRol("EMPRESA", usuario.token),
@@ -129,7 +127,7 @@ export default function RegistrarVehiculoPagina() {
         );
         if (!cancel) setPropietarios(lista);
       } catch (e: any) {
-        if (!cancel) setError(e?.message || "Error cargando propietarios");
+        if (!cancel) setFormErr(e?.message || "Error cargando propietarios");
       } finally {
         if (!cancel) setCargandoProp(false);
       }
@@ -139,203 +137,274 @@ export default function RegistrarVehiculoPagina() {
     };
   }, [usuario?.token]);
 
-  // Validación rápida en el cliente (KISS) para UX, el backend valida oficialmente (SSOT)
+  // Validación ligera (como la de Cita)
   const faltantes = useMemo(() => {
-    const f: string[] = [];
-    if (!form.placa.trim()) f.push("placa");
-    if (!form.marca.trim()) f.push("marca");
-    if (!form.modelo.trim()) f.push("modelo");
-    if (!form.anio.trim()) f.push("anio");
-    if (!form.color.trim()) f.push("color");
-    if (!form.propietarioUsuarioId) f.push("propietario");
+    const f: Record<string, string> = {};
+    if (!form.placa.trim()) f["placa"] = "La placa es obligatoria.";
+    if (!form.marca?.toString().trim()) f["marca"] = "La marca es obligatoria.";
+    if (!form.modelo?.toString().trim()) f["modelo"] = "El modelo es obligatorio.";
+    if (!form.anio) f["anio"] = "El año es obligatorio.";
+    if (!form.propietarioUsuarioId) f["propietarioUsuarioId"] = "Selecciona un propietario.";
     return f;
   }, [form]);
 
-  const onChange =
-    (name: keyof FormVehiculo) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const value =
-        name === "propietarioUsuarioId" ? Number(e.target.value) : e.target.value;
-      setForm((s) => ({ ...s, [name]: value }));
-    };
+  const onChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    let v: any = value;
+    if (name === "anio") v = value === "" ? "" : Number(value);
+    if (name === "propietarioUsuarioId") v = value === "" ? "" : Number(value);
+    setForm((s) => ({ ...s, [name]: v }));
+    if (fieldErr[name]) {
+      setFieldErr((prev) => {
+        const copy = { ...prev };
+        delete copy[name];
+        return copy;
+      });
+    }
+  };
 
-  const submit = async (e: React.FormEvent) => {
+  const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setOkMsg(null);
-    if (!usuario?.token) {
-      setError("Sesión no válida.");
+    setOk(false); setFormErr(null);
+    // valida mínimos
+    if (Object.keys(faltantes).length) {
+      setFieldErr(faltantes);
+      setFormErr(Object.values(faltantes)[0]);
       return;
     }
-    if (faltantes.length) {
-      setError(
-        `Faltan: ${faltantes.join(
-          ", "
-        )}. (El servidor también validará formato/placa única)`
-      );
-      return;
-    }
-    // Ensamble DTO del backend (respetando tipos)
+    if (!usuario?.token) { setFormErr("Sesión inválida."); return; }
+
     const dto = {
       placa: form.placa.trim().toUpperCase(),
-      marca: form.marca.trim(),
-      modelo: form.modelo.trim(),
+      marca: String(form.marca).trim(),
+      modelo: String(form.modelo).trim(),
       anio: Number(form.anio),
-      color: form.color.trim(),
-      vin: form.vin?.trim() || undefined,
-      propietarioUsuarioId: form.propietarioUsuarioId!, // requerido
+      color: form.color?.toString().trim() || undefined,
+      vin: form.vin?.toString().trim() || undefined,
+      propietarioUsuarioId: Number(form.propietarioUsuarioId),
     };
 
-    setEnviando(true);
     try {
-      // POST /vehiculos (RolesGuard en backend permite ADMIN/MECANICO)
+      setEnviando(true);
       await postJSON(`${BASE}/vehiculos`, dto, usuario.token);
-      setOkMsg(`Vehículo ${dto.placa} registrado correctamente.`);
-      // Reset suave manteniendo propietario seleccionado (opcional)
-      setForm((s) => ({
-        ...s,
+      setOk(true);
+      timeoutRef.current = window.setTimeout(() => {
+        navigate("/inicio", {
+          replace: true,
+          state: {
+            flash: {
+              type: "success",
+              text: `Vehículo ${dto.placa} registrado correctamente.`,
+              ttlMs: 4000,
+            },
+          },
+        });
+      }, REDIRECT_DELAY);
+      // reset suave (mantén propietario si quieres; aquí lo limpiamos)
+      setForm({
         placa: "",
         marca: "",
         modelo: "",
         anio: "",
         color: "",
         vin: "",
-      }));
-    } catch (e: any) {
-      setError(e?.message || "No se pudo registrar el vehículo");
+        propietarioUsuarioId: "",
+      });
+    } catch (err: unknown) {
+      setFormErr(err instanceof Error ? err.message : "No se pudo registrar el vehículo");
     } finally {
       setEnviando(false);
     }
   };
 
+  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
+
   return (
-    <div className="inicio-container">
-      <header className="inicio-header">
-        <h1>Registrar vehículo</h1>
-        {usuario && (
-          <span className={`rol-badge rol-${usuario.rol.toLowerCase()}`}>
-            👤 {usuario.nombreCompleto} | Rol: {usuario.rol}
-          </span>
-        )}
-      </header>
+    <main className="registrar">
+      <section className="registrar__split" role="region" aria-label="Formulario de registro de vehículo">
+        <div className="registrar__left reveal">
+          <h1 className="registrar__title">Registrar vehículo</h1>
+          <p className="registrar__sub">
+            Ingresa los datos del vehículo y el propietario asociado.
+          </p>
 
-      <form className="card" onSubmit={submit} noValidate>
-        <h2>Datos del vehículo</h2>
+          <form className="form" onSubmit={enviar} noValidate>
+            {/* Placa */}
+            <div className="form-group reveal">
+              <label className="label" htmlFor="placa">Placa</label>
+              <div className={`input-wrap ${fieldErr["placa"] ? "has-error" : ""}`}>
+                <input
+                  id="placa"
+                  className="input"
+                  name="placa"
+                  type="text"
+                  placeholder="ABC-123"
+                  value={form.placa}
+                  onChange={onChange}
+                  aria-invalid={!!fieldErr["placa"]}
+                  aria-describedby={fieldErr["placa"] ? "err-placa" : undefined}
+                />
+              </div>
+              {fieldErr["placa"] && <div id="err-placa" className="error-message" role="alert">{fieldErr["placa"]}</div>}
+            </div>
 
-        <div className="perfil-grid" style={{ marginTop: 8 }}>
-          <div className="perfil-item">
-            <label className="label">Placa (ABC-123)</label>
-            <input
-              className="input"
-              placeholder="ABC-123"
-              value={form.placa}
-              onChange={onChange("placa")}
-              required
-            />
-          </div>
+            {/* Marca */}
+            <div className="form-group reveal">
+              <label className="label" htmlFor="marca">Marca</label>
+              <div className={`input-wrap ${fieldErr["marca"] ? "has-error" : ""}`}>
+                <input
+                  id="marca"
+                  className="input"
+                  name="marca"
+                  type="text"
+                  placeholder="Toyota"
+                  value={form.marca}
+                  onChange={onChange}
+                  aria-invalid={!!fieldErr["marca"]}
+                  aria-describedby={fieldErr["marca"] ? "err-marca" : undefined}
+                />
+              </div>
+              {fieldErr["marca"] && <div id="err-marca" className="error-message" role="alert">{fieldErr["marca"]}</div>}
+            </div>
 
-          <div className="perfil-item">
-            <label className="label">Marca</label>
-            <input
-              className="input"
-              placeholder="Toyota"
-              value={form.marca}
-              onChange={onChange("marca")}
-              required
-            />
-          </div>
+            {/* Modelo */}
+            <div className="form-group reveal">
+              <label className="label" htmlFor="modelo">Modelo</label>
+              <div className={`input-wrap ${fieldErr["modelo"] ? "has-error" : ""}`}>
+                <input
+                  id="modelo"
+                  className="input"
+                  name="modelo"
+                  type="text"
+                  placeholder="Yaris"
+                  value={form.modelo}
+                  onChange={onChange}
+                  aria-invalid={!!fieldErr["modelo"]}
+                  aria-describedby={fieldErr["modelo"] ? "err-modelo" : undefined}
+                />
+              </div>
+              {fieldErr["modelo"] && <div id="err-modelo" className="error-message" role="alert">{fieldErr["modelo"]}</div>}
+            </div>
 
-          <div className="perfil-item">
-            <label className="label">Modelo</label>
-            <input
-              className="input"
-              placeholder="Yaris"
-              value={form.modelo}
-              onChange={onChange("modelo")}
-              required
-            />
-          </div>
+            {/* Año */}
+            <div className="form-group reveal">
+              <label className="label" htmlFor="anio">Año</label>
+              <div className={`input-wrap ${fieldErr["anio"] ? "has-error" : ""}`}>
+                <input
+                  id="anio"
+                  className="input"
+                  name="anio"
+                  type="number"
+                  placeholder="2020"
+                  min={1950}
+                  max={new Date().getFullYear() + 1}
+                  value={form.anio === "" ? "" : Number(form.anio)}
+                  onChange={onChange}
+                  aria-invalid={!!fieldErr["anio"]}
+                  aria-describedby={fieldErr["anio"] ? "err-anio" : undefined}
+                />
+              </div>
+              {fieldErr["anio"] && <div id="err-anio" className="error-message" role="alert">{fieldErr["anio"]}</div>}
+            </div>
 
-          <div className="perfil-item">
-            <label className="label">Año</label>
-            <input
-              className="input"
-              type="number"
-              min={1950}
-              max={new Date().getFullYear() + 1}
-              placeholder="2020"
-              value={form.anio}
-              onChange={onChange("anio")}
-              required
-            />
-          </div>
+            {/* Color (opcional) */}
+            <div className="form-group reveal">
+              <label className="label" htmlFor="color">Color (opcional)</label>
+              <div className="input-wrap">
+                <input
+                  id="color"
+                  className="input"
+                  name="color"
+                  type="text"
+                  placeholder="Negro"
+                  value={form.color ?? ""}
+                  onChange={onChange}
+                />
+              </div>
+            </div>
 
-          <div className="perfil-item">
-            <label className="label">Color</label>
-            <input
-              className="input"
-              placeholder="Negro"
-              value={form.color}
-              onChange={onChange("color")}
-              required
-            />
-          </div>
+            {/* VIN (opcional) */}
+            <div className="form-group reveal">
+              <label className="label" htmlFor="vin">VIN (opcional)</label>
+              <div className="input-wrap">
+                <input
+                  id="vin"
+                  className="input"
+                  name="vin"
+                  type="text"
+                  placeholder="3N1CB51D54L123456"
+                  value={form.vin ?? ""}
+                  onChange={onChange}
+                />
+              </div>
+            </div>
 
-          <div className="perfil-item">
-            <label className="label">VIN (opcional)</label>
-            <input
-              className="input"
-              placeholder="3N1CB51D54L123456"
-              value={form.vin}
-              onChange={onChange("vin")}
-            />
-          </div>
+            {/* Propietario */}
+            <div className="form-group reveal">
+              <label className="label" htmlFor="propietarioUsuarioId">Propietario (Chofer/Empresa)</label>
+              <div className={`input-wrap ${fieldErr["propietarioUsuarioId"] ? "has-error" : ""}`}>
+                <select
+                  id="propietarioUsuarioId"
+                  name="propietarioUsuarioId"
+                  className="input"
+                  value={form.propietarioUsuarioId ?? ""}
+                  onChange={onChange}
+                  aria-invalid={!!fieldErr["propietarioUsuarioId"]}
+                  aria-describedby={fieldErr["propietarioUsuarioId"] ? "err-prop" : undefined}
+                >
+                  <option value="" disabled>
+                    {cargandoProp ? "Cargando..." : "Seleccione propietario…"}
+                  </option>
+                  {propietarios.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombreCompleto} (ID {p.id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {fieldErr["propietarioUsuarioId"] && (
+                <div id="err-prop" className="error-message" role="alert">
+                  {fieldErr["propietarioUsuarioId"]}
+                </div>
+              )}
+            </div>
 
-          <div className="perfil-item" style={{ gridColumn: "span 12" }}>
-            <label className="label">Propietario (Chofer/Empresa)</label>
-            <select
-              className="input"
-              value={form.propietarioUsuarioId ?? ""}
-              onChange={onChange("propietarioUsuarioId")}
-              required
-            >
-              <option value="" disabled>
-                {cargandoProp ? "Cargando..." : "Seleccione propietario…"}
-              </option>
-              {propietarios.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombreCompleto} (ID {p.id})
-                </option>
-              ))}
-            </select>
-            <small className="helper">
-              El vehículo quedará asociado al propietario seleccionado. La
-              auditoría registrará que tú lo creaste.
-            </small>
-          </div>
+            <button type="submit" className="btn reveal" disabled={enviando}>
+              {enviando ? "Registrando…" : "Registrar vehículo"}
+            </button>
+
+            {formErr && (
+              <div className="error-message mt8 reveal" role="alert">
+                {formErr}
+              </div>
+            )}
+            {ok && (
+              <div className="success-message mt8 reveal" role="status">
+                Vehículo registrado. Redirigiendo…
+              </div>
+            )}
+          </form>
+
+          <p className="helper reveal">
+            ¿Quieres salir?{" "}
+            <span className="textlink" onClick={() => navigate("/inicio")}>
+              Volver al inicio
+            </span>
+          </p>
         </div>
 
-        {/* Estado UX */}
-        {error && <div className="error" style={{ marginTop: 10 }}>{error}</div>}
-        {okMsg && (
-          <div className="success-message" style={{ marginTop: 10 }}>
-            {okMsg}
+        <aside className="registrar__right reveal" aria-hidden="true">
+          <div className="registrar__hero">
+            <h2 className="registrar__heroTitle">Registro rápido y ordenado</h2>
+            <div className="registrar__heroPill">
+              <span aria-hidden>🚗</span>
+              <span>Registra vehículos en minutos</span>
+            </div>
           </div>
-        )}
-
-        <div className="acciones" style={{ marginTop: 14 }}>
-          <button className="btn-primary" type="submit" disabled={enviando}>
-            {enviando ? "Registrando..." : "Registrar vehículo"}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => navigate("/inicio")}
-          >
-            Volver
-          </button>
-        </div>
-      </form>
-    </div>
+        </aside>
+      </section>
+    </main>
   );
 }

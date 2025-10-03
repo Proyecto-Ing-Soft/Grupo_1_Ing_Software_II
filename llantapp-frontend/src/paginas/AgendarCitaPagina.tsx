@@ -1,14 +1,8 @@
-// src/paginas/AgendarCitaPagina.tsx
-
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { esquemaCita, type CitaForm } from "../validaciones/citaSchemas";
 import { apiCitas } from "../servicios/apiCitas";
-
-// PRINCIPIOS:
-// - SRP: render + validación + submit de "agendar cita".
-// - KISS: estado mínimo, mensajes claros.
-// - Demeter: llama a apiCitas (fachada), sin tocar fetch/directo.
+import "../estilos/agendarCita.css";
 
 const REDIRECT_DELAY = 1200;
 
@@ -33,6 +27,35 @@ export default function AgendarCitaPagina() {
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
+
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add("animate-in");
+          } else {
+            e.target.classList.remove("animate-in");
+          }
+        }
+      },
+      { threshold: 0.12 }
+    );
+
+    nodes.forEach((n, i) => {
+      n.dataset.reveal = String(Math.min(i + 1, 5));
+      obs.observe(n);
+    });
+
+    return () => {
+      window.clearTimeout(t);
+      nodes.forEach(n => obs.unobserve(n));
+      obs.disconnect();
+    };
+  }, []);
 
   const onChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -68,14 +91,12 @@ export default function AgendarCitaPagina() {
       const payload = parsed.data;
       await apiCitas.crear({
         ...payload,
-        // normalizamos algunos campos opcionales a undefined
         colorPreliminar: payload.colorPreliminar || undefined,
         vinPreliminar: payload.vinPreliminar || undefined,
         comentario: payload.comentario || undefined,
       });
 
       setOk(true);
-      // Redirige como en Registro: breve delay + mensaje flash en Inicio
       timeoutRef.current = window.setTimeout(() => {
         navigate("/inicio", {
           replace: true,
@@ -96,16 +117,14 @@ export default function AgendarCitaPagina() {
   };
 
   return (
-    <main className="auth-page">
-      <section className="auth-split" role="region" aria-label="Formulario de cita">
-        {/* Izquierda: Form (reusa tus estilos de auth) */}
-        <div className="auth-left">
-          <h1 className="brand">Solicitar cita</h1>
-          <p className="sub">Ingresa los datos del vehículo y la fecha programada.</p>
+    <main className="agendar">
+      <section className="agendar__split" role="region" aria-label="Formulario de cita">
+        <div className="agendar__left reveal">
+          <h1 className="agendar__title">Solicitar cita</h1>
+          <p className="agendar__sub">Ingresa los datos del vehículo y la fecha programada.</p>
 
           <form className="form" onSubmit={enviar} noValidate>
-            {/* Tipo */}
-            <div className="form-group">
+            <div className="form-group reveal">
               <label className="label" htmlFor="tipo">Servicio</label>
               <div className={`input-wrap ${fieldErr["tipo"] ? "has-error" : ""}`}>
                 <select
@@ -126,8 +145,7 @@ export default function AgendarCitaPagina() {
               {fieldErr["tipo"] && <div id="err-tipo" className="error-message" role="alert">{fieldErr["tipo"]}</div>}
             </div>
 
-            {/* Placa */}
-            <div className="form-group">
+            <div className="form-group reveal">
               <label className="label" htmlFor="placaPreliminar">Placa</label>
               <div className={`input-wrap ${fieldErr["placaPreliminar"] ? "has-error" : ""}`}>
                 <input
@@ -145,8 +163,7 @@ export default function AgendarCitaPagina() {
               {fieldErr["placaPreliminar"] && <div id="err-placa" className="error-message" role="alert">{fieldErr["placaPreliminar"]}</div>}
             </div>
 
-            {/* Marca */}
-            <div className="form-group">
+            <div className="form-group reveal">
               <label className="label" htmlFor="marcaPreliminar">Marca</label>
               <div className={`input-wrap ${fieldErr["marcaPreliminar"] ? "has-error" : ""}`}>
                 <input
@@ -164,8 +181,7 @@ export default function AgendarCitaPagina() {
               {fieldErr["marcaPreliminar"] && <div id="err-marca" className="error-message" role="alert">{fieldErr["marcaPreliminar"]}</div>}
             </div>
 
-            {/* Modelo */}
-            <div className="form-group">
+            <div className="form-group reveal">
               <label className="label" htmlFor="modeloPreliminar">Modelo</label>
               <div className={`input-wrap ${fieldErr["modeloPreliminar"] ? "has-error" : ""}`}>
                 <input
@@ -183,8 +199,7 @@ export default function AgendarCitaPagina() {
               {fieldErr["modeloPreliminar"] && <div id="err-modelo" className="error-message" role="alert">{fieldErr["modeloPreliminar"]}</div>}
             </div>
 
-            {/* Año (opcional) */}
-            <div className="form-group">
+            <div className="form-group reveal">
               <label className="label" htmlFor="anioPreliminar">Año (opcional)</label>
               <div className={`input-wrap ${fieldErr["anioPreliminar"] ? "has-error" : ""}`}>
                 <input
@@ -202,8 +217,7 @@ export default function AgendarCitaPagina() {
               {fieldErr["anioPreliminar"] && <div id="err-anio" className="error-message" role="alert">{fieldErr["anioPreliminar"]}</div>}
             </div>
 
-            {/* Color (opcional) */}
-            <div className="form-group">
+            <div className="form-group reveal">
               <label className="label" htmlFor="colorPreliminar">Color (opcional)</label>
               <div className="input-wrap">
                 <input
@@ -218,8 +232,7 @@ export default function AgendarCitaPagina() {
               </div>
             </div>
 
-            {/* VIN (opcional) */}
-            <div className="form-group">
+            <div className="form-group reveal">
               <label className="label" htmlFor="vinPreliminar">VIN (opcional)</label>
               <div className="input-wrap">
                 <input
@@ -234,8 +247,7 @@ export default function AgendarCitaPagina() {
               </div>
             </div>
 
-            {/* Fecha */}
-            <div className="form-group">
+            <div className="form-group reveal">
               <label className="label" htmlFor="programadaPara">Fecha programada</label>
               <div className={`input-wrap ${fieldErr["programadaPara"] ? "has-error" : ""}`}>
                 <input
@@ -252,8 +264,7 @@ export default function AgendarCitaPagina() {
               {fieldErr["programadaPara"] && <div id="err-fecha" className="error-message" role="alert">{fieldErr["programadaPara"]}</div>}
             </div>
 
-            {/* Comentario */}
-            <div className="form-group">
+            <div className="form-group reveal">
               <label className="label" htmlFor="comentario">Mensaje adicional (opcional)</label>
               <div className="input-wrap">
                 <textarea
@@ -268,34 +279,36 @@ export default function AgendarCitaPagina() {
               </div>
             </div>
 
-            <button type="submit" className="btn" disabled={enviando}>
+            <button type="submit" className="btn reveal" disabled={enviando}>
               {enviando ? "Enviando…" : "Solicitar cita"}
             </button>
 
             {formErr && (
-              <div className="error-message" style={{ marginTop: 8 }} role="alert">
+              <div className="error-message mt8 reveal" role="alert">
                 {formErr}
               </div>
             )}
 
             {ok && (
-              <div className="success-message" style={{ marginTop: 8 }} role="status">
+              <div className="success-message mt8 reveal" role="status">
                 Cita solicitada correctamente. Redirigiendo…
               </div>
             )}
           </form>
 
-          <p className="helper">
-            ¿Prefieres más tarde? <span className="textlink" onClick={() => navigate("/inicio")}>Volver al inicio</span>
+          <p className="helper reveal">
+            ¿Prefieres más tarde?{" "}
+            <span className="textlink" onClick={() => navigate("/inicio")}>
+              Volver al inicio
+            </span>
           </p>
         </div>
 
-        {/* Derecha: puedes poner una imagen/hero como en registro, si quieres */}
-        <aside className="auth-right" aria-hidden="true">
-          <div className="auth-right-inner">
-            <h2 className="hero-title">Servicio rápido y confiable</h2>
-            <div className="hero-pill">
-              <span className="fa-solid fa-screwdriver-wrench" aria-hidden="true" />
+        <aside className="agendar__right reveal" aria-hidden="true">
+          <div className="agendar__hero">
+            <h2 className="agendar__heroTitle">Servicio rápido y confiable</h2>
+            <div className="agendar__heroPill">
+              <span aria-hidden>🛠️</span>
               <span>Agenda tu mantenimiento en minutos</span>
             </div>
           </div>

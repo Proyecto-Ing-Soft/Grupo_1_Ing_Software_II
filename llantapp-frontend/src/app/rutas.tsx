@@ -1,4 +1,4 @@
-// src/rutas/Rutas.tsx
+// src/app/Rutas.tsx
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
@@ -12,6 +12,9 @@ import AgendarCitaPagina from '../paginas/AgendarCitaPagina';
 import MisCitasPagina from '../paginas/MisCitasPagina';
 import CitasMecanicoPagina from '../paginas/CitasMecanicoPagina';
 import AdminCitasPendientes from '../paginas/AdminCitasPendientes';
+import CatalogoServiciosPagina from '../paginas/CatalogoServiciosPagina';
+import AsociarMecanicoServicioPagina from '../paginas/AsociarMecanicoServicioPagina';
+import GestionUsuariosPagina from '../paginas/GestionUsuariosPagina';
 
 // ROL PROTEGIENDO PAGINAS
 import { RutaProtegidaPorRol } from '../componentes/RutaProtegidaPorRol';
@@ -19,10 +22,6 @@ import { RutaProtegida } from '../componentes/RutaProtegida';
 
 // LAYOUT
 import LayoutProtegido from '../componentes/LayoutProtegido';
-
-// Seguridad por capas: RutaProtegidaPorRol (UI) + RolesGuard (API).
-// KISS + Demeter: el componente pregunta a AuthContext; no lee token/jwt directo.
-// Facade: AuthContext "facadea" sesión/refresh/perfil para el resto de la UI.
 
 const router = createBrowserRouter(
   [
@@ -48,6 +47,36 @@ const router = createBrowserRouter(
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
               <AdminCitasPendientes />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
+        // ADMIN: catálogo de servicios
+        {
+          path: 'admin/servicios',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+              <CatalogoServiciosPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
+        // ADMIN: asociar mecánico a servicio
+        {
+          path: 'admin/servicios/asociar',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+              <AsociarMecanicoServicioPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
+        // ADMIN: gestionar usuarios
+        {
+          path: 'admin/usuarios',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+              <GestionUsuariosPagina />
             </RutaProtegidaPorRol>
           ),
         },
