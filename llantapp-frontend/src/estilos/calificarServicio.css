@@ -1,0 +1,74 @@
+/* Overlay */
+.calificar-servicio-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+/* Panel principal */
+.calificar-servicio-modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  width: min(90%, 520px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: aparecer 0.25s ease;
+}
+
+@keyframes aparecer {
+  from { transform: translateY(6px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.texto-aux { margin: 6px 0 12px; color: #444; }
+
+/* Estrellas */
+.bloque-estrellas { text-align: center; margin-bottom: 8px; }
+.estrellas-calificacion {
+  display: inline-flex;
+  gap: 10px;
+  margin: 8px 0 6px;
+}
+.estrella {
+  fill: none;
+  stroke: #f5b301;
+  stroke-width: 2;
+  cursor: pointer;
+  transition: transform 0.15s ease, fill 0.15s ease;
+}
+.estrella:hover { transform: scale(1.15); }
+.estrella.rellena { fill: #f5b301; }
+.leyenda-estrellas { font-size: .9rem; color: #555; min-height: 1.2em; }
+
+/* Campos */
+.label { display: block; font-weight: 600; margin-top: 10px; margin-bottom: 6px; }
+textarea {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  resize: vertical;
+  font-size: 0.95rem;
+}
+.contador-resena { text-align: right; font-size: .82rem; color: #666; margin-top: 4px; }
+
+/* Acciones */
+.acciones-calificar {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.btn-cancelar, .btn-enviar {
+  border: 0; padding: 9px 16px; border-radius: 8px; cursor: pointer;
+}
+.btn-cancelar { background: #e5e7eb; color: #111827; }
+.btn-cancelar:hover { background: #d1d5db; }
+.btn-enviar { background: #f59e0b; color: #fff; }
+.btn-enviar:hover { background: #d97706; }
+
+.mensaje-calificacion { margin-top: 10px; color: #374151; font-size: 0.92rem; }
