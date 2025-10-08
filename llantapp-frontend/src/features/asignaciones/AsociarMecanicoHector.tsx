@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../estilos/asociarMecanico.css";
+import "../mantenimientos/asociarMecanico.css";
 
 type Servicio = { id: number; nombre: string };
 type Mecanico = { id: number; nombreCompleto: string };

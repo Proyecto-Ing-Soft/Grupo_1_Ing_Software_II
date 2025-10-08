@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../estilos/gestionarUsuarios.css";
+import "./gestionarUsuarios.css";
 
 type Rol = "ADMIN" | "MECANICO";
 type Usuario = { id: number; nombre: string; correo: string; rol: Rol; activo: boolean };

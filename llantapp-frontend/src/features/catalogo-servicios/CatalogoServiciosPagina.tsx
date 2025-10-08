@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../estilos/catalogoServicios.css";
+import "./catalogoServicios.css";
 
 type Estado = "ACTIVO" | "INACTIVO";
 type Servicio = { id: number; nombre: string; descripcion: string; estado: Estado };

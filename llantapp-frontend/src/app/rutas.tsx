@@ -41,7 +41,6 @@ const router = createBrowserRouter(
       children: [
         { path: 'inicio', element: <InicioProtegido /> },
 
-        // ADMIN: revisar y asignar citas pendientes
         {
           path: 'admin/citas-pendientes',
           element: (
@@ -50,8 +49,6 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-
-        // ADMIN: catálogo de servicios
         {
           path: 'admin/servicios',
           element: (
@@ -60,8 +57,6 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-
-        // ADMIN: asociar mecánico a servicio
         {
           path: 'admin/servicios/asociar',
           element: (
@@ -70,8 +65,6 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-
-        // ADMIN: gestionar usuarios
         {
           path: 'admin/usuarios',
           element: (
@@ -80,8 +73,6 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-
-        // ADMIN y MECANICO: registrar vehículo
         {
           path: 'vehiculos/registrar',
           element: (
@@ -90,8 +81,6 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-
-        // MECANICO: registrar mantenimiento
         {
           path: 'mantenimientos/registrar',
           element: (
@@ -100,8 +89,6 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-
-        // CHOFER o EMPRESA: agendar y ver sus citas
         {
           path: 'citas/agendar',
           element: (
@@ -118,8 +105,6 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-
-        // MECANICO: ver citas asignadas
         {
           path: 'citas/asignadas',
           element: (
@@ -128,8 +113,6 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-
-        // CHOFER, EMPRESA o MECANICO: notificaciones
         {
           path: 'notificaciones',
           element: (
@@ -143,8 +126,12 @@ const router = createBrowserRouter(
 
     { path: '*', element: <LoginPagina /> },
   ],
-  { basename: '/llantapp' }
+  {
+    // usa el base de Vite y quita la barra final
+    basename: (import.meta.env.BASE_URL || '/').replace(/\/$/, ''),
+  }
 );
+
 
 export function Rutas() {
   return <RouterProvider router={router} />;
