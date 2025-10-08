@@ -11,7 +11,9 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "types": ["node", "express"]
   },
   "exclude": ["node_modules", "dist"]
 }

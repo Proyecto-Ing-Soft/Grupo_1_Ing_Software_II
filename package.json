@@ -1,0 +1,18 @@
+{
+  "name": "grupo_1_ing_software_ii",
+  "private": true,
+  "workspaces": [
+    "llantapp-backend",
+    "llantapp-frontend"
+  ],
+  "scripts": {
+    "setup": "npm install",
+    "db:prepare": "npm run prisma:dev -w llantapp-backend && npm run prisma:gen -w llantapp-backend",
+    "dev:back": "npm run start:dev -w llantapp-backend",
+    "dev:front": "npm run dev -w llantapp-frontend",
+    "dev": "npm run db:prepare && concurrently -n FRONT,BACK -c auto \"npm run dev:front\" \"npm run dev:back\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
