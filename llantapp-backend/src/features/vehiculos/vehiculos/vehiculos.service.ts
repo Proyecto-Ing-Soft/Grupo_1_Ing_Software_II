@@ -1,9 +1,8 @@
 import { BadRequestException, Injectable, Inject } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
 import { CrearVehiculoDto } from './dto/crear-vehiculo.dto';
 import { IValidadorVehiculo } from './validacion/ivalidador-vehiculo';
 import { VEHICULO_VALIDADORES } from './validacion/tokens';
-
 
 /**
  * crear(dto, creadorId)
@@ -48,7 +47,6 @@ export class VehiculosService {
       select: { id: true, empresaId: true },
     });
 
-    // (por robustez; el validador ya lo garantizó)
     if (!propietario) throw new BadRequestException('Propietario no existe');
 
     // 3) Persistir con propietario elegido + auditoría del creador

@@ -1,4 +1,3 @@
-// src/servicios/_http.ts
 // DRY + KISS: fachada HTTP única. Adjunta Authorization automáticamente si existe.
 const BASE = import.meta.env.VITE_API_BASE_URL as string;
 import { tokenMemoria } from '../utils/storageMemoria';

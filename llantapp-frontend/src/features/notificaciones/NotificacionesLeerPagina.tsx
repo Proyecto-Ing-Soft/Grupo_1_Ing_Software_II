@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiNotificacion } from "../servicios/apiNotificacion";
-import { useAuth } from "../app/proveedorestado/AuthContext";
-import type { NotificacionDTO as _BaseDTO } from "../tipos/notificacion";
-import "../estilos/notificaciones.css";
+import { apiNotificacion } from "./api";
+import { useAuth } from "../../core/auth/AuthContext";
+import type { NotificacionDTO as _BaseDTO } from "./tipos";
+import "./notificaciones.css";
 
 type NotificacionDTO = _BaseDTO & {
   titulo?: string;

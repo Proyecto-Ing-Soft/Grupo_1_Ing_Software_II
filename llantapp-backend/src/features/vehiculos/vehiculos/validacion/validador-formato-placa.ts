@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ValidadorBase } from './validador-base';
 import { CrearVehiculoDto } from '../dto/crear-vehiculo.dto';
 
-// ValidadorFormatoPlaca.ts
 // - SRP: valida SOLO el patrón de placa (Perú: ABC-123).
 // - Cohesión alta: no toca BD ni otros campos.
 // - OCP: si cambia el formato, solo modificas la regex aquí.

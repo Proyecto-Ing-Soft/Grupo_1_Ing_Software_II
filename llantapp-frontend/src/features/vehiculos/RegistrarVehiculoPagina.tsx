@@ -1,9 +1,8 @@
-// src/paginas/RegistrarVehiculoPagina.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../app/proveedorestado/AuthContext";
-import { apiCitas } from "../servicios/apiCitas";
-import "../estilos/registrarVehiculo.css";
+import { useAuth } from "../../core/auth/AuthContext";
+import { apiCitas } from "../mantenimientos/api";
+import "./registrarVehiculo.css";
 
 type Rol = "ADMIN" | "MECANICO" | "ASISTENTE" | "CHOFER" | "EMPRESA";
 type UsuarioRolLite = { id: number; nombreCompleto: string };

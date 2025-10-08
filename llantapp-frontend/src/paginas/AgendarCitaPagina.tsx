@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { esquemaCita, type CitaForm } from "../validaciones/citaSchemas";
-import { apiCitas } from "../servicios/apiCitas";
-import "../estilos/agendarCita.css";
+import { esquemaCita, type CitaForm } from "../features/mantenimientos/citaSchemas";
+import { apiCitas } from "../features/mantenimientos/api";
+import "../features/mantenimientos/agendarCita.css";
 
 const REDIRECT_DELAY = 1200;
 

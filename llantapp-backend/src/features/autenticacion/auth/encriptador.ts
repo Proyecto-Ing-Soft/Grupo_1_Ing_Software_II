@@ -1,4 +1,3 @@
-// encriptador.ts
 import * as bcrypt from 'bcrypt';
 
 // SRP: encapsula hashing/comparación.

@@ -1,6 +1,5 @@
-// auth.service.ts
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { UsuarioService } from '../usuario/usuario.service';
+import { UsuarioService } from '../../usuarios/usuario/usuario.service';
 import { RegistrarUsuarioDto } from './dto/registrar-usuario.dto';
 import { LoginDto } from './dto/login.dto';
 import { Encriptador } from './encriptador';
@@ -44,7 +43,11 @@ export class AuthService {
   async renovarAccess(refreshToken: string) {
     try {
       const payload: any = this.jwt.verificarRefresh(refreshToken);
-      const accessToken = this.jwt.emitirAccess({ sub: payload.sub, correo: payload.correo, rol: payload.rol });
+      const accessToken = this.jwt.emitirAccess({
+        sub: payload.sub,
+        correo: payload.correo,
+        rol: payload.rol,
+      });
       // YAGNI: sin rotación persistente ni lista negra aún (se puede agregar en Sprint 2).
       return { accessToken };
     } catch {

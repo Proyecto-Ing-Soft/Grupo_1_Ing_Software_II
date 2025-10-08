@@ -1,17 +1,27 @@
-// src/citas/citas.controller.ts
-
 // PRINCIPIOS:
 // - SRP: solo orquesta HTTP ⇄ Service. Nada de reglas de negocio aquí.
 // - DRY: delega todo en CitasService, evitando duplicar validaciones.
 // - Demeter: el controller solo “conoce” a su Service (no navega por capas internas).
 // - Seguridad por capas: aquí puedes aplicar Jwt/RolesGuard sin tocar el Service (OCP).
-// src/citas/citas.controller.ts
-// src/citas/citas.controller.ts
-import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, ParseIntPipe, Post, Req, StreamableFile, UnauthorizedException, UseGuards } from '@nestjs/common';
+
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  StreamableFile,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { CitasService } from './citas.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { AsignarMecanicoDto } from './dto/asignar-mecanico.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller('citas-mantenimiento')
@@ -62,23 +72,22 @@ export class CitasController {
   }
 
   @Get('admin/pendientes')
-    pendientes(@Req() req: any) {
-      if (req.user?.rol !== 'ADMIN') throw new ForbiddenException('Solo admin');
-      return this.svc.listarPendientes();
-    }
+  pendientes(@Req() req: any) {
+    if (req.user?.rol !== 'ADMIN') throw new ForbiddenException('Solo admin');
+    return this.svc.listarPendientes();
+  }
 
   @Get(':id')
   async detalle(@Param('id', ParseIntPipe) id: number) {
     const c = await this.svc.buscarPorIdConVehiculo(id);
     if (!c) throw new NotFoundException('Cita no encontrada');
 
-    // Normalizamos la forma en que el front lo necesita:
+    // Normalizamr la forma en que el front lo necesita:
     return {
       id: c.id,
       clienteId: c.clienteId ?? null,
       programadaPara: c.programadaPara ?? null,
 
-      // Si ya existe vehículo asociado
       vehiculo: c.vehiculo
         ? {
             placa: c.vehiculo.placa ?? null,
@@ -90,7 +99,6 @@ export class CitasController {
           }
         : null,
 
-      // Preliminares de la cita (como cuando la creaste)
       placaPreliminar: c.placaPreliminar ?? null,
       marcaPreliminar: c.marcaPreliminar ?? null,
       modeloPreliminar: c.modeloPreliminar ?? null,

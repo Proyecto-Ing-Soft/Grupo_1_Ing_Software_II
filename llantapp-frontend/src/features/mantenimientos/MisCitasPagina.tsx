@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { apiCitas } from "../servicios/apiCitas";
-import "../estilos/miscitas.css";
+import { apiCitas } from "./api";
+import "./miscitas.css";
 
 type Cita = {
   id: number;

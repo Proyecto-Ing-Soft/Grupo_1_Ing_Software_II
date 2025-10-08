@@ -1,5 +1,3 @@
-// src/citas/dto/crear-cita.dto.ts
-
 // PRINCIPIOS:
 // - SRP: el DTO solo define contrato/validación de entrada. Nada de lógica.
 // - KISS: tipos simples; validaciones declarativas con class-validator.

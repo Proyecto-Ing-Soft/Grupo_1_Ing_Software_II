@@ -1,6 +1,5 @@
-// usuario.service.ts
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
 import { Usuario, Rol } from '@prisma/client';
 
 // SRP: Acceso y lógica de dominio para usuarios.
@@ -23,7 +22,7 @@ export class UsuarioService {
     return this.prisma.usuario.findUnique({ where: { id } });
   }
 
-  // ✅ Nuevo caso de uso: listar por rol (ej. MECANICO) para que el cliente elija a quién agendar
+  // Nuevo caso de uso: listar por rol (ej. MECANICO) para que el cliente elija a quién agendar
   async listarPorRol(rol: string) {
     // KISS: casteamos al enum de Prisma; si el rol no existe, simplemente devolverá []
     return this.prisma.usuario.findMany({

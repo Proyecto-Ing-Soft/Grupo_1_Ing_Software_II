@@ -1,4 +1,3 @@
-// src/notificaciones/envio/notificador.ts
 import { Injectable } from '@nestjs/common';
 import { NotificacionPrismaRepo } from '../repos/notificacion.prisma.repo';
 

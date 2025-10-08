@@ -1,21 +1,29 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AuthModule } from './auth/auth.module';
-import { UsuarioModule } from './usuario/usuario.module';
-import { PrismaModule } from './prisma/prisma.module';
-import { VehiculosModule } from './vehiculos/vehiculo.module';
-import { NotificacionesModule } from './notificaciones/notificaciones.module';
-import { CitasModule } from './citas/citas.module';
+
+// Núcleo compartido
+import { PrismaModule } from './core/prisma/prisma/prisma.module';
+
+// Módulos de dominio (features)
+import { AuthModule } from './features/autenticacion/auth/auth.module';
+import { UsuarioModule } from './features/usuarios/usuario/usuario.module';
+import { VehiculosModule } from './features/vehiculos/vehiculos/vehiculo.module';
+import { NotificacionesModule } from './features/notificaciones/notificaciones/notificaciones.module';
+import { CitasModule } from './features/mantenimientos/citas/citas.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule,      // SRP: acceso a BD
-    UsuarioModule,     // SRP: lógica de usuario
-    AuthModule,         // SRP: autenticación
-    VehiculosModule,
-    NotificacionesModule,
-    CitasModule
-  ]
+
+    // Núcleo (acceso a BD, configuración)
+    PrismaModule,
+
+    // Features del dominio
+    UsuarioModule,        // Lógica de usuario
+    AuthModule,           // Autenticación
+    VehiculosModule,      // Gestión de vehículos
+    NotificacionesModule, // Envío y lectura de notificaciones
+    CitasModule           // Citas de mantenimiento
+  ],
 })
 export class AppModule {}

@@ -1,7 +1,6 @@
-// src/componentes/BotonCerrarSesion.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../app/proveedorestado/AuthContext';
+import { useAuth } from '../../core/auth/AuthContext';
 
 const BotonCerrarSesion: React.FC<{ className?: string }> = ({ className }) => {
   const { cerrar } = useAuth();
@@ -9,12 +8,15 @@ const BotonCerrarSesion: React.FC<{ className?: string }> = ({ className }) => {
 
   return (
     <button
-      className={`logout-btn ${className ?? ""}`} 
-      onClick={() => { cerrar(); navigate('/login', { replace: true }); }}
+      className={`logout-btn ${className ?? ''}`}
+      onClick={() => {
+        cerrar();
+        navigate('/login', { replace: true });
+      }}
       aria-label="Cerrar sesión"
       title="Cerrar sesión"
     >
-     Cerrar sesión
+      Cerrar sesión
     </button>
   );
 };

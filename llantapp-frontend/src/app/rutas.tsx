@@ -1,29 +1,27 @@
-// src/app/Rutas.tsx
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 // PAGINAS
-import LoginPagina from '../paginas/LoginPagina';
-import RegistroPagina from '../paginas/RegistroPagina';
-import InicioProtegido from '../paginas/InicioProtegido';
-import RegistrarVehiculoPagina from '../paginas/RegistrarVehiculoPagina';
-import NotificacionesLeerPagina from '../paginas/NotificacionesLeerPagina';
+import LoginPagina from '../features/autenticacion/LoginPagina';
+import RegistroPagina from '../features/autenticacion/RegistroPagina';
+import InicioProtegido from '../common/paginas/InicioProtegido';
+import RegistrarVehiculoPagina from '../features/vehiculos/RegistrarVehiculoPagina';
+import NotificacionesLeerPagina from '../features/notificaciones/NotificacionesLeerPagina';
 import AgendarCitaPagina from '../paginas/AgendarCitaPagina';
-import MisCitasPagina from '../paginas/MisCitasPagina';
-import CitasMecanicoPagina from '../paginas/CitasMecanicoPagina';
-import AdminCitasPendientes from '../paginas/AsociarMecanicoPagina';
-import CatalogoServiciosPagina from '../paginas/CatalogoServiciosPagina';
-import AsociarMecanicoServicioPagina from '../paginas/AsociarMecanicoHector';
-import GestionUsuariosPagina from '../paginas/GestionUsuariosPagina';
-import RegistrarMantenimientoPagina from "../paginas/RegistrarMantenimientoPagina";
+import MisCitasPagina from '../features/mantenimientos/MisCitasPagina';
+import CitasMecanicoPagina from '../features/mantenimientos/CitasMecanicoPagina';
+import AdminCitasPendientes from '../features/asignaciones/AsociarMecanicoPagina';
+import CatalogoServiciosPagina from '../features/catalogo-servicios/CatalogoServiciosPagina';
+import AsociarMecanicoServicioPagina from '../features/asignaciones/AsociarMecanicoHector';
+import GestionUsuariosPagina from '../features/usuarios/GestionUsuariosPagina';
+import RegistrarMantenimientoPagina from '../features/mantenimientos/RegistrarMantenimientoPagina';
 
 // ROL PROTEGIENDO PAGINAS
-import { RutaProtegidaPorRol } from '../componentes/RutaProtegidaPorRol';
-import { RutaProtegida } from '../componentes/RutaProtegida';
-// donde declaras tus rutas
+import { RutaProtegidaPorRol } from '../common/componentes/RutaProtegidaPorRol';
+import { RutaProtegida } from '../common/componentes/RutaProtegida';
 
 // LAYOUT
-import LayoutProtegido from '../componentes/LayoutProtegido';
+import LayoutProtegido from '../common/componentes/LayoutProtegido';
 
 const router = createBrowserRouter(
   [

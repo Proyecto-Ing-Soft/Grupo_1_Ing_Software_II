@@ -1,7 +1,6 @@
-// src/notificaciones/repos/notificacion.prisma.repo.ts
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { EstadoNotificacion } from '@prisma/client'; // <- usa el enum
+import { PrismaService } from '../../../../core/prisma/prisma/prisma.service';
+import { EstadoNotificacion } from '@prisma/client'; // enum
 
 type CrearNotificacion = {
   usuarioId: number;
@@ -14,7 +13,7 @@ type CrearNotificacion = {
 export class NotificacionPrismaRepo {
   constructor(private prisma: PrismaService) {}
 
-  // NEW: crear notificación (lo usará el Notificador)
+  // crear notificación (lo usará el Notificador)
   async crear(data: CrearNotificacion) {
     return this.prisma.notificacion.create({
       data: {
@@ -38,10 +37,10 @@ export class NotificacionPrismaRepo {
     const n = await this.prisma.notificacion.findUnique({ where: { id } });
     if (!n) throw new NotFoundException('No existe la notificación');
     if (n.usuarioId !== usuarioId) throw new ForbiddenException('No autorizado');
-    if (n.estado === EstadoNotificacion.LEIDA) return; // <- enum
+    if (n.estado === EstadoNotificacion.LEIDA) return; // enum
     await this.prisma.notificacion.update({
       where: { id },
-      data: { estado: EstadoNotificacion.LEIDA }, // <- enum
+      data: { estado: EstadoNotificacion.LEIDA }, // enum
     });
   }
 }

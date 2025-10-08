@@ -1,12 +1,11 @@
-// src/paginas/AdminCitasPendientes.tsx
 // Lógica: basada en el componente original (apiCitas.pendientesAdmin, apiUsuarios.listarPorRol, asignación).
-// Estilos/UI: usa las clases de ../estilos/asociarMecanico.css (botones, inputs, layout, reveal).
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiCitas } from "../servicios/apiCitas";
-import { apiUsuarios } from "../servicios/apiUsuarios";
-import "../estilos/asociarMecanico.css"; // <- usar este CSS "bonito"
+
+import { apiCitas } from "../mantenimientos/api";
+import { apiUsuarios } from "../usuarios/api";
+import "../mantenimientos/asociarMecanico.css";
 
 // Tipos (idénticos a la vista original)
 type TipoMantenimientoFE = "PREVENTIVO" | "CORRECTIVO" | "LEGAL_ITV" | "EXTRAS";
@@ -35,7 +34,6 @@ export default function AdminCitasPendientes() {
   const [q, setQ] = useState("");
   const [okMsg, setOkMsg] = useState<string | null>(null);
 
-  // Carga inicial (misma lógica que el original)
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -47,25 +45,26 @@ export default function AdminCitasPendientes() {
       setCitas(cs);
       setMecanicos(ms);
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  // Reveal animations (estilo de la página bonita)
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
     const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
-
-    const obs = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        (e.target as HTMLElement).classList.toggle("animate-in", e.isIntersecting);
-      }
-    }, { threshold: 0.12 });
-
+    const obs = new IntersectionObserver(
+      entries => {
+        for (const e of entries) {
+          (e.target as HTMLElement).classList.toggle("animate-in", e.isIntersecting);
+        }
+      },
+      { threshold: 0.12 }
+    );
     nodes.forEach((n, i) => {
       n.dataset.reveal = String(Math.min(i + 1, 5));
       obs.observe(n);
     });
-
     return () => {
       window.clearTimeout(t);
       nodes.forEach(n => obs.unobserve(n));
@@ -92,7 +91,6 @@ export default function AdminCitasPendientes() {
     if (!mecId) return alert("Selecciona un mecánico");
     setOkMsg(null);
     await apiCitas.asignar(citaId, mecId);
-    // Quita la cita de la lista (refresco optimista)
     setCitas(prev => prev.filter(c => c.id !== citaId));
     setOkMsg(`Cita #${citaId} asignada correctamente.`);
   };
@@ -102,8 +100,9 @@ export default function AdminCitasPendientes() {
       <section className="agendar__left reveal" data-reveal="1">
         <header className="ams__head">
           <h1 className="agendar__title">Citas pendientes</h1>
-          <p className="agendar__sub">Asigna un mecánico a cada solicitud de mantenimiento.</p>
-
+          <p className="agendar__sub">
+            Asigna un mecánico a cada solicitud de mantenimiento.
+          </p>
           <div className="ams__toolbar">
             <button
               type="button"
@@ -116,8 +115,11 @@ export default function AdminCitasPendientes() {
           </div>
         </header>
 
-        {/* Buscador */}
-        <form className="form reveal" data-reveal="2" onSubmit={(e) => e.preventDefault()}>
+        <form
+          className="form reveal"
+          data-reveal="2"
+          onSubmit={e => e.preventDefault()}
+        >
           <div className="form-group" style={{ gridColumn: "1 / -1" }}>
             <label className="label" htmlFor="buscar">Buscar</label>
             <div className="input-wrap">
@@ -132,27 +134,29 @@ export default function AdminCitasPendientes() {
           </div>
         </form>
 
-        {/* Estado vacío */}
         {filtradas.length === 0 ? (
-          <div className="ams__box reveal" data-reveal="3" role="status" aria-live="polite">
-            <div className="helper">No hay citas pendientes que coincidan con tu búsqueda.</div>
+          <div className="ams__box reveal" data-reveal="3" role="status">
+            <div className="helper">
+              No hay citas pendientes que coincidan con tu búsqueda.
+            </div>
           </div>
         ) : (
           <div className="ams__split reveal" data-reveal="3">
-            {/* Listado de tarjetas (izquierda y derecha en grid responsive) */}
-            {filtradas.map((c) => (
+            {filtradas.map(c => (
               <article key={c.id} className="ams__box" aria-label={`Cita #${c.id}`}>
-                <header style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                <header
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "center",
+                    marginBottom: 8,
+                  }}
+                >
                   <span className="pill">
-                    <span className="pill__dot" />
-                    #{c.id}
+                    <span className="pill__dot" />#{c.id}
                   </span>
-                  <span className="pill">
-                    {c.tipo.replace("_", " ")}
-                  </span>
-                  <span className="pill">
-                    {c.estado.replace("_", " ")}
-                  </span>
+                  <span className="pill">{c.tipo.replace("_", " ")}</span>
+                  <span className="pill">{c.estado.replace("_", " ")}</span>
                 </header>
 
                 <div className="selList" style={{ marginBottom: 8 }}>
@@ -166,10 +170,11 @@ export default function AdminCitasPendientes() {
                   </div>
                 </div>
 
-                {/* Selección de mecánico */}
                 <div className="form" style={{ gridTemplateColumns: "1fr" }}>
                   <div className="form-group">
-                    <label className="label" htmlFor={`mec-${c.id}`}>Mecánico</label>
+                    <label className="label" htmlFor={`mec-${c.id}`}>
+                      Mecánico
+                    </label>
                     <div className="input-wrap">
                       <select
                         id={`mec-${c.id}`}
@@ -182,7 +187,9 @@ export default function AdminCitasPendientes() {
                       >
                         <option value="">Asignar…</option>
                         {mecanicos.map(m => (
-                          <option key={m.id} value={m.id}>{m.nombreCompleto}</option>
+                          <option key={m.id} value={m.id}>
+                            {m.nombreCompleto}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -203,9 +210,9 @@ export default function AdminCitasPendientes() {
             ))}
           </div>
         )}
-
         {okMsg && <div className="success-message mt8">{okMsg}</div>}
       </section>
     </main>
   );
 }
+

@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { esquemaRegistro } from "../validaciones/usuarioSchemas";
-import { apiAuth } from "../servicios/apiAuth";
-import { Link } from "react-router-dom";
-import "../estilos/authRegister.css";
+import { useNavigate, Link } from "react-router-dom";
+import { esquemaRegistro } from "../../features/usuarios/usuarioSchemas";
+import { apiAuth } from "../../features/autenticacion/api";
+import "../../features/autenticacion/authRegister.css";
 
-import logo from "../imagenes/logo.jpg";
-import fondo from "../imagenes/taller.jpeg";
+import logo from "../../assets/img/logo.jpg";
+import fondo from "../../assets/img/taller.jpeg";
 
 export default function RegistroPagina() {
   const [form, setForm] = useState({ nombreCompleto: "", correo: "", clave: "" });

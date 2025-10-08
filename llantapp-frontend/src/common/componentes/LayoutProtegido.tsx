@@ -1,4 +1,3 @@
-// src/componentes/LayoutProtegido.tsx
 import { Outlet } from "react-router-dom";
 import BotonCerrarSesion from "./BotonCerrarSesion";
 import "../estilos/LayoutProtegido.css";

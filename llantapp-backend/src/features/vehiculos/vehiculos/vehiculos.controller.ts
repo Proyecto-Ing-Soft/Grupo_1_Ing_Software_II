@@ -1,13 +1,12 @@
-// src/vehiculos/vehiculos.controller.ts
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { VehiculosService } from './vehiculos.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CrearVehiculoDto } from './dto/crear-vehiculo.dto';
 
 // Autorización por rol
-import { RolesGuard } from '../common/guards/roles.guard';
-import { RolRequerido } from '../common/decorators/rol-requerido.decorator';
-import { Rol } from '../common/enums/rol.enum';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { RolRequerido } from '../../../common/decorators/rol-requerido.decorator';
+import { Rol } from '../../../common/enums/rol.enum';
 
 @UseGuards(JwtAuthGuard) // SRP: este guard SOLO valida token (autenticación)
 @Controller('vehiculos')
@@ -26,12 +25,12 @@ export class VehiculosController {
    * - SRP: El controller NO valida negocio; delega a VehiculosService.
    * - DIP: El servicio depende de una ABSTRACCIÓN (IValidadorVehiculo[]).
    * - OCP: Puedes agregar validadores sin tocar este método.
-   * - Seguridad por capas: JwtAuthGuard → RolesGuard (autenticación → autorización).
+   * - Seguridad por capas: JwtAuthGuard -> RolesGuard (autenticación → autorización).
    *
    * Diagrama de secuencia (pasos):
-   * UI (usuario ID) → Controller (POST) → Service.validar() → Prisma.create() → Respuesta 201(TODO SALIO BIEN)/400(ERROR).
+   * UI (usuario ID) -> Controller (POST) -> Service.validar() -> Prisma.create() -> Respuesta 201(TODO SALIO BIEN)/400(ERROR).
    */
-  @UseGuards(RolesGuard)                 // Aplica que rol va poder acceder a esa pagina
+  @UseGuards(RolesGuard) // Aplica qué rol puede acceder
   @RolRequerido(Rol.MECANICO) // SOLO MECANICO
   @Post()
   async crear(@Body() dto: CrearVehiculoDto, @Req() req: any) {

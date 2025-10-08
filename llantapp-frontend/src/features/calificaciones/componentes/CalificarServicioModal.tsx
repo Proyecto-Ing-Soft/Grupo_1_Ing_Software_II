@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import "./calificarServicio.css";
-import EstrellasCalificacion from"./EstrellasCalificacion"
-import { useAuth } from "../../app/proveedorestado/AuthContext";
+import "../../calificarServicio.css";
+import EstrellasCalificacion from "./EstrellasCalificacion";
+import { useAuth } from "../../../core/auth/AuthContext";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 

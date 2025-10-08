@@ -1,19 +1,18 @@
 import { Module } from '@nestjs/common';
 import { VehiculosController } from './vehiculos.controller';
 import { VehiculosService } from './vehiculos.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
 
 // Validadores (usar la misma carpeta en todos los imports)
 import { ValidadorCamposObligatorios } from './validacion/validador-campos-obligatorios';
 import { ValidadorFormatoPlaca } from './validacion/validador-formato-placa';
 import { ValidadorPlacaUnica } from './validacion/validador-placa-unica';
-import { VEHICULO_VALIDADORES } from './validacion/tokens';
 import { ValidadorPropietarioValido } from './validacion/validador-propietario-valido';
+import { VEHICULO_VALIDADORES } from './validacion/tokens';
 
 // useFactory(...) → "mini Abstract Factory"
 // - Crea e inyecta un ARREGLO de IValidadorVehiculo.
 // - OCP/DIP: agregar/quitar validadores sin re-escribir el servicio.
-
 
 @Module({
   controllers: [VehiculosController],

@@ -1,4 +1,3 @@
-// src/auth/jwt-auth.guard.ts
 // SRP: valida y decodifica el token, dejando req.user listo para los controladores.
 // KISS: extracción simple de Bearer; mensajes claros.
 // Demeter: el resto del código no necesita saber que el JWT usa "sub" → exponemos "id".

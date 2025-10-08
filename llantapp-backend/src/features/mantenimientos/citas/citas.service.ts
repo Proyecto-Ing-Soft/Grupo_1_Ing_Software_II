@@ -1,5 +1,3 @@
-// src/citas/citas.service.ts
-
 // PRINCIPIOS/PATRONES:
 // - SRP: este servicio concentra reglas del caso de uso (crear, asignar, terminar y listados).
 // - KISS: validaciones claras y mensajes concretos; helpers pequeños (toYMD).
@@ -10,10 +8,10 @@
 // - Facade: Notificador oculta cómo se persisten/emiten las notificaciones.
 
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { EstadoCita } from '@prisma/client';
-import { Notificador } from '../notificaciones/envio/notificador';
+import { Notificador } from '../../notificaciones/notificaciones/envio/notificador';
 
 @Injectable()
 export class CitasService {
@@ -27,39 +25,39 @@ export class CitasService {
 
   // === CREAR CITA (estado inicial: SOLICITADA) ===
   async crear(dto: CrearCitaDto, clienteId: number) {
-  // ✅ Validación de fecha futura/actual (sin TZ)
-  if (!dto.programadaPara || !/^\d{4}-\d{2}-\d{2}$/.test(dto.programadaPara)) {
-    throw new BadRequestException('Fecha inválida (usa AAAA-MM-DD)');
-  }
-  const hoyYMD = this.toYMD(new Date()); // e.g. "2025-10-07"
-  const ymd = dto.programadaPara.slice(0, 10);
-  if (ymd < hoyYMD) {
-    throw new BadRequestException('La fecha programada debe ser hoy o una fecha futura');
-  }
+    // ✅ Validación de fecha futura/actual (sin TZ)
+    if (!dto.programadaPara || !/^\d{4}-\d{2}-\d{2}$/.test(dto.programadaPara)) {
+      throw new BadRequestException('Fecha inválida (usa AAAA-MM-DD)');
+    }
+    const hoyYMD = this.toYMD(new Date()); // e.g. "2025-10-07"
+    const ymd = dto.programadaPara.slice(0, 10);
+    if (ymd < hoyYMD) {
+      throw new BadRequestException('La fecha programada debe ser hoy o una fecha futura');
+    }
 
-  if (!dto.placaPreliminar || !dto.marcaPreliminar || !dto.modeloPreliminar) {
-    throw new BadRequestException('Faltan datos del vehículo');
-  }
+    if (!dto.placaPreliminar || !dto.marcaPreliminar || !dto.modeloPreliminar) {
+      throw new BadRequestException('Faltan datos del vehículo');
+    }
 
-  // tu creación actual tal cual (puedes conservar el T00:00:00Z si quieres):
-  const cita = await this.prisma.citaMantenimiento.create({
-    data: {
-      tipo: dto.tipo,
-      comentario: dto.comentario ?? '',
-      programadaPara: new Date(dto.programadaPara + 'T00:00:00Z'),
-      estado: EstadoCita.SOLICITADA,
-      clienteId,
-      vehiculoId: null,
-      placaPreliminar: dto.placaPreliminar.trim().toUpperCase(),
-      marcaPreliminar: dto.marcaPreliminar.trim(),
-      modeloPreliminar: dto.modeloPreliminar.trim(),
-      anioPreliminar: dto.anioPreliminar ?? null,
-      colorPreliminar: dto.colorPreliminar ?? null,
-      vinPreliminar: dto.vinPreliminar ?? null,
-    },
-  });
+    // Crear cita
+    const cita = await this.prisma.citaMantenimiento.create({
+      data: {
+        tipo: dto.tipo,
+        comentario: dto.comentario ?? '',
+        programadaPara: new Date(dto.programadaPara + 'T00:00:00Z'),
+        estado: EstadoCita.SOLICITADA,
+        clienteId,
+        vehiculoId: null,
+        placaPreliminar: dto.placaPreliminar.trim().toUpperCase(),
+        marcaPreliminar: dto.marcaPreliminar.trim(),
+        modeloPreliminar: dto.modeloPreliminar.trim(),
+        anioPreliminar: dto.anioPreliminar ?? null,
+        colorPreliminar: dto.colorPreliminar ?? null,
+        vinPreliminar: dto.vinPreliminar ?? null,
+      },
+    });
 
-    // Notificación a administradores (flujo de trabajo)
+    // Notificación a administradores
     const admins = await this.prisma.usuario.findMany({ where: { rol: 'ADMIN' } });
     await Promise.all(
       admins.map(a =>
@@ -73,7 +71,7 @@ export class CitasService {
       ),
     );
 
-    // 🟠 Notificación al cliente: textos actualizados
+    // Notificación al cliente
     await this.noti.enviar({
       usuarioId: clienteId,
       citaId: cita.id,
@@ -96,7 +94,7 @@ export class CitasService {
       data: { mecanicoId, estado: EstadoCita.EN_PROGRESO },
     });
 
-    // 🟡 Notificación al cliente: textos actualizados con fecha formateada
+    // Notificación al cliente
     const fecha = actualizada.programadaPara
       ? new Date(actualizada.programadaPara).toLocaleDateString('es-PE')
       : 'fecha programada';
@@ -108,7 +106,7 @@ export class CitasService {
       mensaje: `Se asignó un mecánico a tu cita #${actualizada.id} para el ${fecha}. Tu mantenimiento está en curso según lo programado.`,
     });
 
-    // Notificación al mecánico (flujo): mantiene el aviso operativo
+    // Notificación al mecánico
     await this.noti.enviar({
       usuarioId: mecanicoId,
       citaId: actualizada.id,
@@ -132,12 +130,12 @@ export class CitasService {
     if (cita.estado !== EstadoCita.EN_PROGRESO) throw new BadRequestException('La cita no está en proceso');
     if (!cita.programadaPara) throw new BadRequestException('La cita no tiene fecha programada');
 
-    // permite terminar el mismo día o después (evita falsos negativos en pruebas)
+    // permite terminar el mismo día o después
     const hoy = this.toYMD(new Date());
     const programada = this.toYMD(new Date(cita.programadaPara));
     if (hoy < programada) throw new BadRequestException('Aún no es el día programado');
 
-    // 1) Si la cita NO tiene vehiculoId, NO creamos. Solo intentamos enlazar uno existente por placa.
+    // 1) Intentar enlazar vehículo existente por placa si no hay vehiculoId
     let vehiculoId = cita.vehiculoId ?? null;
     let vehiculo = null as null | { id: number; placa: string | null };
 
@@ -153,7 +151,7 @@ export class CitasService {
           vehiculo = existente;
           await this.prisma.citaMantenimiento.update({
             where: { id: citaId },
-            data: { vehiculoId }, // enlaza a la cita
+            data: { vehiculoId },
           });
         }
       }
@@ -164,15 +162,15 @@ export class CitasService {
       });
     }
 
-    // 2) Construye el payload de update SOLO con campos existentes en tu schema
+    // 2) Update con campos existentes en tu schema
     const dataUpdate: any = {
       estado: EstadoCita.TERMINADA,
-      fechaMantenimiento: new Date(), // <- si agregaste este campo en Prisma
+      fechaMantenimiento: new Date(), // ← si existe en tu schema
     };
     if (dto?.trabajosRealizados != null) dataUpdate.trabajosRealizados = dto.trabajosRealizados;
     if (dto?.repuestos != null)         dataUpdate.repuestos          = dto.repuestos;
 
-    // Si guardas imagen en BD como Bytes (opcional):
+    // Evidencia (opcional, guardada como bytes + metadata)
     if (dto?.evidenciaBase64) {
       const m = /^data:(.+);base64,(.+)$/.exec(dto.evidenciaBase64);
       if (!m) throw new BadRequestException('Imagen inválida');
@@ -188,7 +186,7 @@ export class CitasService {
       data: dataUpdate,
     });
 
-    // 3) Notificación: usa placa real si hay vehículo; si no, preliminar; si tampoco, placeholder
+    // 3) Notificación final
     const placaMostrar =
       vehiculo?.placa
         ?? (cita.placaPreliminar && cita.placaPreliminar.trim()
@@ -206,10 +204,9 @@ export class CitasService {
     return terminada;
   }
 
-
   // === LISTADOS PARA UI ===
 
-  // CHOFER/EMPRESA: sus citas (mostrar placa real si existe o preliminar)
+  // CHOFER/EMPRESA: sus citas
   async listarDelCliente(clienteId: number) {
     return this.prisma.citaMantenimiento.findMany({
       where: { clienteId },
@@ -259,7 +256,7 @@ export class CitasService {
   async buscarPorIdConVehiculo(id: number) {
     return this.prisma.citaMantenimiento.findUnique({
       where: { id },
-      include: { vehiculo: true }, // asegura traer el vehículo si ya existe vínculo
+      include: { vehiculo: true },
     });
   }
 }

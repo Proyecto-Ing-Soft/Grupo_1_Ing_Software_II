@@ -1,8 +1,9 @@
-// src/auth/auth.controller.ts
 import { Body, Controller, Get, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { Response, Request } from 'express';
-import { UsuarioService } from '../usuario/usuario.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { UsuarioService } from '../../usuarios/usuario/usuario.service';
+
 import { JwtEstrategias } from './estrategies/jwt';
 import { JwtPayloadAcceso } from './tipos';
 import { AuthService } from './auth.service';
@@ -41,7 +42,7 @@ export class AuthController {
     }
 
   @Post('refresh')
-  async refresh(@Req() req: Request) {
+  async refresh(@Req() req: Request & { cookies?: any; signedCookies?: any }) {
     const rt = (req.cookies?.rt || req.signedCookies?.rt) as string | undefined;
     if (!rt) throw new UnauthorizedException('Sin refresh token');
     const dec = this.jwt.verificarRefresh(rt) as unknown as { sub: number; iat: number; exp: number };

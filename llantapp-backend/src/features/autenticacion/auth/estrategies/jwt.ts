@@ -1,4 +1,3 @@
-// estrategias/jwt.ts
 import * as jwt from 'jsonwebtoken';
 
 

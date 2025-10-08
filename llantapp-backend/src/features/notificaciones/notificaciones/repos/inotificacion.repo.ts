@@ -1,4 +1,3 @@
-// src/notificaciones/repos/inotificacion.repo.ts
 export type Prioridad = 'BAJA' | 'MEDIA' | 'ALTA';
 export type Estado = 'PENDIENTE' | 'LEIDA';
 

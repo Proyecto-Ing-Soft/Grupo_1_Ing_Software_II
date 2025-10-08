@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { esquemaLogin } from "../validaciones/usuarioSchemas";
-import { useAuth } from "../app/proveedorestado/AuthContext";
+import { esquemaLogin } from "../../features/usuarios/usuarioSchemas";
+import { useAuth } from "../../core/auth/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
-import "../estilos/authLogin.css";
+import "./authLogin.css";
 
-import logo from "../imagenes/logo.jpg";
-import fondo from "../imagenes/taller.jpeg";
+import logo from "../../assets/img/logo.jpg";
+import fondo from "../../assets/img/taller.jpeg";
 
 function parseJsonish(s: string) { try { return JSON.parse(s); } catch { return null; } }
 async function normalizarError(e: unknown): Promise<string> {

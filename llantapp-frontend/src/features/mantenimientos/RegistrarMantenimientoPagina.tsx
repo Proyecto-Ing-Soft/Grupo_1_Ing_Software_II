@@ -1,9 +1,8 @@
-// src/paginas/RegistrarMantenimientoPagina.tsx
 import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../app/proveedorestado/AuthContext";
-import { apiCitas, TerminarCitaPayload } from "../servicios/apiCitas";
-import "../estilos/registrarVehiculo.css"; // reutilizamos el estilo bonito
+import { useAuth } from "../../core/auth/AuthContext";
+import { apiCitas, TerminarCitaPayload } from "./api";
+import "../vehiculos/registrarVehiculo.css";
 
 export default function RegistrarMantenimientoPagina() {
   const navigate = useNavigate();

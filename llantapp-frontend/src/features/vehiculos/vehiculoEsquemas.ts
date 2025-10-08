@@ -1,4 +1,3 @@
-// validaciones/vehiculoEsquemas.ts
 import { z } from 'zod';
 
 /**

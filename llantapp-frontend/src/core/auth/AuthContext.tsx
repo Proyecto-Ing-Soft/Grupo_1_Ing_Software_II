@@ -1,13 +1,12 @@
 // SRP: manejar sesión (token) + perfil (incluye rol)
 // OCP: si mañana cambias origen del perfil (decode JWT o endpoint), consumidores no cambian.
-// app/proveedorestado/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { apiAuth } from '../../servicios/apiAuth';
-import { tokenMemoria } from '../../utils/storageMemoria';
-type Usuario = Perfil & { token: string };
+import { apiAuth } from '../../features/autenticacion/api';
+import { tokenMemoria } from '../utils/storageMemoria';
 
 type Rol = 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CHOFER' | 'EMPRESA';
 type Perfil = { id: number; nombreCompleto: string; rol: Rol };
+type Usuario = Perfil & { token: string };
 
 type DatosSesion = {
   accessToken: string | null;
@@ -24,7 +23,7 @@ const Contexto = createContext<{
   tieneRol: (roles: Rol[]) => boolean;
 }>({
   sesion: { accessToken: null, cargando: true, perfil: null },
-  usuario: null, 
+  usuario: null,
   iniciar: async () => {},
   cerrar: () => {},
   refrescar: async () => {},
@@ -38,24 +37,21 @@ export const ProveedorAuth: React.FC<{ children: React.ReactNode }> = ({ childre
     perfil: null
   });
 
-  /**
-   * KISS/SRP: cargar perfil cuando hay token.
-   * Lee el token del argumento o de tokenMemoria.
-   */
+  // KISS/SRP: cargar perfil cuando hay token.
   const cargarPerfil = async (tokenArg?: string) => {
     const token = tokenArg ?? tokenMemoria.get?.() ?? sesion.accessToken;
     if (!token) throw new Error('No hay token disponible para consultar el perfil');
     const perfil = await apiAuth.perfil(token);
-    console.log('👤 Perfil cargado:', perfil); // ROL ACTUAL
+    console.log('👤 Perfil cargado:', perfil);
     setSesion((s) => ({ ...s, perfil }));
     return perfil;
   };
 
-  // Al montar: intenta refresh (cookie httpOnly) y luego perfil.
+  // Al montar: intenta refresh y luego perfil.
   useEffect(() => {
     (async () => {
       try {
-        const { accessToken } = await apiAuth.refresh();  // devuelve nuevo token
+        const { accessToken } = await apiAuth.refresh();
         tokenMemoria.set(accessToken);
         setSesion({ accessToken, cargando: false, perfil: null });
         await cargarPerfil(accessToken);
@@ -70,7 +66,7 @@ export const ProveedorAuth: React.FC<{ children: React.ReactNode }> = ({ childre
     const { accessToken } = await apiAuth.login({ correo, clave });
     tokenMemoria.set(accessToken);
     setSesion({ accessToken, cargando: false, perfil: null });
-    await cargarPerfil(accessToken); 
+    await cargarPerfil(accessToken);
   };
 
   const cerrar = () => {

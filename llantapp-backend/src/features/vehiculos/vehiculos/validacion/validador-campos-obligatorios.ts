@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ValidadorBase } from './validador-base';
 import { CrearVehiculoDto } from '../dto/crear-vehiculo.dto';
 
-// ValidadorCamposObligatorios.ts
 // - SRP: verifica faltantes + rango razonable de "anio".
 // - Alterno 3b: devuelve campos faltantes en un solo mensaje (DRY).
 
