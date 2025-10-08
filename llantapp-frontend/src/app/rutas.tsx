@@ -15,6 +15,8 @@ import CatalogoServiciosPagina from '../features/catalogo-servicios/CatalogoServ
 import AsociarMecanicoServicioPagina from '../features/asignaciones/AsociarMecanicoHector';
 import GestionUsuariosPagina from '../features/usuarios/GestionUsuariosPagina';
 import RegistrarMantenimientoPagina from '../features/mantenimientos/RegistrarMantenimientoPagina';
+import InicioPublico from '../paginas/InicioPublico';
+import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';
 
 // ROL PROTEGIENDO PAGINAS
 import { RutaProtegidaPorRol } from '../common/componentes/RutaProtegidaPorRol';
@@ -26,10 +28,23 @@ import LayoutProtegido from '../common/componentes/LayoutProtegido';
 const router = createBrowserRouter(
   [
     // públicas
-    { path: '/', element: <LoginPagina /> },
-    { path: '/login', element: <LoginPagina /> },
-    { path: '/registro', element: <RegistroPagina /> },
-
+    { path: '/', element: <InicioPublico /> },
+    {
+      path: '/login',
+      element: (
+        <RedirigirSiAutenticado>
+          <LoginPagina />
+        </RedirigirSiAutenticado>
+      ),
+    },
+    {
+      path: '/registro',
+      element: (
+        <RedirigirSiAutenticado>
+          <RegistroPagina />
+        </RedirigirSiAutenticado>
+      ),
+    },
     // protegidas por sesión
     {
       path: '/',
@@ -124,7 +139,7 @@ const router = createBrowserRouter(
       ],
     },
 
-    { path: '*', element: <LoginPagina /> },
+    { path: '*', element: <InicioPublico /> },
   ],
   {
     // usa el base de Vite y quita la barra final
