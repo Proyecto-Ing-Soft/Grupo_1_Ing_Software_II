@@ -32,7 +32,7 @@ export class VehiculosController {
    * UI (usuario ID) → Controller (POST) → Service.validar() → Prisma.create() → Respuesta 201(TODO SALIO BIEN)/400(ERROR).
    */
   @UseGuards(RolesGuard)                 // Aplica que rol va poder acceder a esa pagina
-  @RolRequerido(Rol.ADMIN, Rol.MECANICO) // SOLO ADMIN O MECANICO
+  @RolRequerido(Rol.MECANICO) // SOLO MECANICO
   @Post()
   async crear(@Body() dto: CrearVehiculoDto, @Req() req: any) {
     const uid = req.user?.sub ?? req.user?.id;

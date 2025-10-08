@@ -11,14 +11,16 @@ import NotificacionesLeerPagina from '../paginas/NotificacionesLeerPagina';
 import AgendarCitaPagina from '../paginas/AgendarCitaPagina';
 import MisCitasPagina from '../paginas/MisCitasPagina';
 import CitasMecanicoPagina from '../paginas/CitasMecanicoPagina';
-import AdminCitasPendientes from '../paginas/AdminCitasPendientes';
+import AdminCitasPendientes from '../paginas/AsociarMecanicoPagina';
 import CatalogoServiciosPagina from '../paginas/CatalogoServiciosPagina';
-import AsociarMecanicoServicioPagina from '../paginas/AsociarMecanicoServicioPagina';
+import AsociarMecanicoServicioPagina from '../paginas/AsociarMecanicoHector';
 import GestionUsuariosPagina from '../paginas/GestionUsuariosPagina';
+import RegistrarMantenimientoPagina from "../paginas/RegistrarMantenimientoPagina";
 
 // ROL PROTEGIENDO PAGINAS
 import { RutaProtegidaPorRol } from '../componentes/RutaProtegidaPorRol';
 import { RutaProtegida } from '../componentes/RutaProtegida';
+// donde declaras tus rutas
 
 // LAYOUT
 import LayoutProtegido from '../componentes/LayoutProtegido';
@@ -87,6 +89,16 @@ const router = createBrowserRouter(
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['ADMIN', 'MECANICO']}>
               <RegistrarVehiculoPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
+        // MECANICO: registrar mantenimiento
+        {
+          path: 'mantenimientos/registrar',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
+              <RegistrarMantenimientoPagina />
             </RutaProtegidaPorRol>
           ),
         },

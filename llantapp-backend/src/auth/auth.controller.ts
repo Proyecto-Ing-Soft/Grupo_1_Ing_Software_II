@@ -20,34 +20,25 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(
-    @Body() body: { correo: string; clave: string },
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const u = await this.usuarios.buscarPorCorreo(body.correo);
-    if (!u) throw new UnauthorizedException('Credenciales inválidas');
-    // TODO: reemplaza por verificación real de hash (bcrypt.compare)
-    const ok = body.clave && u.hashClave; // simple placeholder
-    if (!ok) throw new UnauthorizedException('Credenciales inválidas');
+    async login(
+      @Body() body: { correo: string; clave: string },
+      @Res({ passthrough: true }) res: Response,
+    ) {
+      // usa el servicio de autenticación que ya compara correctamente con bcrypt
+      const tokens = await this.auth.login({ correo: body.correo, clave: body.clave } as any)
+        .catch(() => { throw new UnauthorizedException('Credenciales inválidas'); });
 
-    // payload para access y refresh
-    const payload: JwtPayloadAcceso = {
-      sub: u.id, rol: u.rol as any, nombreCompleto: u.nombreCompleto, correo: u.correo,
-    };
-    const accessToken = this.jwt.emitirAccess(payload);
-    const refreshToken = this.jwt.emitirRefresh({ sub: u.id });
+      // tokens: { accessToken, refreshToken }
+      res.cookie('rt', tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/auth',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
 
-    // cookie httpOnly con refresh
-    res.cookie('rt', refreshToken, {
-      httpOnly: true,
-      secure: false,          // pon true en prod con HTTPS
-      sameSite: 'lax',
-      path: '/auth',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    return { accessToken };
-  }
+      return { accessToken: tokens.accessToken };
+    }
 
   @Post('refresh')
   async refresh(@Req() req: Request) {

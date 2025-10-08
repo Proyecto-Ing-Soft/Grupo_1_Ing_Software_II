@@ -87,7 +87,7 @@ export default function InicioProtegido() {
         </header>
 
         <div className="acciones">
-          {tieneRol(["ADMIN", "MECANICO"]) && (
+          {tieneRol(["MECANICO"]) && (
             <Link to="/vehiculos/registrar" className="btn-card btn-primary reveal" data-delay="120">
               <div className="btn-icon">🚘</div>
               <div className="btn-text">

@@ -226,11 +226,16 @@ export default function NotificacionesLeerPagina() {
 
                           <button
                             type="button"
-                            className="btnActionDark"
-                            onClick={() => navigate(`/mantenimientos/registrar?cita=${n.citaId}`, { state: { citaId: n.citaId } })}
-                            title="Registrar mantenimiento"
+                            className="mc-btn mc-btn--gradient"
+                            onClick={() =>
+                              navigate(`/mantenimientos/registrar?cita=${n.citaId}`, {
+                                state: { citaId: n.citaId },
+                              })
+                            }
+                            title="Registrar mantenimiento de esta cita"
                           >
-                            🛠️ Registrar mantenimiento
+                            <span className="mc-icon" aria-hidden>🛠️</span>
+                            <span className="mc-btn__text">Registrar mantenimiento</span>
                           </button>
 
                           {n.estado === "PENDIENTE" && (

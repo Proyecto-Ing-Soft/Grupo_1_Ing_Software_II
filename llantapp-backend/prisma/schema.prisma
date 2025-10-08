@@ -110,6 +110,8 @@ model CitaMantenimiento {
   comentario     String            @db.Text
   estado         EstadoCita        @default(SOLICITADA)
   programadaPara DateTime?
+  fechaMantenimiento DateTime?
+
   creadoEn       DateTime          @default(now())
   actualizadoEn  DateTime          @updatedAt
 
@@ -119,11 +121,9 @@ model CitaMantenimiento {
   mecanicoId Int?
   mecanico   Usuario? @relation("CitasMecanico", fields: [mecanicoId], references: [id])
 
-  // ← Debe ser opcional (nullable en DB)
   vehiculoId Int?
   vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id])
 
-  // ← Campos preliminares NUEVOS (deben existir en la tabla)
   placaPreliminar  String
   marcaPreliminar  String
   modeloPreliminar String
@@ -133,12 +133,18 @@ model CitaMantenimiento {
 
   notificaciones Notificacion[]
 
+  trabajosRealizados String?
+  repuestos          Json? 
+
+  evidenciaBytes       Bytes?
+  evidenciaMime        String?
+  evidenciaNombre      String?
+
   @@index([clienteId])
   @@index([mecanicoId, estado])
   @@index([vehiculoId])
   @@index([placaPreliminar])
 }
-
 
 model Notificacion {
   id         Int     @id @default(autoincrement())

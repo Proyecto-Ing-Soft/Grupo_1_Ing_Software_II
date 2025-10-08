@@ -1,6 +1,8 @@
+// src/paginas/RegistrarVehiculoPagina.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../app/proveedorestado/AuthContext";
+import { apiCitas } from "../servicios/apiCitas";
 import "../estilos/registrarVehiculo.css";
 
 type Rol = "ADMIN" | "MECANICO" | "ASISTENTE" | "CHOFER" | "EMPRESA";
@@ -16,9 +18,11 @@ type FormVehiculo = {
   propietarioUsuarioId?: number | "";
 };
 
+const ROLES_PERMITIDOS: Rol[] = ["MECANICO", "ASISTENTE", "ADMIN"]; // ajusta si quieres solo MECANICO
 const REDIRECT_DELAY = 1200;
 const BASE = import.meta.env.VITE_API_BASE_URL as string;
 
+// ------- helpers HTTP locales -------
 async function getUsuariosPorRol(
   rol: "CHOFER" | "EMPRESA",
   token?: string
@@ -48,7 +52,6 @@ async function postJSON<T>(url: string, body: unknown, token?: string): Promise<
     const txt = await res.text().catch(() => "");
     try {
       const j = JSON.parse(txt);
-      // NestJS ValidationPipe suele devolver { message: [...] } o string
       const msg = Array.isArray(j?.message) ? j.message.join(" | ") : (j?.message ?? txt);
       throw new Error(msg || `HTTP ${res.status}`);
     } catch {
@@ -61,21 +64,27 @@ async function postJSON<T>(url: string, body: unknown, token?: string): Promise<
 export default function RegistrarVehiculoPagina() {
   const navigate = useNavigate();
   const { usuario, tieneRol } = useAuth();
+  const { state } = useLocation() as { state?: { citaId?: number } };
   const timeoutRef = useRef<number | null>(null);
 
-  // Animaciones reveal (idéntico a Agendar Cita)
+  // ---------- Guard de rol ----------
+  useEffect(() => {
+    if (!tieneRol(ROLES_PERMITIDOS)) {
+      // Si el usuario no es de un rol permitido, lo mandamos al inicio
+      navigate("/inicio", { replace: true });
+    }
+  }, [tieneRol, navigate]);
+
+  // ---------- Animaciones reveal ----------
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
     const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
-    const obs = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) e.target.classList.add("animate-in");
-          else e.target.classList.remove("animate-in");
-        }
-      },
-      { threshold: 0.12 }
-    );
+    const obs = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) (e.target as HTMLElement).classList.add("animate-in");
+        else (e.target as HTMLElement).classList.remove("animate-in");
+      }
+    }, { threshold: 0.12 });
     nodes.forEach((n, i) => {
       n.dataset.reveal = String(Math.min(i + 1, 5));
       obs.observe(n);
@@ -87,13 +96,7 @@ export default function RegistrarVehiculoPagina() {
     };
   }, []);
 
-  // Guard de rol
-  useEffect(() => {
-    if (!tieneRol(["ADMIN", "MECANICO"])) {
-      navigate("/inicio", { replace: true });
-    }
-  }, [tieneRol, navigate]);
-
+  // ---------- Estado del formulario ----------
   const [form, setForm] = useState<FormVehiculo>({
     placa: "",
     marca: "",
@@ -104,14 +107,71 @@ export default function RegistrarVehiculoPagina() {
     propietarioUsuarioId: "",
   });
 
+  // ---------- Datos auxiliares ----------
   const [propietarios, setPropietarios] = useState<UsuarioRolLite[]>([]);
   const [cargandoProp, setCargandoProp] = useState(false);
+
+  const [cargandoPrelim, setCargandoPrelim] = useState(false);
+  const [banner, setBanner] = useState<string | null>(null);
+
   const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
-  // Cargar choferes/empresas
+  // ---------- Obtener citaId desde state o query ----------
+  const citaIdFromState = state?.citaId;
+  const citaIdFromQuery = (() => {
+    try {
+      const search = new URLSearchParams(window.location.search);
+      const n = Number(search.get("cita") ?? "");
+      return Number.isFinite(n) ? n : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
+  const citaId = citaIdFromState ?? citaIdFromQuery;
+
+  // ---------- Precarga por cita ----------
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!citaId) return;
+      try {
+        setCargandoPrelim(true);
+        const c = await apiCitas.detalle(citaId);
+
+        // Usa vehículo asociado si existe; si no, los preliminares de la cita
+        const placa  = c.vehiculo?.placa  ?? c.placaPreliminar  ?? "";
+        const marca  = c.vehiculo?.marca  ?? c.marcaPreliminar  ?? "";
+        const modelo = c.vehiculo?.modelo ?? c.modeloPreliminar ?? "";
+        const anio   = c.vehiculo?.anio   ?? c.anioPreliminar   ?? "";
+        const color  = c.vehiculo?.color  ?? c.colorPreliminar  ?? "";
+        const vin    = c.vehiculo?.vin    ?? c.vinPreliminar    ?? "";
+
+        if (!alive) return;
+        setForm(s => ({
+          ...s,
+          placa,
+          marca,
+          modelo,
+          anio: (anio as any) ?? "",
+          color: color ?? "",
+          vin: vin ?? "",
+          propietarioUsuarioId: (c.clienteId ?? s.propietarioUsuarioId) as any,
+        }));
+        setBanner(`Datos preliminares cargados de la cita #${c.id}. Revísalos y registra si están correctos.`);
+      } catch {
+        if (!alive) return;
+        setBanner("No se pudieron cargar los datos preliminares de la cita. Completa manualmente.");
+      } finally {
+        if (alive) setCargandoPrelim(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [citaId]);
+
+  // ---------- Cargar lista de propietarios (CHOFER + EMPRESA) ----------
   useEffect(() => {
     let cancel = false;
     (async () => {
@@ -132,25 +192,22 @@ export default function RegistrarVehiculoPagina() {
         if (!cancel) setCargandoProp(false);
       }
     })();
-    return () => {
-      cancel = true;
-    };
+    return () => { cancel = true; };
   }, [usuario?.token]);
 
-  // Validación ligera (como la de Cita)
+  // ---------- Validación ligera ----------
   const faltantes = useMemo(() => {
     const f: Record<string, string> = {};
     if (!form.placa.trim()) f["placa"] = "La placa es obligatoria.";
-    if (!form.marca?.toString().trim()) f["marca"] = "La marca es obligatoria.";
-    if (!form.modelo?.toString().trim()) f["modelo"] = "El modelo es obligatorio.";
+    if (!String(form.marca).trim()) f["marca"] = "La marca es obligatoria.";
+    if (!String(form.modelo).trim()) f["modelo"] = "El modelo es obligatorio.";
     if (!form.anio) f["anio"] = "El año es obligatorio.";
     if (!form.propietarioUsuarioId) f["propietarioUsuarioId"] = "Selecciona un propietario.";
     return f;
   }, [form]);
 
-  const onChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  // ---------- Handlers ----------
+  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     let v: any = value;
     if (name === "anio") v = value === "" ? "" : Number(value);
@@ -158,9 +215,7 @@ export default function RegistrarVehiculoPagina() {
     setForm((s) => ({ ...s, [name]: v }));
     if (fieldErr[name]) {
       setFieldErr((prev) => {
-        const copy = { ...prev };
-        delete copy[name];
-        return copy;
+        const cp = { ...prev }; delete cp[name]; return cp;
       });
     }
   };
@@ -168,7 +223,6 @@ export default function RegistrarVehiculoPagina() {
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
     setOk(false); setFormErr(null);
-    // valida mínimos
     if (Object.keys(faltantes).length) {
       setFieldErr(faltantes);
       setFormErr(Object.values(faltantes)[0]);
@@ -184,11 +238,15 @@ export default function RegistrarVehiculoPagina() {
       color: form.color?.toString().trim() || undefined,
       vin: form.vin?.toString().trim() || undefined,
       propietarioUsuarioId: Number(form.propietarioUsuarioId),
+      // opcional: origenCitaId: citaId
     };
 
     try {
       setEnviando(true);
+      // 1) crear vehículo
+      // const vehiculo = await postJSON(`${BASE}/vehiculos`, dto, usuario.token);
       await postJSON(`${BASE}/vehiculos`, dto, usuario.token);
+
       setOk(true);
       timeoutRef.current = window.setTimeout(() => {
         navigate("/inicio", {
@@ -202,7 +260,8 @@ export default function RegistrarVehiculoPagina() {
           },
         });
       }, REDIRECT_DELAY);
-      // reset suave (mantén propietario si quieres; aquí lo limpiamos)
+
+      // reset suave
       setForm({
         placa: "",
         marca: "",
@@ -221,16 +280,18 @@ export default function RegistrarVehiculoPagina() {
 
   useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
 
+  // ---------- Render ----------
   return (
     <main className="registrar">
       <section className="registrar__split" role="region" aria-label="Formulario de registro de vehículo">
         <div className="registrar__left reveal">
           <h1 className="registrar__title">Registrar vehículo</h1>
-          <p className="registrar__sub">
-            Ingresa los datos del vehículo y el propietario asociado.
-          </p>
+          <p className="registrar__sub">Ingresa los datos del vehículo y el propietario asociado.</p>
 
-          <form className="form" onSubmit={enviar} noValidate>
+          {banner && <div className="info-banner">{banner}</div>}
+          {cargandoPrelim && <div className="helper">Cargando datos preliminares…</div>}
+
+          <form className="form" onSubmit={enviar} noValidate aria-busy={cargandoPrelim}>
             {/* Placa */}
             <div className="form-group reveal">
               <label className="label" htmlFor="placa">Placa</label>
@@ -371,7 +432,7 @@ export default function RegistrarVehiculoPagina() {
               )}
             </div>
 
-            <button type="submit" className="btn reveal" disabled={enviando}>
+            <button type="submit" className="btn reveal" disabled={enviando || cargandoPrelim}>
               {enviando ? "Registrando…" : "Registrar vehículo"}
             </button>
 

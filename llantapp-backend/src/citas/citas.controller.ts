@@ -7,7 +7,7 @@
 // - Seguridad por capas: aquí puedes aplicar Jwt/RolesGuard sin tocar el Service (OCP).
 // src/citas/citas.controller.ts
 // src/citas/citas.controller.ts
-import { Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, ParseIntPipe, Post, Req, StreamableFile, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { CitasService } from './citas.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { AsignarMecanicoDto } from './dto/asignar-mecanico.dto';
@@ -37,10 +37,14 @@ export class CitasController {
   }
 
   @Post(':id/terminar')
-  terminar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  terminar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: { trabajosRealizados?: string; repuestos?: string[]; evidenciaBase64?: string | null },
+    @Req() req: any,
+  ) {
     const mecanicoId = Number(req.user?.id ?? req.user?.sub);
     if (!Number.isFinite(mecanicoId)) throw new UnauthorizedException('Usuario no válido');
-    return this.svc.terminar(id, mecanicoId);
+    return this.svc.terminar(id, mecanicoId, dto);
   }
 
   @Get('mias')
@@ -63,4 +67,50 @@ export class CitasController {
       return this.svc.listarPendientes();
     }
 
+  @Get(':id')
+  async detalle(@Param('id', ParseIntPipe) id: number) {
+    const c = await this.svc.buscarPorIdConVehiculo(id);
+    if (!c) throw new NotFoundException('Cita no encontrada');
+
+    // Normalizamos la forma en que el front lo necesita:
+    return {
+      id: c.id,
+      clienteId: c.clienteId ?? null,
+      programadaPara: c.programadaPara ?? null,
+
+      // Si ya existe vehículo asociado
+      vehiculo: c.vehiculo
+        ? {
+            placa: c.vehiculo.placa ?? null,
+            marca: c.vehiculo.marca ?? null,
+            modelo: c.vehiculo.modelo ?? null,
+            anio: c.vehiculo.anio ?? null,
+            color: c.vehiculo.color ?? null,
+            vin: c.vehiculo.vin ?? null,
+          }
+        : null,
+
+      // Preliminares de la cita (como cuando la creaste)
+      placaPreliminar: c.placaPreliminar ?? null,
+      marcaPreliminar: c.marcaPreliminar ?? null,
+      modeloPreliminar: c.modeloPreliminar ?? null,
+      anioPreliminar: c.anioPreliminar ?? null,
+      colorPreliminar: c.colorPreliminar ?? null,
+      vinPreliminar: c.vinPreliminar ?? null,
+    };
+  }
+
+  @Get(':id/evidencia')
+  async evidencia(@Param('id', ParseIntPipe) id: number): Promise<StreamableFile> {
+    const c = await this.svc.buscarPorIdConVehiculo(id);
+    if (!c || !c.evidenciaBytes) throw new NotFoundException('Sin evidencia');
+
+    const mime = (c as any).evidenciaMime ?? 'application/octet-stream';
+    const name = (c as any).evidenciaNombre ?? `evidencia-${id}`;
+
+    return new StreamableFile(Buffer.from(c.evidenciaBytes as any), {
+      type: mime,
+      disposition: `inline; filename="${name}"`,
+    });
+  }
 }
