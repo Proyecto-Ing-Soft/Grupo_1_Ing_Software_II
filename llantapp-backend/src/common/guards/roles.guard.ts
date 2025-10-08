@@ -2,12 +2,11 @@ import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { ROL_REQUERIDO_KEY } from '../decorators/rol-requerido.decorator';
 import { Rol } from '../enums/rol.enum';
-import { JwtPayloadAcceso } from '../../auth/tipos';
-/**
- * SRP: verifica autorización por rol.
- * DRY: usa metadata común.
- * KISS: retorna si el rol del usuario está permitido.
- */
+import { JwtPayloadAcceso } from '../../features/autenticacion/auth/tipos';
+
+// SRP: verifica autorización por rol.
+// DRY: usa metadata común.
+// KISS: retorna si el rol del usuario está permitido.
 
 @Injectable()
 export class RolesGuard implements CanActivate {
