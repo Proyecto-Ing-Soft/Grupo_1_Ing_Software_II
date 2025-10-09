@@ -28,8 +28,6 @@ import CatalogoServiciosPagina from '../features/catalogo-servicios/CatalogoServ
 import AsociarMecanicoServicioPagina from '../features/asignaciones/AsociarMecanicoHector';
 import GestionUsuariosPagina from '../features/usuarios/GestionUsuariosPagina';
 import RegistrarMantenimientoPagina from '../features/mantenimientos/RegistrarMantenimientoPagina';
-import InicioPublico from '../paginas/InicioPublico';
-import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';
 // --- NUEVAS PÁGINAS ---
 import MisVehiculosPagina from '../features/vehiculos/MisVehiculosPagina';
 import HistorialDeServiciosPagina from '../features/vehiculos/HistorialDeServiciosPagina';

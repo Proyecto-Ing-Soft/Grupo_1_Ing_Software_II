@@ -1,6 +1,7 @@
 import { Controller, Get, Req, UseGuards, NotFoundException, Query } from '@nestjs/common';
 import { UsuarioService } from './usuario.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { UsuariosPorRolQueryDto } from './dto/usuarios-por-rol.dto';
 
 @Controller('usuarios')
 export class UsuarioController {
@@ -26,9 +27,8 @@ export class UsuarioController {
   //    GET /usuarios?rol=MECANICO  → [{ id, nombreCompleto }]
   @UseGuards(JwtAuthGuard)
   @Get()
-  async porRol(@Query('rol') rol?: string) {
-    // YAGNI: si no envían rol, devolvemos arreglo vacío sin complicarnos
-    if (!rol) return [];
-    return this.usuarios.listarPorRol(rol);
+  async porRol(@Query() q: UsuariosPorRolQueryDto) {
+    if (!q.rol) return [];
+    return this.usuarios.listarPorRol(q.rol);
   }
 }
