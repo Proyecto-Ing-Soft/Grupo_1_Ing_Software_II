@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useParams, useSearchParams } from "react-router-dom";
 import { esquemaRegistro } from "../../features/usuarios/usuarioSchemas";
 import { apiAuth } from "../../features/autenticacion/api";
 import "../../features/autenticacion/authRegister.css";
@@ -7,20 +7,41 @@ import "../../features/autenticacion/authRegister.css";
 import logo from "../../assets/img/logo.jpg";
 import fondo from "../../assets/img/taller.jpeg";
 
+// --- Helpers de rol ---
+type RolUi = "cliente" | "chofer" | "taller";
+type RolApi = "ADMIN" | "MECANICO" | "ASISTENTE" | "CHOFER" | "EMPRESA";
+
+const ROL_MAP: Record<RolUi, RolApi> = {
+  cliente: "EMPRESA",
+  chofer: "CHOFER",
+  taller: "MECANICO",
+};
+
+function esRolUi(x: any): x is RolUi {
+  return x === "cliente" || x === "chofer" || x === "taller";
+}
+
 export default function RegistroPagina() {
+  // Rol desde /registro/:rol o ?rol=
+  const params = useParams();
+  const [q] = useSearchParams();
+  const rolParam = params.rol || q.get("rol") || "cliente";
+  const rolUi: RolUi = esRolUi(rolParam) ? rolParam : "cliente";
+  const rolApi = ROL_MAP[rolUi];
+
   const [form, setForm] = useState({ nombreCompleto: "", correo: "", clave: "" });
   const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const navigate = useNavigate();
-  const LOGIN_PATH = "/login";
-   const REDIRECT_DELAY = 1200;
-   const timeoutRef = useRef<number | null>(null);
 
-   useEffect(() => {
-     return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
-   }, []);
+  const LOGIN_PATH = `/login/${rolUi}`;
+  const REDIRECT_DELAY = 1200;
+  const timeoutRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+  }, []);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -44,7 +65,7 @@ export default function RegistroPagina() {
       return;
     }
     try {
-      await apiAuth.registrar(form);
+      await apiAuth.registrar({ ...form, rol: rolApi });
       setOk(true);
       timeoutRef.current = window.setTimeout(() => navigate(LOGIN_PATH, { replace: true }), REDIRECT_DELAY);
     } catch (err: unknown) {
@@ -52,9 +73,16 @@ export default function RegistroPagina() {
     }
   };
 
+  const titulo =
+    rolUi === "taller" ? "Crear cuenta (Taller)"
+    : rolUi === "chofer" ? "Crear cuenta (Chofer)"
+    : "Crear cuenta (Cliente)";
+
+  const linkLogin = `/login/${rolUi}`;
+
   return (
     <main className="auth-page">
-      <section className="auth-split" role="region" aria-label="Formulario de registro">
+      <section className="auth-split" role="region" aria-label={`Formulario de registro (${rolUi})`}>
         {/* Izquierda: Logo + Form */}
         <div className="auth-left">
           <div className="logo-wrap" aria-label="Marca Llantapp">
@@ -62,8 +90,10 @@ export default function RegistroPagina() {
             <span>Llantapp</span>
           </div>
 
-          <h1 className="brand">Crear cuenta</h1>
-          <p className="sub">Regístrate para empezar a gestionar tus vehículos y servicios.</p>
+          <h1 className="brand">{titulo}</h1>
+          <p className="sub">
+            Regístrate para empezar a gestionar tus vehículos y servicios.
+          </p>
 
           <form className="form" onSubmit={enviar} noValidate>
             {/* Nombre completo */}
@@ -141,7 +171,7 @@ export default function RegistroPagina() {
               )}
             </div>
 
-            <button type="submit" className="btn">Registrarme</button>
+            <button type="submit" className="btn">Registrarme ({rolUi})</button>
 
             {formErr && <div className="error-message" style={{ marginTop: 8 }} role="alert">{formErr}</div>}
             {ok && <div className="success-message" style={{ marginTop: 8 }} role="status">
@@ -151,7 +181,7 @@ export default function RegistroPagina() {
 
           <p className="helper">
             ¿Ya tienes cuenta?{" "}
-            <Link to="/login" className="textlink">Inicia sesión aquí</Link>
+            <Link to={linkLogin} className="textlink">Inicia sesión aquí</Link>
           </p>
         </div>
 

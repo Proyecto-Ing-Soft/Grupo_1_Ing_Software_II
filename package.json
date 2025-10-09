@@ -14,6 +14,10 @@
     "dev": "npm run db:prepare && concurrently -n FRONT,BACK,BROWSER -c auto \"npm run dev:front\" \"npm run dev:back\" \"npm run open:front\""
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "prisma": "^4.16.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^4.16.2"
   }
 }

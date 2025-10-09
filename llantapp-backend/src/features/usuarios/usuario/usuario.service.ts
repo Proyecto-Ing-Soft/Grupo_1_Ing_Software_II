@@ -1,16 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
-import { Usuario, Rol } from '@prisma/client';
+import type { Usuario, Rol as PrismaRol } from '@prisma/client';
+import { Rol as AppRol } from '../../../common/enums/rol.enum';
 
-// SRP: Acceso y lógica de dominio para usuarios.
-// DRY: métodos reutilizables para otros casos de uso.
+// Helper de conversión (mismo literal -> cast seguro)
+const toPrismaRol = (r: AppRol): PrismaRol => r as unknown as PrismaRol;
+
 @Injectable()
 export class UsuarioService {
   constructor(private prisma: PrismaService) {}
 
-  async crear(datos: { nombreCompleto: string; correo: string; hashClave: string; rol?: Rol }): Promise<Usuario> {
+  async crear(datos: {
+    nombreCompleto: string;
+    correo: string;
+    hashClave: string;
+    rol?: AppRol;
+  }): Promise<Usuario> {
+    const rol = toPrismaRol(datos.rol ?? AppRol.CHOFER);
     return this.prisma.usuario.create({
-      data: { ...datos, rol: datos.rol ?? Rol.CHOFER },
+      data: { ...datos, rol },
     });
   }
 
@@ -22,18 +30,15 @@ export class UsuarioService {
     return this.prisma.usuario.findUnique({ where: { id } });
   }
 
-  // Nuevo caso de uso: listar por rol (ej. MECANICO) para que el cliente elija a quién agendar
-  async listarPorRol(rol: string) {
-    // KISS: casteamos al enum de Prisma; si el rol no existe, simplemente devolverá []
+  async listarPorRol(rol: AppRol) {
     return this.prisma.usuario.findMany({
-      where: { rol: rol as Rol },
+      where: { rol: toPrismaRol(rol) },
       select: { id: true, nombreCompleto: true },
       orderBy: { nombreCompleto: 'asc' },
     });
   }
 
   aPublico(u: Usuario) {
-    // DRY: un solo mapeo a "vista pública".
     const { hashClave, ...resto } = u;
     return resto;
   }
