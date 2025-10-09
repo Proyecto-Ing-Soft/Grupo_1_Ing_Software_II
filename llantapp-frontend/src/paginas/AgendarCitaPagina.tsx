@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { esquemaCita, type CitaForm } from "../features/mantenimientos/citaSchemas";
 import { apiCitas } from "../features/mantenimientos/api";
 import "../features/mantenimientos/agendarCita.css";
+import PreviewCita from "../features/mantenimientos/componentes/PreviewCita";
 
 const REDIRECT_DELAY = 1200;
 
@@ -82,7 +83,17 @@ export default function AgendarCitaPagina() {
         if (k) fe[k] = issue.message;
       }
       setFieldErr(fe);
-      setFormErr(Object.values(fe)[0] ?? "Datos inválidos");
+
+      // setFormErr(Object.values(fe)[0] ?? "Datos inválidos"); //estas lineas retornaba solo el primer error, se ajusta para cuando haya varios errores
+      // return;
+
+      if (Object.keys(fe).length > 1) {
+        setFormErr("Faltan campos por completar.");
+      } else if (Object.keys(fe).length === 1) {
+        setFormErr(Object.values(fe)[0]);
+      } else {
+        setFormErr("Datos inválidos");
+      }
       return;
     }
 
@@ -110,7 +121,24 @@ export default function AgendarCitaPagina() {
         });
       }, REDIRECT_DELAY);
     } catch (err: unknown) {
-      setFormErr(err instanceof Error ? err.message : "No se pudo registrar la cita");
+      // setFormErr(err instanceof Error ? err.message : "No se pudo registrar la cita"); //esto hacia que el mensaje venga directo del backend
+      let msg = "No se pudo registrar la cita";
+
+      if (typeof err === "object" && err !== null) {
+        const e = err as any;
+        if (e.message && typeof e.message === "string") {
+          msg = e.message;
+        } else if (e.response && typeof e.response === "object") {
+          const data = e.response.data;
+          if (data?.message) msg = data.message;
+        }
+      }
+
+      if (msg.includes("Bad Request") || msg.includes("{")) {
+        msg = "La fecha programada debe ser hoy o una fecha futura.";
+      }
+
+      setFormErr(msg);
     } finally {
       setEnviando(false);
     }
@@ -120,7 +148,7 @@ export default function AgendarCitaPagina() {
     <main className="agendar">
       <section className="agendar__split" role="region" aria-label="Formulario de cita">
         <div className="agendar__left reveal">
-          <h1 className="agendar__title">Solicitar cita</h1>
+          <h1 className="agendar__title">Agendar cita</h1>
           <p className="agendar__sub">Ingresa los datos del vehículo y la fecha programada.</p>
 
           <form className="form" onSubmit={enviar} noValidate>
@@ -304,15 +332,10 @@ export default function AgendarCitaPagina() {
           </p>
         </div>
 
-        <aside className="agendar__right reveal" aria-hidden="true">
-          <div className="agendar__hero">
-            <h2 className="agendar__heroTitle">Servicio rápido y confiable</h2>
-            <div className="agendar__heroPill">
-              <span aria-hidden>🛠️</span>
-              <span>Agenda tu mantenimiento en minutos</span>
-            </div>
-          </div>
+        <aside className="agendar__right reveal" aria-label="Preview de cita">
+          <PreviewCita form={form} />
         </aside>
+        
       </section>
     </main>
   );
