@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiAuth } from '../../features/autenticacion/api';
 import { tokenMemoria } from '../utils/storageMemoria';
 
-type Rol = 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CHOFER' | 'EMPRESA';
+type Rol = 'ADMIN' | 'MECANICO' | 'CLIENTE';
 type Perfil = { id: number; nombreCompleto: string; rol: Rol };
 type Usuario = Perfil & { token: string };
 

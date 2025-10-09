@@ -16,7 +16,7 @@ export class UsuarioService {
     hashClave: string;
     rol?: AppRol;
   }): Promise<Usuario> {
-    const rol = toPrismaRol(datos.rol ?? AppRol.CHOFER);
+    const rol = toPrismaRol(datos.rol ?? AppRol.CLIENTE);
     return this.prisma.usuario.create({
       data: { ...datos, rol },
     });

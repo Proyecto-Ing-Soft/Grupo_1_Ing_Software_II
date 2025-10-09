@@ -1,6 +1,6 @@
 import { postJSON, getJSON } from '../../core/http/_http';
 
-export type Rol = 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CHOFER' | 'EMPRESA';
+export type Rol = 'ADMIN' | 'MECANICO' | 'CLIENTE';
 
 export interface Perfil {
   id: number;

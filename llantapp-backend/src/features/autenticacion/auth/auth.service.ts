@@ -23,7 +23,7 @@ export class AuthService {
       nombreCompleto: dto.nombreCompleto,
       correo: dto.correo,
       hashClave: hash,
-      rol: dto.rol ?? Rol.CHOFER,
+      rol: dto.rol ?? Rol.CLIENTE,
     });
     return this.usuarios.aPublico(nuevo);
   }

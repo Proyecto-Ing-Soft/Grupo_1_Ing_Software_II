@@ -87,7 +87,7 @@ export default function InicioProtegido() {
         </header>
 
         <div className="acciones">
-          {tieneRol(["CHOFER", "EMPRESA"]) && (
+          {tieneRol(["CLIENTE"]) && (
           <Link to="/vehiculos/mios" className="btn-card btn-primary reveal" data-delay="160">
             <div className="btn-icon">📋</div>
             <div className="btn-text">
@@ -107,7 +107,7 @@ export default function InicioProtegido() {
             </Link>
           )}
 
-          {tieneRol(["CHOFER", "EMPRESA"]) && (
+          {tieneRol(["CLIENTE"]) && (
             <Link to="/citas/agendar" className="btn-card btn-accent reveal" data-delay="200">
               <div className="btn-icon">📅</div>
               <div className="btn-text">
@@ -117,7 +117,7 @@ export default function InicioProtegido() {
             </Link>
           )}
 
-          {tieneRol(["CHOFER", "EMPRESA"]) && (
+          {tieneRol(["CLIENTE"]) && (
             <Link to="/citas/mias" className="btn-card btn-secondary reveal" data-delay="280">
               <div className="btn-icon">🗂️</div>
               <div className="btn-text">
@@ -137,7 +137,7 @@ export default function InicioProtegido() {
             </Link>
           )}
 
-          {tieneRol(["CHOFER", "EMPRESA", "MECANICO"]) && (
+          {tieneRol(["CLIENTE", "MECANICO"]) && (
             <Link to="/notificaciones" className="btn-card btn-secondary reveal" data-delay="440">
               <div className="btn-icon">🔔</div>
               <div className="btn-text">

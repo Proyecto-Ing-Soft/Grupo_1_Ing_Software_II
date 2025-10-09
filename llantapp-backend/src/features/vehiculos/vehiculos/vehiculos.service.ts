@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Inject, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Rol } from 'src/common/enums/rol.enum';
+import { Rol } from '../../../common/enums/rol.enum';
 import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
 import { CrearVehiculoDto } from './dto/crear-vehiculo.dto';
 import { IValidadorVehiculo } from './validacion/ivalidador-vehiculo';

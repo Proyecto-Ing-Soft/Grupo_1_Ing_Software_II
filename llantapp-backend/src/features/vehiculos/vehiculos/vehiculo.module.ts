@@ -9,6 +9,7 @@ import { ValidadorFormatoPlaca } from './validacion/validador-formato-placa';
 import { ValidadorPlacaUnica } from './validacion/validador-placa-unica';
 import { ValidadorPropietarioValido } from './validacion/validador-propietario-valido';
 import { VEHICULO_VALIDADORES } from './validacion/tokens';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 
 // useFactory(...) → "mini Abstract Factory"
 // - Crea e inyecta un ARREGLO de IValidadorVehiculo.
@@ -19,6 +20,7 @@ import { VEHICULO_VALIDADORES } from './validacion/tokens';
   providers: [
     PrismaService,
     VehiculosService,
+    RolesGuard,
 
     // Un solo provider que retorna el ARRAY de validadores
     {

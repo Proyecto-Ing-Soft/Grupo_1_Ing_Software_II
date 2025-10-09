@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ValidadorBase } from './validador-base';
 import { CrearVehiculoDto } from '../dto/crear-vehiculo.dto';
 import { PrismaService } from '../../../../core/prisma/prisma/prisma.service';
+import { Rol as PrismaRol } from '@prisma/client';
 
 // SRP: Solo valida existencia y rol del propietario elegido.
 // DIP: Depende de PrismaService (abstracción de acceso a datos en tu app).
@@ -21,8 +22,8 @@ export class ValidadorPropietarioValido extends ValidadorBase {
     });
 
     if (!propietario) return 'Propietario no existe';
-    if (propietario.rol !== 'CHOFER' && propietario.rol !== 'EMPRESA') {
-      return 'El propietario debe ser CHOFER o EMPRESA';
+    if (propietario.rol !== PrismaRol.CLIENTE) {
+      return 'El propietario debe ser CLIENTE';
     }
 
     return null;

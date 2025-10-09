@@ -4,7 +4,7 @@ import { useAuth } from "../../core/auth/AuthContext";
 import { apiCitas } from "../mantenimientos/api";
 import "./registrarVehiculo.css";
 
-type Rol = "ADMIN" | "MECANICO" | "ASISTENTE" | "CHOFER" | "EMPRESA";
+type Rol = "ADMIN" | "MECANICO" | "CLIENTE";
 type UsuarioRolLite = { id: number; nombreCompleto: string };
 
 type FormVehiculo = {
@@ -17,13 +17,13 @@ type FormVehiculo = {
   propietarioUsuarioId?: number | "";
 };
 
-const ROLES_PERMITIDOS: Rol[] = ["MECANICO", "ASISTENTE", "ADMIN"]; // ajusta si quieres solo MECANICO
+const ROLES_PERMITIDOS: Rol[] = ["MECANICO", "ADMIN"];
 const REDIRECT_DELAY = 1200;
 const BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 // ------- helpers HTTP locales -------
 async function getUsuariosPorRol(
-  rol: "CHOFER" | "EMPRESA",
+  rol: "CLIENTE",
   token?: string
 ): Promise<UsuarioRolLite[]> {
   const res = await fetch(`${BASE}/usuarios?rol=${rol}`, {
@@ -170,21 +170,18 @@ export default function RegistrarVehiculoPagina() {
     return () => { alive = false; };
   }, [citaId]);
 
-  // ---------- Cargar lista de propietarios (CHOFER + EMPRESA) ----------
+  // ---------- Cargar lista de propietarios (CLIENTE) ----------
   useEffect(() => {
     let cancel = false;
     (async () => {
       if (!usuario?.token) return;
       try {
         setCargandoProp(true);
-        const [choferes, empresas] = await Promise.all([
-          getUsuariosPorRol("CHOFER", usuario.token),
-          getUsuariosPorRol("EMPRESA", usuario.token),
-        ]);
-        const lista = [...choferes, ...empresas].sort((a, b) =>
+        const lista = await getUsuariosPorRol("CLIENTE", usuario.token);
+        const ordenada = [...lista].sort((a, b) =>
           a.nombreCompleto.localeCompare(b.nombreCompleto)
         );
-        if (!cancel) setPropietarios(lista);
+        if (!cancel) setPropietarios(ordenada);
       } catch (e: any) {
         if (!cancel) setFormErr(e?.message || "Error cargando propietarios");
       } finally {
@@ -403,7 +400,7 @@ export default function RegistrarVehiculoPagina() {
 
             {/* Propietario */}
             <div className="form-group reveal">
-              <label className="label" htmlFor="propietarioUsuarioId">Propietario (Chofer/Empresa)</label>
+              <label className="label" htmlFor="propietarioUsuarioId">Propietario (Cliente)</label>
               <div className={`input-wrap ${fieldErr["propietarioUsuarioId"] ? "has-error" : ""}`}>
                 <select
                   id="propietarioUsuarioId"

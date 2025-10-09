@@ -8,17 +8,16 @@ import logo from "../../assets/img/logo.jpg";
 import fondo from "../../assets/img/taller.jpeg";
 
 // --- Helpers de rol ---
-type RolUi = "cliente" | "chofer" | "taller";
-type RolApi = "ADMIN" | "MECANICO" | "ASISTENTE" | "CHOFER" | "EMPRESA";
+type RolUi = "cliente" | "taller";
+type RolApi = "ADMIN" | "MECANICO" | "CLIENTE";
 
 const ROL_MAP: Record<RolUi, RolApi> = {
-  cliente: "EMPRESA",
-  chofer: "CHOFER",
-  taller: "MECANICO",
+  cliente: "CLIENTE",
+  taller: "ADMIN",
 };
 
 function esRolUi(x: any): x is RolUi {
-  return x === "cliente" || x === "chofer" || x === "taller";
+  return x === "cliente" || x === "taller";
 }
 
 export default function RegistroPagina() {
@@ -75,7 +74,6 @@ export default function RegistroPagina() {
 
   const titulo =
     rolUi === "taller" ? "Crear cuenta (Taller)"
-    : rolUi === "chofer" ? "Crear cuenta (Chofer)"
     : "Crear cuenta (Cliente)";
 
   const linkLogin = `/login/${rolUi}`;

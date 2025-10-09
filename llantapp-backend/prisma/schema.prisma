@@ -12,9 +12,9 @@ generator client {
 enum Rol {
   ADMIN
   MECANICO
-  CHOFER
-  EMPRESA
+  CLIENTE
 }
+
 
 enum TipoMantenimiento {
   PREVENTIVO
@@ -39,7 +39,7 @@ model Usuario {
   nombreCompleto String
   correo         String   @unique
   hashClave      String
-  rol            Rol      @default(CHOFER)
+  rol            Rol      @default(CLIENTE)
   creadoEn       DateTime @default(now())
   actualizadoEn  DateTime @updatedAt
 

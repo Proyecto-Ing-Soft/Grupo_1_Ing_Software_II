@@ -132,11 +132,10 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-        // --- NUEVAS RUTAS AÑADIDAS AQUÍ ---
         {
           path: 'vehiculos/mios',
           element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA']}>
+            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
               <MisVehiculosPagina />
             </RutaProtegidaPorRol>
           ),
@@ -144,12 +143,11 @@ const router = createBrowserRouter(
         {
           path: 'vehiculos/:id/historial',
           element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA', 'ADMIN', 'MECANICO']}>
+            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE', 'ADMIN', 'MECANICO']}>
               <HistorialDeServiciosPagina />
             </RutaProtegidaPorRol>
           ),
         },
-        // --- FIN DE NUEVAS RUTAS ---
         {
           path: 'mantenimientos/registrar',
           element: (
@@ -161,7 +159,7 @@ const router = createBrowserRouter(
         {
           path: 'citas/agendar',
           element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA']}>
+            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
               <AgendarCitaPagina />
             </RutaProtegidaPorRol>
           ),
@@ -169,7 +167,7 @@ const router = createBrowserRouter(
         {
           path: 'citas/mias',
           element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA']}>
+            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
               <MisCitasPagina />
             </RutaProtegidaPorRol>
           ),
@@ -185,7 +183,7 @@ const router = createBrowserRouter(
         {
           path: 'notificaciones',
           element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA', 'MECANICO']}>
+            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE', 'MECANICO']}>
               <NotificacionesLeerPagina />
             </RutaProtegidaPorRol>
           ),

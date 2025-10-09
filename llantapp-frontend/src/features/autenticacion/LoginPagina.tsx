@@ -7,21 +7,19 @@ import "./authLogin.css";
 import logo from "../../assets/img/logo.jpg";
 import fondo from "../../assets/img/taller.jpeg";
 
-// --- Helpers de rol (UI -> backend y viceversa) ---
-type RolUi = "cliente" | "chofer" | "taller";
-type RolApi = "ADMIN" | "MECANICO" | "ASISTENTE" | "CHOFER" | "EMPRESA";
+type RolUi = "cliente" | "taller";
+type RolApi = "ADMIN" | "MECANICO" | "CLIENTE";
 
 const ROL_MAP: Record<RolUi, RolApi> = {
-  cliente: "EMPRESA", // cliente (empresa/propietario)
-  chofer: "CHOFER",
-  taller: "MECANICO",
+  cliente: "CLIENTE",
+  taller: "ADMIN",
 };
 
 const rolApiToUi = (r: RolApi): RolUi =>
-  r === "MECANICO" ? "taller" : r === "EMPRESA" ? "cliente" : "chofer";
+  r === "ADMIN" ? "taller" : "cliente";
 
 function esRolUi(x: any): x is RolUi {
-  return x === "cliente" || x === "chofer" || x === "taller";
+  return x === "cliente" || x === "taller";
 }
 
 function parseJsonish(s: string) { try { return JSON.parse(s); } catch { return null; } }
@@ -138,7 +136,6 @@ export default function LoginPagina() {
 
   const titulo =
     rolUi === "taller" ? "Bienvenido Taller"
-    : rolUi === "chofer" ? "Bienvenido Chofer"
     : "Bienvenido Cliente";
 
   const linkRegistro = `/registro/${rolUi}`;
