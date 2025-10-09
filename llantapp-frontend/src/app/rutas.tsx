@@ -17,6 +17,9 @@ import GestionUsuariosPagina from '../features/usuarios/GestionUsuariosPagina';
 import RegistrarMantenimientoPagina from '../features/mantenimientos/RegistrarMantenimientoPagina';
 import InicioPublico from '../paginas/InicioPublico';
 import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';
+// --- NUEVAS PÁGINAS ---
+import MisVehiculosPagina from '../features/vehiculos/MisVehiculosPagina';
+import HistorialDeServiciosPagina from '../features/vehiculos/HistorialDeServiciosPagina';
 
 // ROL PROTEGIENDO PAGINAS
 import { RutaProtegidaPorRol } from '../common/componentes/RutaProtegidaPorRol';
@@ -96,6 +99,24 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
+        // --- NUEVAS RUTAS AÑADIDAS AQUÍ ---
+        {
+          path: 'vehiculos/mios',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA']}>
+              <MisVehiculosPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+        {
+          path: 'vehiculos/:id/historial',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['CHOFER', 'EMPRESA', 'ADMIN', 'MECANICO']}>
+              <HistorialDeServiciosPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+        // --- FIN DE NUEVAS RUTAS ---
         {
           path: 'mantenimientos/registrar',
           element: (

@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Inject } from '@nestjs/common';
+import { BadRequestException, Injectable, Inject, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Rol } from 'src/common/enums/rol.enum';
 import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
 import { CrearVehiculoDto } from './dto/crear-vehiculo.dto';
 import { IValidadorVehiculo } from './validacion/ivalidador-vehiculo';
@@ -66,4 +67,66 @@ export class VehiculosService {
       select: { id: true, placa: true, marca: true, modelo: true },
     });
   }
+
+  // ... dentro de la clase VehiculosService
+  async obtenerHistorial(vehiculoId: number, usuario: { sub: number; rol: Rol }) {
+    // 1. Buscamos el vehículo y su propietario
+    const vehiculo = await this.prisma.vehiculo.findUnique({
+      where: { id: vehiculoId },
+      select: { id: true, placa: true, marca: true, modelo: true, propietarioUsuarioId: true },
+    });
+
+    if (!vehiculo) {
+      throw new NotFoundException('Vehículo no encontrado');
+    }
+
+    // 2. Validación de permisos (Seguridad)
+    const esPropietario = vehiculo.propietarioUsuarioId === usuario.sub;
+    const esPersonalTaller = usuario.rol === Rol.ADMIN || usuario.rol === Rol.MECANICO;
+
+    if (!esPropietario && !esPersonalTaller) {
+      throw new ForbiddenException('No tienes permiso para ver este historial.');
+    }
+
+    // 3. Consultar Citas Terminadas (Historial)
+    const trabajosRealizados = await this.prisma.citaMantenimiento.findMany({
+      where: {
+        vehiculoId: vehiculoId,
+        estado: 'TERMINADA',
+      },
+      orderBy: { fechaMantenimiento: 'desc' },
+      select: {
+        id: true,
+        tipo: true,
+        fechaMantenimiento: true,
+        trabajosRealizados: true,
+        mecanico: { select: { nombreCompleto: true } },
+      },
+    });
+
+    // 4. Consultar Citas Próximas
+    const proximosServicios = await this.prisma.citaMantenimiento.findMany({
+      where: {
+        vehiculoId: vehiculoId,
+        estado: { in: ['SOLICITADA', 'EN_PROGRESO'] },
+      },
+      orderBy: { programadaPara: 'asc' },
+      select: {
+        id: true,
+        tipo: true,
+        estado: true,
+        programadaPara: true,
+        comentario: true,
+        mecanico: { select: { nombreCompleto: true } },
+      },
+    });
+
+    // 5. Devolver todo el paquete de datos
+    return {
+      vehiculo,
+      trabajosRealizados,
+      proximosServicios,
+    };
+  }
+
 }

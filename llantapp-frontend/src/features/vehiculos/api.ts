@@ -13,4 +13,9 @@ export const apiVehiculos = {
     },
     token?: string
   ) => postJSON('/vehiculos', payload, token),
+
+  // NUEVO MÉTODO
+  historial: (vehiculoId: number, token?: string) =>
+    getJSON<any>(`/vehiculos/${vehiculoId}/historial`, token),
+
 };

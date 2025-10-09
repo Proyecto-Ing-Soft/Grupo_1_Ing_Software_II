@@ -1,0 +1,87 @@
+.mis-vehiculos {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.mis-vehiculos__header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.mis-vehiculos__title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #1e293b;
+}
+
+.mis-vehiculos__sub {
+  font-size: 1.1rem;
+  color: #475569;
+  margin-top: 0.25rem;
+}
+
+.vehiculos-loading,
+.vehiculos-error,
+.mis-vehiculos__empty {
+  text-align: center;
+  font-size: 1.1rem;
+  padding: 3rem;
+  color: #475569;
+}
+
+.mis-vehiculos__grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.vehiculo-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.vehiculo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+}
+
+.vehiculo-card__icon {
+  font-size: 2rem;
+}
+
+.vehiculo-card__details {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.vehiculo-card__placa {
+  font-family: monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0f172a;
+  background-color: #f1f5f9;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  width: max-content;
+}
+
+.vehiculo-card__info {
+  margin-top: 0.25rem;
+  color: #475569;
+}
+
+.vehiculo-card__cta {
+  font-weight: 600;
+  color: #0ea5e9;
+}

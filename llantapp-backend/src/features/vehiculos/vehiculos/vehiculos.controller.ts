@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards, Param, ParseIntPipe } from '@nestjs/common';
 import { VehiculosService } from './vehiculos.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CrearVehiculoDto } from './dto/crear-vehiculo.dto';
@@ -36,5 +36,15 @@ export class VehiculosController {
   async crear(@Body() dto: CrearVehiculoDto, @Req() req: any) {
     const uid = req.user?.sub ?? req.user?.id;
     return this.svc.crear(dto, uid);
+  }
+
+  @Get(':id/historial')
+  async obtenerHistorial(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
+    // El ID del usuario que hace la petición se extrae del token JWT
+    const usuario = req.user;
+    return this.svc.obtenerHistorial(id, usuario);
   }
 }
