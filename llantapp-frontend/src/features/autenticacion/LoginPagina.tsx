@@ -1,11 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { esquemaLogin } from "../../features/usuarios/usuarioSchemas";
 import { useAuth } from "../../core/auth/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useParams, useSearchParams } from "react-router-dom";
 import "./authLogin.css";
 
 import logo from "../../assets/img/logo.jpg";
 import fondo from "../../assets/img/taller.jpeg";
+
+// --- Helpers de rol (UI -> backend y viceversa) ---
+type RolUi = "cliente" | "chofer" | "taller";
+type RolApi = "ADMIN" | "MECANICO" | "ASISTENTE" | "CHOFER" | "EMPRESA";
+
+const ROL_MAP: Record<RolUi, RolApi> = {
+  cliente: "EMPRESA", // cliente (empresa/propietario)
+  chofer: "CHOFER",
+  taller: "MECANICO",
+};
+
+const rolApiToUi = (r: RolApi): RolUi =>
+  r === "MECANICO" ? "taller" : r === "EMPRESA" ? "cliente" : "chofer";
+
+function esRolUi(x: any): x is RolUi {
+  return x === "cliente" || x === "chofer" || x === "taller";
+}
 
 function parseJsonish(s: string) { try { return JSON.parse(s); } catch { return null; } }
 async function normalizarError(e: unknown): Promise<string> {
@@ -34,13 +51,20 @@ async function normalizarError(e: unknown): Promise<string> {
 }
 
 export default function LoginPagina() {
+  // Rol UI desde /login/:rol o ?rol=
+  const params = useParams();
+  const [q] = useSearchParams();
+  const rolParam = params.rol || q.get("rol") || "cliente";
+  const rolUi: RolUi = esRolUi(rolParam) ? rolParam : "cliente";
+
   const [form, setForm] = useState({ correo: "", clave: "" });
   const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
   const [showPass, setShowPass] = useState(false);
   const [enviando, setEnviando] = useState(false);
+
   const navigate = useNavigate();
-  const { iniciar } = useAuth();
+  const { iniciar, tieneRol, sesion } = useAuth();
 
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
@@ -90,6 +114,20 @@ export default function LoginPagina() {
     try {
       setEnviando(true);
       await iniciar(form.correo, form.clave);
+
+      // Verifica que el rol de la cuenta coincida con el acceso usado
+      const esperado = ROL_MAP[rolUi];
+      if (!tieneRol([esperado])) {
+        const real = sesion.perfil?.rol;
+        const sugerido = real ? rolApiToUi(real) : "cliente";
+        setFormErr(
+          real
+            ? `Estás entrando por “${rolUi}”, pero tu cuenta es de tipo “${real}”. Ingresa por /login/${sugerido}.`
+            : "No se pudo validar el rol de tu cuenta."
+        );
+        return;
+      }
+
       navigate("/inicio");
     } catch (err) {
       setFormErr(await normalizarError(err));
@@ -98,16 +136,23 @@ export default function LoginPagina() {
     }
   };
 
+  const titulo =
+    rolUi === "taller" ? "Bienvenido Taller"
+    : rolUi === "chofer" ? "Bienvenido Chofer"
+    : "Bienvenido Cliente";
+
+  const linkRegistro = `/registro/${rolUi}`;
+
   return (
     <main className="auth-page">
-      <section className="auth-split" role="region" aria-label="Formulario de inicio de sesión">
+      <section className="auth-split" role="region" aria-label={`Formulario de inicio de sesión (${rolUi})`}>
         <div className="auth-left">
           <div className="logo-wrap reveal" data-reveal="1">
             <img src={logo} alt="LlantApp" />
             <span className="logo-title">LlantApp</span>
           </div>
 
-          <h1 className="brand reveal" data-reveal="2">Bienvenido de nuevo</h1>
+          <h1 className="brand reveal" data-reveal="2">{titulo}</h1>
           <p className="sub reveal" data-reveal="2">Ingresa tus credenciales para acceder a tu cuenta</p>
 
           <form className="form reveal" data-reveal="3" onSubmit={enviar} noValidate>
@@ -159,13 +204,13 @@ export default function LoginPagina() {
             </div>
 
             <button type="submit" className="btn" disabled={enviando}>
-              {enviando ? "Ingresando…" : "Iniciar sesión"}
+              {enviando ? "Ingresando…" : `Iniciar sesión (${rolUi})`}
             </button>
             {formErr && <div className="error-message" style={{ marginTop: 8 }}>{formErr}</div>}
           </form>
 
           <p className="helper reveal" data-reveal="4">
-            ¿No tienes cuenta? <Link to="/registro" className="textlink">Regístrate aquí</Link>
+            ¿No tienes cuenta? <Link to={linkRegistro} className="textlink">Regístrate aquí</Link>
           </p>
         </div>
 

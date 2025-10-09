@@ -3,6 +3,7 @@ import { UsuarioService } from '../../usuarios/usuario/usuario.service';
 import { RegistrarUsuarioDto } from './dto/registrar-usuario.dto';
 import { LoginDto } from './dto/login.dto';
 import { Encriptador } from './encriptador';
+import { Rol } from '../../../common/enums/rol.enum';
 import { JwtEstrategias } from './estrategies/jwt';
 
 // SRP: toda la lógica de autenticación en un servicio.
@@ -22,6 +23,7 @@ export class AuthService {
       nombreCompleto: dto.nombreCompleto,
       correo: dto.correo,
       hashClave: hash,
+      rol: dto.rol ?? Rol.CHOFER,
     });
     return this.usuarios.aPublico(nuevo);
   }

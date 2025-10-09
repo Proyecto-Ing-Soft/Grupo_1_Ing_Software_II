@@ -1,9 +1,22 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-// PAGINAS
+// PÁGINAS PÚBLICAS
+import InicioPublico from '../paginas/inicio-publico/InicioPublico';
+
+// PÁGINAS PÚBLICAS ESTÁTICAS (nuevas)
+import CentroAyudaPagina from '../paginas/estaticas/CentroAyudaPagina';
+import ContactoPagina from '../paginas/estaticas/ContactoPagina';
+import LibroReclamacionesPagina from '../paginas/estaticas/LibroReclamacionesPagina';
+import TerminosPagina from '../paginas/estaticas/TerminosPagina';
+import PrivacidadPagina from '../paginas/estaticas/PrivacidadPagina';
+import CookiesPagina from '../paginas/estaticas/CookiesPagina';
+
+// PÁGINAS AUTENTICACIÓN
 import LoginPagina from '../features/autenticacion/LoginPagina';
 import RegistroPagina from '../features/autenticacion/RegistroPagina';
+
+// PÁGINAS PROTEGIDAS
 import InicioProtegido from '../common/paginas/InicioProtegido';
 import RegistrarVehiculoPagina from '../features/vehiculos/RegistrarVehiculoPagina';
 import NotificacionesLeerPagina from '../features/notificaciones/NotificacionesLeerPagina';
@@ -21,22 +34,44 @@ import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado
 import MisVehiculosPagina from '../features/vehiculos/MisVehiculosPagina';
 import HistorialDeServiciosPagina from '../features/vehiculos/HistorialDeServiciosPagina';
 
-// ROL PROTEGIENDO PAGINAS
+// GUARDS / LAYOUT
+import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';
 import { RutaProtegidaPorRol } from '../common/componentes/RutaProtegidaPorRol';
 import { RutaProtegida } from '../common/componentes/RutaProtegida';
-
-// LAYOUT
 import LayoutProtegido from '../common/componentes/LayoutProtegido';
 
 const router = createBrowserRouter(
   [
-    // públicas
+    // === Públicas ===
     { path: '/', element: <InicioPublico /> },
+    { path: '/centro-ayuda', element: <CentroAyudaPagina /> },
+    { path: '/contacto', element: <ContactoPagina /> },
+    { path: '/libro-reclamaciones', element: <LibroReclamacionesPagina /> },
+    { path: '/terminos', element: <TerminosPagina /> },
+    { path: '/privacidad', element: <PrivacidadPagina /> },
+    { path: '/cookies', element: <CookiesPagina /> },
+
+    {
+      path: '/login/:rol',
+      element: (
+        <RedirigirSiAutenticado>
+          <LoginPagina />
+        </RedirigirSiAutenticado>
+      ),
+    },
     {
       path: '/login',
       element: (
         <RedirigirSiAutenticado>
           <LoginPagina />
+        </RedirigirSiAutenticado>
+      ),
+    },
+    {
+      path: '/registro/:rol',
+      element: (
+        <RedirigirSiAutenticado>
+          <RegistroPagina />
         </RedirigirSiAutenticado>
       ),
     },
@@ -48,7 +83,8 @@ const router = createBrowserRouter(
         </RedirigirSiAutenticado>
       ),
     },
-    // protegidas por sesión
+
+    // === Protegidas por sesión ===
     {
       path: '/',
       element: (
@@ -58,7 +94,6 @@ const router = createBrowserRouter(
       ),
       children: [
         { path: 'inicio', element: <InicioProtegido /> },
-
         {
           path: 'admin/citas-pendientes',
           element: (
@@ -167,7 +202,6 @@ const router = createBrowserRouter(
     basename: (import.meta.env.BASE_URL || '/').replace(/\/$/, ''),
   }
 );
-
 
 export function Rutas() {
   return <RouterProvider router={router} />;
