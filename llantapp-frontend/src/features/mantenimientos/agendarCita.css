@@ -1,173 +1,95 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  html, body {
-    @apply text-slate-800 bg-slate-50;
-  }
-  ::placeholder { @apply text-slate-400; }
+.agendar__title {
+  margin-bottom: 10px;
 }
 
-@layer components {
-  .mt8 { margin-top: 8px; }
-
-  .agendar { @apply max-w-6xl mx-auto px-3 sm:px-4 md:px-0 py-8; }
-
-  .agendar__split{
-    display:grid; grid-template-columns: 1.02fr .98fr; gap:22px;
-  }
-  @media (max-width: 1024px){
-    .agendar__split{ grid-template-columns: 1fr; }
-  }
-
-  .agendar__left{
-    @apply bg-white rounded-2xl border border-slate-200;
-    box-shadow: 0 16px 36px rgba(2,6,23,.08);
-    padding: clamp(18px, 3vw, 28px);
-  }
-  .agendar__title{
-    @apply text-3xl md:text-4xl font-black tracking-tight text-slate-900;
-    letter-spacing: -0.01em;
-  }
-  .agendar__sub{ @apply text-slate-600 mt-1; }
-
-  .form{
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap:16px;
-    margin-top:14px;
-  }
-  @media (max-width: 640px){
-    .form{ grid-template-columns: 1fr; }
-  }
-
-  .form-group{ display:flex; flex-direction:column; gap:6px; }
-  .form-group:nth-child(1),
-  .form-group:nth-child(12),
-  .form-group:nth-child(13){
-    grid-column: 1 / -1;
-  }
-
-  .label{ @apply text-sm font-semibold text-slate-800; }
-
-  .input-wrap{
-    position: relative;
-    @apply rounded-xl border border-slate-200 bg-white;
-    box-shadow: 0 1px 0 rgba(15,23,42,.02);
-  }
-  .input{
-    width:100%; border:0; outline:none; background:transparent;
-    padding: 11px 12px;
-    @apply text-[15px] text-slate-900 rounded-xl;
-    transition: box-shadow .2s ease, transform .15s ease;
-  }
-  .input:focus{
-    box-shadow: 0 0 0 4px rgba(14,165,233,.18);
-  }
-
-  select.input{
-    appearance: none;
-    background-image:
-      linear-gradient(45deg, transparent 50%, #0ea5e9 50%),
-      linear-gradient(135deg, #0ea5e9 50%, transparent 50%),
-      linear-gradient(to right, rgba(15,23,42,.08), rgba(15,23,42,0));
-    background-position:
-      calc(100% - 18px) calc(1.1em),
-      calc(100% - 12px) calc(1.1em),
-      calc(100% - 2.4rem) 50%;
-    background-size: 6px 6px, 6px 6px, 1px 60%;
-    background-repeat: no-repeat;
-  }
-
-  .has-error{ border-color:#fca5a5; }
-  .has-error .input:focus{ box-shadow: 0 0 0 4px rgba(239,68,68,.18); }
-
-  .error-message{ @apply text-sm text-red-600; }
-  .success-message{ @apply text-sm text-emerald-600; }
-
-  textarea.input{ resize: vertical; min-height: 96px; }
-
-  .btn{
-    grid-column: 1 / -1;
-    @apply mt-1 inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-semibold text-white bg-sky-600 hover:bg-sky-700 focus:outline-none;
-    box-shadow: 0 10px 22px rgba(2,132,199,.25);
-    transition: transform .12s ease, box-shadow .2s ease;
-  }
-  .btn:hover{ transform: translateY(-1px); box-shadow: 0 14px 26px rgba(2,132,199,.28); }
-  .btn:active{ transform: translateY(0); box-shadow: 0 10px 22px rgba(2,132,199,.25); }
-  .btn:disabled{ @apply opacity-70 cursor-not-allowed; box-shadow:none; }
-
-  .helper{ @apply text-sm text-slate-600 mt-3; }
-  .textlink{ @apply text-sky-700 font-semibold cursor-pointer; }
-  .textlink:hover{ text-decoration: underline; }
-
-  .agendar__right{
-    border-radius: 22px; overflow: hidden; position: relative;
-    box-shadow: 0 24px 48px rgba(2,6,23,.14);
-    min-height: 260px;
-  }
-  .agendar__right::before{
-    content:""; position:absolute; inset:0;
-    background:
-      radial-gradient(closest-side at 76% 42%, rgba(255,255,255,.55), rgba(255,255,255,.08) 60%, transparent 61%),
-      radial-gradient(closest-side at 90% 78%, rgba(255,255,255,.35), rgba(255,255,255,.10) 70%, transparent 71%),
-      linear-gradient(115deg,#0891b2 0%,#0ea5e9 45%,#22c9e9 70%,#22d3ee 100%);
-  }
-  .agendar__hero{
-    position: relative; padding: clamp(18px, 4vw, 28px);
-    height: 100%; display:flex; flex-direction:column; justify-content:center; gap:14px;
-  }
-  .agendar__heroTitle{
-    @apply text-2xl md:text-3xl font-extrabold;
-    color:#0b1220;
-    text-shadow: 0 1px 0 rgba(255,255,255,.35);
-  }
-  .agendar__heroPill{
-    display:inline-flex; align-items:center; gap:10px;
-    padding:10px 14px; border-radius:9999px;
-    background: rgba(255,255,255,.88);
-    color:#0b1220;
-    border: 1px solid rgba(15,23,42,.08);
-    box-shadow: 0 10px 22px rgba(2,6,23,.12);
-    width: max-content; font-weight: 700;
-  }
-
-  .reveal{
-    will-change: transform, opacity;
-    transition: transform .50s cubic-bezier(.2,.8,.2,1), opacity .50s ease;
-  }
-  .will-animate{ opacity: 0; transform: translateY(14px) scale(.985); }
-  .animate-in{ opacity: 1; transform: none; }
-
-  .animate-in[data-reveal="1"]{ transition-delay: .04s; }
-  .animate-in[data-reveal="2"]{ transition-delay: .08s; }
-  .animate-in[data-reveal="3"]{ transition-delay: .12s; }
-  .animate-in[data-reveal="4"]{ transition-delay: .16s; }
-  .animate-in[data-reveal="5"]{ transition-delay: .20s; }
-
-  @media (prefers-reduced-motion: reduce){
-    .reveal, .will-animate, .animate-in{ transition: none !important; transform: none !important; opacity: 1 !important; }
-  }
+.agendar__sub {
+  margin-top: 0;
+  margin-bottom: 20px;
 }
 
-:root { color-scheme: light; } 
-
-.agendar__left { color:#0f172a; }
-.agendar__left .label { color:#0f172a; }
-.agendar__left .input { color:#0b1220; }
-.agendar__left .input::placeholder { color:#64748b; } 
-
-input:-webkit-autofill,
-input:-webkit-autofill:focus,
-textarea:-webkit-autofill {
-  -webkit-text-fill-color:#0f172a !important;
-  box-shadow: 0 0 0 1000px #fff inset !important;
+.agendar__split {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 28px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.reveal.will-animate { opacity:0; transform: translateY(14px) scale(.985); }
-.reveal.animate-in { opacity:1; transform:none; }
-.will-animate:not(.reveal), .animate-in:not(.reveal) { opacity:1; transform:none; }
+.agendar__left {
+  flex: 1 1 70%;
+  max-width: 880px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 10px 40px 40px;
+  padding-bottom: 20px;
+}
 
-.agendar__heroTitle { text-shadow:none; }
+.agendar__left form .btn {
+  margin-top: 16px;
+}
 
+.agendar__left .helper {
+  margin-top: 25px;
+}
+
+.agendar__right {
+  flex: 0 0 300px;
+}
+
+.agendar .input {
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  box-sizing: border-box;
+}
+
+.agendar select.input {
+  appearance: auto !important;
+  -webkit-appearance: menulist !important;
+  -moz-appearance: menulist !important;
+  background-color: #fff;
+  cursor: pointer;
+
+  padding-left: 12px !important;
+}
+
+.agendar .input::placeholder {
+  color: rgba(0, 0, 0, 0.3) !important;
+  font-weight: 400;
+}
+
+/* esto es para q los errores en el formulario se vean */
+.error-message {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  margin-top: 4px;
+  padding-left: 2px;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.input-wrap.has-error .input {
+  border: 1.5px solid #d32f2f;
+  background-color: #ffeaea;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+/* esto es para el mensaje de exito se vea */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.success-message {
+  color: #2e7d32;
+  background-color: #e6f4ea;
+  border: 1px solid #b6e0b8;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  animation: fadeIn 0.25s ease-in-out;
+}
