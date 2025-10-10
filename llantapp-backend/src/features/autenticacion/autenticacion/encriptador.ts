@@ -4,7 +4,7 @@ import * as bcrypt from 'bcrypt';
 // OCP: si cambiamos a Argon2, solo tocamos aquí.
 export class Encriptador {
   async hashear(plain: string) {
-    const rondas = 12; // Seguridad razonable.
+    const rondas = 12;
     return bcrypt.hash(plain, rondas);
   }
   async comparar(plain: string, hash: string) {

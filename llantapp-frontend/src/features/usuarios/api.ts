@@ -8,7 +8,7 @@ import type { Perfil } from '../autenticacion/api';
 
 export const apiUsuarios = {
   listarPorRol: (
-    rol: 'ADMIN' | 'MECANICO' | 'ASISTENTE' | 'CHOFER' | 'EMPRESA',
+    rol: 'ADMIN' | 'MECANICO' | 'CLIENTE',
     token?: string
   ) => getJSON<Perfil[]>(`/usuarios?rol=${rol}`, token),
 };

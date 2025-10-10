@@ -1,7 +1,7 @@
 /*
   Warnings:
 
-  - The values [CHOFER,EMPRESA] on the enum `Rol` will be removed. If these variants are still used in the database, this will fail.
+  - The values [CLIENTE] on the enum `Rol` will be removed. If these variants are still used in the database, this will fail.
 
 */
 -- AlterEnum

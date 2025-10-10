@@ -1,0 +1,46 @@
+.preview-cita {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.preview-icon {
+  width: 28px;
+  height: 28px;
+  fill: currentColor;
+  color: #d93025;
+}
+
+.preview-title {
+  color: #d32f2f;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.preview-field label {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+  display: block;
+}
+
+.preview-field p {
+  margin: 2px 0 10px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #000;
+}

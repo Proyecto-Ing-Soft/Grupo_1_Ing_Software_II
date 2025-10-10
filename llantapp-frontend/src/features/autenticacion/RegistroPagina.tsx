@@ -2,14 +2,14 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, Link, useParams, useSearchParams } from "react-router-dom";
 import { esquemaRegistro } from "../../features/usuarios/usuarioSchemas";
 import { apiAuth } from "../../features/autenticacion/api";
+import { Rol as RolApi } from "./api"
 import "../../features/autenticacion/authRegister.css";
 
-import logo from "../../assets/img/logo.jpg";
+import logo from "../../assets/img/logo.png";
 import fondo from "../../assets/img/taller.jpeg";
 
 // --- Helpers de rol ---
 type RolUi = "cliente" | "taller";
-type RolApi = "ADMIN" | "MECANICO" | "CLIENTE";
 
 const ROL_MAP: Record<RolUi, RolApi> = {
   cliente: "CLIENTE",

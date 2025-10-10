@@ -4,23 +4,10 @@
 // - Demeter: el controller solo “conoce” a su Service (no navega por capas internas).
 // - Seguridad por capas: aquí puedes aplicar Jwt/RolesGuard sin tocar el Service (OCP).
 
-import {
-  Body,
-  Controller,
-  ForbiddenException,
-  Get,
-  NotFoundException,
-  Param,
-  ParseIntPipe,
-  Post,
-  Req,
-  StreamableFile,
-  UnauthorizedException,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, ParseIntPipe, Post, Req, StreamableFile, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { CitasService } from './citas.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
-import { AsignarMecanicoDto } from './dto/asignar-mecanico.dto';
+import { AsignarMecanicoDto } from '../../asignaciones/asignaciones/dto/asignar-mecanico.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
@@ -30,7 +17,7 @@ export class CitasController {
 
   @Post()
   crear(@Body() dto: CrearCitaDto, @Req() req: any) {
-    const userId = Number(req.user?.id ?? req.user?.sub); // 👈 lee id o sub
+    const userId = Number(req.user?.id ?? req.user?.sub);
     if (!Number.isFinite(userId)) throw new UnauthorizedException('Usuario no válido');
     return this.svc.crear(dto, userId);
   }

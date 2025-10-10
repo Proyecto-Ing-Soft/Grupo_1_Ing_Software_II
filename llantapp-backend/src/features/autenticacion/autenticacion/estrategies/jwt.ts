@@ -1,6 +1,5 @@
 import * as jwt from 'jsonwebtoken';
 
-
 // SRP: emitir/verificar JWT.
 // OCP: fácil de extender con otros emisores/algoritmos.
 export class JwtEstrategias {

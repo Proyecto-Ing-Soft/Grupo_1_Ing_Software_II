@@ -206,7 +206,7 @@ export class CitasService {
 
   // === LISTADOS PARA UI ===
 
-  // CHOFER/EMPRESA: sus citas
+  // CLIENTE/EMPRESA: sus citas
   async listarDelCliente(clienteId: number) {
     return this.prisma.citaMantenimiento.findMany({
       where: { clienteId },

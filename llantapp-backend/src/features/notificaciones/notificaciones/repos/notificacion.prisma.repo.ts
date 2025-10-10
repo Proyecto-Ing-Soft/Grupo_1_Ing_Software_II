@@ -21,7 +21,6 @@ export class NotificacionPrismaRepo {
         mensaje: data.mensaje,
         vehiculoId: data.vehiculoId ?? null,
         citaId: data.citaId ?? null,
-        // estado por defecto = PENDIENTE (lo pone tu schema)
       },
     });
   }

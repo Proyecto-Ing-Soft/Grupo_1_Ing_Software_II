@@ -1,7 +1,9 @@
+// src/paginas/vehiculos/api.ts
 import { getJSON, postJSON } from '../../core/http/_http';
 
 export const apiVehiculos = {
   mios: (token?: string) => getJSON<any[]>('/vehiculos/mios', token),
+
   crear: (
     payload: {
       placa: string;
@@ -13,9 +15,4 @@ export const apiVehiculos = {
     },
     token?: string
   ) => postJSON('/vehiculos', payload, token),
-
-  // NUEVO MÉTODO
-  historial: (vehiculoId: number, token?: string) =>
-    getJSON<any>(`/vehiculos/${vehiculoId}/historial`, token),
-
 };

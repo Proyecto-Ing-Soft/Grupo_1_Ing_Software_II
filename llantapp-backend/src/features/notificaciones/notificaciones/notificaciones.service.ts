@@ -4,7 +4,7 @@ import { NotificacionPrismaRepo } from './repos/notificacion.prisma.repo';
 // SRP + Facade: interfaz simple para publicar notificaciones desde el dominio
 export interface EnvioNotificacion {
   usuarioId: number;
-  titulo: string;      // lo concatenamos al mensaje para tu modelo actual
+  titulo: string;
   mensaje: string;
   vehiculoId?: number;
   citaId?: number;
@@ -14,9 +14,8 @@ export interface EnvioNotificacion {
 export class NotificacionesService {
   constructor(private readonly repo: NotificacionPrismaRepo) {}
 
-  // NEW: método que usa CitasService
   async enviar(data: EnvioNotificacion): Promise<void> {
-    // Tu modelo Notificacion solo tiene "mensaje", así que unimos titulo + mensaje
+
     const cuerpo = `${data.titulo}: ${data.mensaje}`;
     await this.repo.crear({
       usuarioId: data.usuarioId,
