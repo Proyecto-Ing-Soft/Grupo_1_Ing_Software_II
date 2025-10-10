@@ -18,6 +18,19 @@ import { VEHICULO_VALIDADORES } from './validacion/tokens';
  * Alternos: si hay errores, lanza BadRequest con lista de mensajes.
  */
 
+// Helpers de placa (tolerantes a espacios/guiones)
+function normalizarPlaca(placa: string) {
+  return placa.trim().toUpperCase().replace(/\s*-\s*/g, '-');
+}
+function variantesPlaca(placa: string): string[] {
+  const p = (placa || '').toUpperCase().trim();
+  const sinEsp = p.replace(/\s+/g, '');
+  const conEspAntes = p.replace(/\s*-\s*/g, ' -'); // ABC -123
+  const conEspDesp = p.replace(/\s*-\s*/g, '- ');  // ABC- 123
+  const sinGuion = sinEsp.replace(/-/g, '');       // ABC123
+  return Array.from(new Set([p, sinEsp, conEspAntes, conEspDesp, sinGuion]));
+}
+
 @Injectable()
 export class VehiculosService {
   constructor(
@@ -33,12 +46,16 @@ export class VehiculosService {
     });
   }
 
+  /**
+   * Crear vehículo (uso general en taller) y enganchar citas preliminares
+   * por placa + cliente, sobrescribiendo snapshot.
+   */
   async crear(dto: CrearVehiculoDto, creadorId: number) {
     // 1) Validaciones
     const errores: string[] = [];
     for (const v of this.validadores) {
-      const msg = await v.validar(dto);
-      if (msg) errores.push(...(Array.isArray(msg) ? msg : [msg]));
+      const res = await v.validar(dto);
+      if (res) errores.push(...(Array.isArray(res) ? res : [res]));
     }
     if (errores.length) throw new BadRequestException(errores.join(' | '));
 
@@ -49,39 +66,36 @@ export class VehiculosService {
     });
     if (!propietario) throw new BadRequestException('Propietario no existe');
 
-    // 3) Crear y ENGANCHAR citas preliminares en una transacción
-    const placa = dto.placa.trim().toUpperCase();
-
+    // 3) Transacción: crear vehículo + updateMany de citas preliminares
+    const placaNorm = normalizarPlaca(dto.placa);
     const vehiculo = await this.prisma.$transaction(async (tx) => {
-      // 3.1 crear vehículo canónico
       const nuevo = await tx.vehiculo.create({
         data: {
-          placa,
+          placa: placaNorm,
           marca: dto.marca.trim(),
           modelo: dto.modelo.trim(),
           anio: dto.anio,
           color: dto.color.trim(),
           vin: dto.vin?.trim() || null,
-
           propietarioUsuarioId: propietario.id,
           creadoPorId: creadorId,
           empresaId: propietario.empresaId ?? null,
         },
-        select: {
-          id: true, placa: true, marca: true, modelo: true, anio: true, color: true, vin: true,
-        },
+        select: { id: true, placa: true, marca: true, modelo: true, anio: true, color: true, vin: true },
       });
 
-      // 3.2 ENGANCHAR y SOBREESCRIBIR snapshot preliminar de citas sin vehiculoId
+      // Enganchar citas preliminares del mismo cliente por variantes de placa
+      const placas = variantesPlaca(nuevo.placa);
       await tx.citaMantenimiento.updateMany({
         where: {
           vehiculoId: null,
-          placaPreliminar: nuevo.placa,
-          clienteId: propietario.id,          // seguridad: evita enganchar citas de otro usuario con la misma placa
+          placaPreliminar: { in: placas },
+          clienteId: propietario.id, // seguridad para no enganchar de otros usuarios
         },
         data: {
           vehiculoId: nuevo.id,
-          // sobrescribe el snapshot con la fuente canónica del vehículo
+          // sobrescribe snapshot con datos canónicos
+          placaPreliminar: nuevo.placa,
           marcaPreliminar: nuevo.marca,
           modeloPreliminar: nuevo.modelo,
           anioPreliminar: nuevo.anio,
@@ -96,61 +110,183 @@ export class VehiculosService {
     return { id: vehiculo.id, placa: vehiculo.placa, marca: vehiculo.marca, modelo: vehiculo.modelo };
   }
 
+  /**
+   * Crear vehículo DESDE una CITA específica (flujo de confirmación del mecánico).
+   * - Crea vehículo con propietario = cliente de la cita.
+   * - Enlaza la cita (vehiculoId).
+   * - Sobrescribe snapshot preliminar con datos del vehículo.
+   * - Opcional: pasa estado a EN_PROGRESO y setea mecanicoId.
+   */
+  async crearYEnlazarCita(
+    citaId: number,
+    dto: CrearVehiculoDto,
+    creador: { id: number; rol: Rol },
+  ) {
+    if (creador.rol !== Rol.ADMIN && creador.rol !== Rol.MECANICO) {
+      throw new ForbiddenException('Solo personal de taller puede registrar vehículos desde una cita');
+    }
+
+    const placaNorm = normalizarPlaca(dto.placa);
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1) Cita
+      const cita = await tx.citaMantenimiento.findUnique({
+        where: { id: citaId },
+        select: { id: true, clienteId: true, vehiculoId: true, estado: true },
+      });
+      if (!cita) throw new NotFoundException('Cita no existe');
+      if (cita.vehiculoId) throw new BadRequestException('La cita ya está enlazada a un vehículo');
+
+      // 2) Propietario = cliente de la cita
+      const propietario = await tx.usuario.findUnique({
+        where: { id: cita.clienteId },
+        select: { id: true, empresaId: true },
+      });
+      if (!propietario) throw new BadRequestException('Propietario no existe');
+
+      // 3) Crear vehículo definitivo
+      const vehiculo = await tx.vehiculo.create({
+        data: {
+          placa: placaNorm,
+          marca: dto.marca.trim(),
+          modelo: dto.modelo.trim(),
+          anio: dto.anio,
+          color: dto.color.trim(),
+          vin: dto.vin?.trim() || null,
+          propietarioUsuarioId: propietario.id,
+          creadoPorId: creador.id,
+          empresaId: propietario.empresaId ?? null,
+        },
+        select: { id: true, placa: true, marca: true, modelo: true, anio: true, color: true, vin: true },
+      });
+
+      // 4) Enlazar la cita y sobrescribir snapshot
+      await tx.citaMantenimiento.update({
+        where: { id: cita.id },
+        data: {
+          vehiculoId: vehiculo.id,
+          estado: cita.estado === 'SOLICITADA' ? 'EN_PROGRESO' : cita.estado,
+          mecanicoId: creador.id,
+          placaPreliminar: vehiculo.placa,
+          marcaPreliminar: vehiculo.marca,
+          modeloPreliminar: vehiculo.modelo,
+          anioPreliminar: vehiculo.anio,
+          colorPreliminar: vehiculo.color,
+          vinPreliminar: vehiculo.vin,
+        },
+      });
+
+      return vehiculo;
+    });
+  }
+
+  /**
+   * Historial: trabajos TERMINADOS y próximos (SOLICITADA | EN_PROGRESO).
+   * Incluye fallback por placa preliminar para cubrir citas antiguas sin vehiculoId.
+   */
   async obtenerHistorial(vehiculoId: number, usuario: { sub: number; rol: Rol }) {
-    // 1. Vehículo y permisos
+    // Vehículo y permisos
     const vehiculo = await this.prisma.vehiculo.findUnique({
       where: { id: vehiculoId },
-      select: { id: true, placa: true, marca: true, modelo: true, propietarioUsuarioId: true },
+      select: { id: true, placa: true, marca: true, modelo: true, anio: true, color: true, propietarioUsuarioId: true },
     });
     if (!vehiculo) throw new NotFoundException('Vehículo no encontrado');
 
     const esPropietario = vehiculo.propietarioUsuarioId === usuario.sub;
-    const esPersonalTaller = usuario.rol === Rol.ADMIN || usuario.rol === Rol.MECANICO;
-    if (!esPropietario && !esPersonalTaller) {
+    const esTaller = usuario.rol === Rol.ADMIN || usuario.rol === Rol.MECANICO;
+    if (!esPropietario && !esTaller) {
       throw new ForbiddenException('No tienes permiso para ver este historial.');
     }
 
-    // 2. Historial: TERMINADA
-    const trabajosRealizados = await this.prisma.citaMantenimiento.findMany({
-      where: {
-        OR: [
-          { vehiculoId: vehiculoId, estado: 'TERMINADA' },
-          { AND: [{ vehiculoId: null }, { placaPreliminar: vehiculo.placa }, { estado: 'TERMINADA' }] }, // fallback por placa
-        ],
-      },
-      orderBy: { fechaMantenimiento: 'desc' },
-      select: {
-        id: true,
-        tipo: true,
-        fechaMantenimiento: true,
-        trabajosRealizados: true,
-        mecanico: { select: { nombreCompleto: true } },
-      },
-    });
+    const placas = variantesPlaca(vehiculo.placa);
 
-    // 3. Próximos: SOLICITADA | EN_PROGRESO
-    const proximosServicios = await this.prisma.citaMantenimiento.findMany({
-      where: {
-        OR: [
-          { vehiculoId: vehiculoId, estado: { in: ['SOLICITADA', 'EN_PROGRESO'] } },
-          { AND: [{ vehiculoId: null }, { placaPreliminar: vehiculo.placa }, { estado: { in: ['SOLICITADA', 'EN_PROGRESO'] } }] },
-        ],
-      },
-      orderBy: { programadaPara: 'asc' },
-      select: {
-        id: true,
-        tipo: true,
-        estado: true,
-        programadaPara: true,
-        comentario: true,
-        mecanico: { select: { nombreCompleto: true } },
-      },
-    });
+    const [trabajosRealizados, proximosServicios] = await Promise.all([
+      this.prisma.citaMantenimiento.findMany({
+        where: {
+          OR: [
+            { vehiculoId: vehiculo.id, estado: 'TERMINADA' },
+            { vehiculoId: null, placaPreliminar: { in: placas }, estado: 'TERMINADA' },
+          ],
+        },
+        orderBy: [{ fechaMantenimiento: 'desc' }, { programadaPara: 'desc' }, { creadoEn: 'desc' }],
+        select: {
+          id: true,
+          tipo: true,
+          fechaMantenimiento: true,
+          programadaPara: true,
+          trabajosRealizados: true,
+          mecanico: { select: { nombreCompleto: true } },
+        },
+      }),
+      this.prisma.citaMantenimiento.findMany({
+        where: {
+          OR: [
+            { vehiculoId: vehiculo.id, estado: { in: ['SOLICITADA', 'EN_PROGRESO'] } },
+            { vehiculoId: null, placaPreliminar: { in: placas }, estado: { in: ['SOLICITADA', 'EN_PROGRESO'] } },
+          ],
+        },
+        orderBy: [{ programadaPara: 'asc' }, { creadoEn: 'asc' }],
+        select: {
+          id: true,
+          tipo: true,
+          estado: true,
+          programadaPara: true,
+          comentario: true,
+          mecanico: { select: { nombreCompleto: true } },
+        },
+      }),
+    ]);
 
     return {
-      vehiculo: { id: vehiculo.id, placa: vehiculo.placa, marca: vehiculo.marca, modelo: vehiculo.modelo },
-      trabajosRealizados,
-      proximosServicios,
+      vehiculo: {
+        id: vehiculo.id,
+        placa: vehiculo.placa,
+        marca: vehiculo.marca,
+        modelo: vehiculo.modelo,
+        anio: vehiculo.anio,
+        color: vehiculo.color,
+      },
+      trabajosRealizados: trabajosRealizados.map((t) => ({
+        id: t.id,
+        tipo: t.tipo,
+        fechaMantenimiento: t.fechaMantenimiento ?? t.programadaPara ?? null,
+        trabajosRealizados: t.trabajosRealizados ?? null,
+        mecanico: t.mecanico ?? { nombreCompleto: '—' },
+      })),
+      proximosServicios: proximosServicios.map((s) => ({
+        id: s.id,
+        tipo: s.tipo,
+        estado: s.estado,
+        programadaPara: s.programadaPara ?? null,
+        comentario: s.comentario ?? '',
+        mecanico: s.mecanico ?? null,
+      })),
     };
   }
+
+  async enlazarVehiculo(citaId: number, vehiculoId: number, mecanicoId: number) {
+  return this.prisma.$transaction(async (tx) => {
+    const [cita, vehiculo] = await Promise.all([
+      tx.citaMantenimiento.findUnique({ where: { id: citaId } }),
+      tx.vehiculo.findUnique({ where: { id: vehiculoId } }),
+    ]);
+    if (!cita) throw new BadRequestException('Cita no existe');
+    if (!vehiculo) throw new BadRequestException('Vehículo no existe');
+
+    return tx.citaMantenimiento.update({
+      where: { id: cita.id },
+      data: {
+        vehiculoId: vehiculo.id,
+        estado: cita.estado === 'SOLICITADA' ? 'EN_PROGRESO' : cita.estado,
+        mecanicoId,
+        placaPreliminar: vehiculo.placa,
+        marcaPreliminar: vehiculo.marca,
+        modeloPreliminar: vehiculo.modelo,
+        anioPreliminar: vehiculo.anio,
+        colorPreliminar: vehiculo.color,
+        vinPreliminar: vehiculo.vin,
+      },
+    });
+  });
+}
 }

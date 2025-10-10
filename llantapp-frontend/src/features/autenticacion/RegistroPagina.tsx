@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, Link, useParams, useSearchParams } from "react-router-dom";
-import { esquemaRegistro } from "../../features/usuarios/usuarioSchemas";
+import { esquemaRegistro } from "./usuarioSchemas";
 import { apiAuth } from "../../features/autenticacion/api";
 import { Rol as RolApi } from "./api"
 import "../../features/autenticacion/authRegister.css";

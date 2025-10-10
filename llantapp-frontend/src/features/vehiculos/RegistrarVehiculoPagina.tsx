@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../core/auth/AuthContext";
 import { apiCitas } from "../mantenimientos/api";
+import { apiVehiculos, VehiculoMin } from "./api";
 import "./registrarVehiculo.css";
 
 type Rol = "ADMIN" | "MECANICO" | "CLIENTE";
@@ -37,29 +38,6 @@ async function getUsuariosPorRol(
   return res.json();
 }
 
-async function postJSON<T>(url: string, body: unknown, token?: string): Promise<T> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    credentials: "include",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    try {
-      const j = JSON.parse(txt);
-      const msg = Array.isArray(j?.message) ? j.message.join(" | ") : (j?.message ?? txt);
-      throw new Error(msg || `HTTP ${res.status}`);
-    } catch {
-      throw new Error(txt || `HTTP ${res.status}`);
-    }
-  }
-  return res.json();
-}
-
 export default function RegistrarVehiculoPagina() {
   const navigate = useNavigate();
   const { usuario, tieneRol } = useAuth();
@@ -69,7 +47,6 @@ export default function RegistrarVehiculoPagina() {
   // ---------- Guard de rol ----------
   useEffect(() => {
     if (!tieneRol(ROLES_PERMITIDOS)) {
-      // Si el usuario no es de un rol permitido, lo mandamos al inicio
       navigate("/inicio", { replace: true });
     }
   }, [tieneRol, navigate]);
@@ -138,9 +115,9 @@ export default function RegistrarVehiculoPagina() {
       if (!citaId) return;
       try {
         setCargandoPrelim(true);
-        const c = await apiCitas.detalle(citaId);
+        // adjunta token si tu apiCitas lo soporta
+        const c = await (apiCitas as any).detalle?.(citaId, usuario?.token) ?? await apiCitas.detalle(citaId);
 
-        // Usa vehículo asociado si existe; si no, los preliminares de la cita
         const placa  = c.vehiculo?.placa  ?? c.placaPreliminar  ?? "";
         const marca  = c.vehiculo?.marca  ?? c.marcaPreliminar  ?? "";
         const modelo = c.vehiculo?.modelo ?? c.modeloPreliminar ?? "";
@@ -168,7 +145,7 @@ export default function RegistrarVehiculoPagina() {
       }
     })();
     return () => { alive = false; };
-  }, [citaId]);
+  }, [citaId, usuario?.token]);
 
   // ---------- Cargar lista de propietarios (CLIENTE) ----------
   useEffect(() => {
@@ -198,9 +175,10 @@ export default function RegistrarVehiculoPagina() {
     if (!String(form.marca).trim()) f["marca"] = "La marca es obligatoria.";
     if (!String(form.modelo).trim()) f["modelo"] = "El modelo es obligatorio.";
     if (!form.anio) f["anio"] = "El año es obligatorio.";
-    if (!form.propietarioUsuarioId) f["propietarioUsuarioId"] = "Selecciona un propietario.";
+    // si vengo desde una cita, el backend infiere propietario con el cliente de la cita
+    if (!citaId && !form.propietarioUsuarioId) f["propietarioUsuarioId"] = "Selecciona un propietario.";
     return f;
-  }, [form]);
+  }, [form, citaId]);
 
   // ---------- Handlers ----------
   const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -219,6 +197,7 @@ export default function RegistrarVehiculoPagina() {
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
     setOk(false); setFormErr(null);
+
     if (Object.keys(faltantes).length) {
       setFieldErr(faltantes);
       setFormErr(Object.values(faltantes)[0]);
@@ -233,24 +212,25 @@ export default function RegistrarVehiculoPagina() {
       anio: Number(form.anio),
       color: form.color?.toString().trim() || undefined,
       vin: form.vin?.toString().trim() || undefined,
-      propietarioUsuarioId: Number(form.propietarioUsuarioId),
-      // opcional: origenCitaId: citaId
+      propietarioUsuarioId: form.propietarioUsuarioId ? Number(form.propietarioUsuarioId) : undefined,
     };
 
     try {
       setEnviando(true);
-      // 1) crear vehículo
-      // const vehiculo = await postJSON(`${BASE}/vehiculos`, dto, usuario.token);
-      await postJSON(`${BASE}/vehiculos`, dto, usuario.token);
+
+      // usa apiVehiculos y captura el vehículo creado para redirigir al historial
+      const v: VehiculoMin = citaId
+        ? await apiVehiculos.crearDesdeCita(citaId, dto, usuario.token)
+        : await apiVehiculos.crear(dto as any, usuario.token);
 
       setOk(true);
       timeoutRef.current = window.setTimeout(() => {
-        navigate("/inicio", {
+        navigate(`/inicio`, {
           replace: true,
           state: {
             flash: {
               type: "success",
-              text: `Vehículo ${dto.placa} registrado correctamente.`,
+              text: `Vehículo ${v.placa} registrado correctamente.`,
               ttlMs: 4000,
             },
           },
@@ -424,6 +404,11 @@ export default function RegistrarVehiculoPagina() {
               {fieldErr["propietarioUsuarioId"] && (
                 <div id="err-prop" className="error-message" role="alert">
                   {fieldErr["propietarioUsuarioId"]}
+                </div>
+              )}
+              {citaId && (
+                <div className="helper">
+                  * Si vienes desde una cita, el propietario se tomará de la propia cita.
                 </div>
               )}
             </div>

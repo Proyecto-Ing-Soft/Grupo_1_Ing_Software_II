@@ -148,16 +148,6 @@ export default function InicioProtegido() {
           )}
 
           {tieneRol(["ADMIN"]) && (
-            <Link to="/admin/citas-pendientes" className="btn-card btn-primary reveal" data-delay="520">
-              <div className="btn-icon">📋</div>
-              <div className="btn-text">
-                <div className="btn-title">Citas pendientes</div>
-                <div className="btn-sub">Gestión de agenda del taller</div>
-              </div>
-            </Link>
-          )}
-
-          {tieneRol(["ADMIN"]) && (
             <Link to="/admin/servicios" className="btn-card btn-secondary reveal" data-delay="600">
               <div className="btn-icon">📑</div>
               <div className="btn-text">
@@ -168,7 +158,7 @@ export default function InicioProtegido() {
           )}
 
           {tieneRol(["ADMIN"]) && (
-            <Link to="/admin/servicios/asociar" className="btn-card btn-secondary reveal" data-delay="680">
+            <Link to="/admin/citas-pendientes" className="btn-card btn-secondary reveal" data-delay="680">
               <div className="btn-icon">👷</div>
               <div className="btn-text">
                 <div className="btn-title">Asociar mecánico</div>

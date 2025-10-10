@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { apiCitas } from "../mantenimientos/api";
-import { apiUsuarios } from "../usuarios/api";
-import "../mantenimientos/asociarMecanico.css";
+import { apiUsuarios } from "./api";
+import "./asociarMecanico.css";
 
 // Tipos (idénticos a la vista original)
 type TipoMantenimientoFE = "PREVENTIVO" | "CORRECTIVO" | "LEGAL_ITV" | "EXTRAS";

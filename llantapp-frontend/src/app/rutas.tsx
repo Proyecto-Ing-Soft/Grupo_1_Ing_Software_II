@@ -25,8 +25,7 @@ import MisCitasPagina from '../features/mantenimientos/MisCitasPagina';
 import CitasMecanicoPagina from '../features/mantenimientos/CitasMecanicoPagina';
 import AdminCitasPendientes from '../features/asignaciones/AsociarMecanicoPagina';
 import CatalogoServiciosPagina from '../features/catalogo-servicios/CatalogoServiciosPagina';
-import AsociarMecanicoServicioPagina from '../features/asignaciones/AsociarMecanicoHector';
-import GestionUsuariosPagina from '../features/usuarios/GestionUsuariosPagina';
+import GestionUsuariosPagina from '../features/gestion/GestionUsuariosPagina';
 import RegistrarMantenimientoPagina from '../features/mantenimientos/RegistrarMantenimientoPagina';
 // --- NUEVAS PÁGINAS ---
 import MisVehiculosPagina from '../features/vehiculos/MisVehiculosPagina';
@@ -49,6 +48,7 @@ const router = createBrowserRouter(
     { path: '/privacidad', element: <PrivacidadPagina /> },
     { path: '/cookies', element: <CookiesPagina /> },
 
+    // Login / Registro
     {
       path: '/login/:rol',
       element: (
@@ -82,7 +82,7 @@ const router = createBrowserRouter(
       ),
     },
 
-    // === Protegidas por sesión ===
+    // === Protegidas ===
     {
       path: '/',
       element: (
@@ -92,6 +92,8 @@ const router = createBrowserRouter(
       ),
       children: [
         { path: 'inicio', element: <InicioProtegido /> },
+
+        // Admin: Asignaciones (dos rutas apuntan a la misma página)
         {
           path: 'admin/citas-pendientes',
           element: (
@@ -101,6 +103,16 @@ const router = createBrowserRouter(
           ),
         },
         {
+          path: 'admin/asignaciones',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+              <AdminCitasPendientes />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
+        // Admin: Servicios (catálogo)
+        {
           path: 'admin/servicios',
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
@@ -108,14 +120,8 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-        {
-          path: 'admin/servicios/asociar',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
-              <AsociarMecanicoServicioPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
+
+        // Admin: Gestión de Usuarios (lista, crear, editar — mismo componente)
         {
           path: 'admin/usuarios',
           element: (
@@ -124,6 +130,24 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
+        {
+          path: 'admin/usuarios/nuevo',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+              <GestionUsuariosPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+        {
+          path: 'admin/usuarios/:id/editar',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+              <GestionUsuariosPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
+        // Vehículos
         {
           path: 'vehiculos/registrar',
           element: (
@@ -148,6 +172,8 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
+
+        // Mantenimientos / Citas
         {
           path: 'mantenimientos/registrar',
           element: (
@@ -180,6 +206,8 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
+
+        // Notificaciones
         {
           path: 'notificaciones',
           element: (
@@ -194,7 +222,6 @@ const router = createBrowserRouter(
     { path: '*', element: <InicioPublico /> },
   ],
   {
-    // usa el base de Vite y quita la barra final
     basename: (import.meta.env.BASE_URL || '/').replace(/\/$/, ''),
   }
 );
