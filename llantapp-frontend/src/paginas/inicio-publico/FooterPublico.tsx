@@ -16,7 +16,7 @@ export default function FooterPublico(){
       <div className="container" style={{padding:"24px 0"}}>
         <div id="seguridad" style={{marginBottom:20}}>
           <h3 style={{fontSize:"clamp(18px,2.4vw,22px)", marginBottom:6}}>Seguridad</h3>
-          <p style={{color:"#bcd4e6"}}>
+          <p style={{color:"var(--muted)"}}>
             Encriptamos credenciales, auditamos acciones por rol y protegemos evidencias con permisos. Accesibilidad AA.
           </p>
         </div>
@@ -56,7 +56,7 @@ export default function FooterPublico(){
             <h5>Apps</h5>
             <div style={{opacity:.5}}>App Store (Próximamente)</div>
             <div style={{opacity:.5}}>Google Play (Próximamente)</div>
-            <div style={{marginTop:8, color:"#9fb0c0"}}>Perú (ES)</div>
+            <div style={{marginTop:8, color:"var(--muted)"}}>Perú (ES)</div>
           </div>
         </div>
 

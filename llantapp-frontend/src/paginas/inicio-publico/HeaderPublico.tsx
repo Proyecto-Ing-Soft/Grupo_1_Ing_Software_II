@@ -15,10 +15,15 @@ export default function HeaderPublico(){
       <div className="container lp-header-inner">
         {/* Izquierda: logo + idioma */}
         <div style={{display:"flex", alignItems:"center", gap:12}}>
-          <a className="lp-logo" href="#top" aria-label="LlantApp inicio">
+          <Link
+            className="lp-logo"
+            to="/"
+            aria-label="Ir al inicio de LlantApp"
+            onClick={() => window.scrollTo({ top: 0, left: 0, behavior: "auto" })}
+          >
             <img src={logo} alt="LlantApp" />
             <span>LlantApp</span>
-          </a>
+          </Link>
           <span className="lp-sep-vert" />
           <div className="lp-lang" role="button" aria-label="Cambiar idioma">
             <span className="globe" aria-hidden>🌐</span> <span>ES</span>
@@ -36,22 +41,24 @@ export default function HeaderPublico(){
 
         {/* Derecha: Cliente / Taller */}
         <div className="lp-actions" aria-label="Acciones rápidas">
-          {/* Cliente */}
+          {/* Cliente (azul noche) */}
           <div style={{display:"flex", alignItems:"center", gap:10}}>
-            <Link className="btn btn-ghost" to="/login?rol=cliente" aria-label="Iniciar sesión cliente">
+            <Link className="btn btn-cta cliente" to="/login?rol=cliente" aria-label="Iniciar sesión cliente">
               Iniciar sesión <span className="badge-role">Cliente</span>
             </Link>
-            <Link className="btn btn-solid" to="/registro?rol=cliente" aria-label="Crear cuenta cliente">
+            <Link className="btn btn-cta cliente" to="/registro?rol=cliente" aria-label="Crear cuenta cliente">
               Crear cuenta <span className="badge-role">Cliente</span>
             </Link>
           </div>
+
           <span className="lp-sep-vert" />
-          {/* Taller */}
+
+          {/* Taller (gris) */}
           <div style={{display:"flex", alignItems:"center", gap:10}}>
-            <Link className="btn" to="/login?rol=taller" aria-label="Iniciar sesión taller">
+            <Link className="btn btn-cta taller" to="/login?rol=taller" aria-label="Iniciar sesión taller">
               Iniciar sesión <span className="badge-role">Taller</span>
             </Link>
-            <Link className="btn btn-solid" to="/registro?rol=taller" aria-label="Crear cuenta taller">
+            <Link className="btn btn-cta taller" to="/registro?rol=taller" aria-label="Crear cuenta taller">
               Crear cuenta <span className="badge-role">Taller</span>
             </Link>
           </div>

@@ -3,13 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { setPreSeleccion } from "./hooks/usePreseleccionServicio";
 import { ServicioCard } from "./types";
 
-// íconos
-import icCambioLlanta from "../../assets/public/landing/servicios/cambio-llanta.svg";
-import icBalanceo from "../../assets/public/landing/servicios/balanceo.svg";
-import icAlineacion from "../../assets/public/landing/servicios/alineacion.svg";
-import icAceite from "../../assets/public/landing/servicios/cambio-aceite.svg";
-import icFrenos from "../../assets/public/landing/servicios/frenos.svg";
-import icDiag from "../../assets/public/landing/servicios/diagnostico.svg";
+import icCambioLlanta from "../../assets/public/landing/servicios/cambio-llanta.png";
+import icBalanceo from "../../assets/public/landing/servicios/balanceo.png";
+import icAlineacion from "../../assets/public/landing/servicios/alineacion.png";
+import icAceite from "../../assets/public/landing/servicios/cambio-aceite.png";
+import icFrenos from "../../assets/public/landing/servicios/frenos.png";
+import icDiag from "../../assets/public/landing/servicios/diagnostico.png";
 
 const DATA: ServicioCard[] = [
   { slug:"cambio-llanta", nombre:"Cambio de llanta", descripcion:"Revisión y reemplazo de neumático.", icon: icCambioLlanta },
@@ -24,7 +23,7 @@ export default function ServiciosDestacados(){
   const nav = useNavigate();
   const elegir = (s: ServicioCard) => {
     setPreSeleccion({ slug: s.slug, nombre: s.nombre });
-    nav("/login?rol=cliente"); // el flujo de solicitud se realiza tras autenticarse
+    nav("/login?rol=cliente");
   };
 
   return (
@@ -33,7 +32,10 @@ export default function ServiciosDestacados(){
       <div className="grid-services">
         {DATA.map(s=>(
           <article key={s.slug} className="card-service" aria-label={s.nombre}>
-            <img src={s.icon} alt="" />
+            <figure className="card-media" aria-hidden="true">
+              <img src={s.icon} alt="" />
+            </figure>
+
             <h4>{s.nombre}</h4>
             <p>{s.descripcion}</p>
             <button className="btn btn-mini" onClick={()=>elegir(s)} aria-label={`Quiero ${s.nombre}`}>
