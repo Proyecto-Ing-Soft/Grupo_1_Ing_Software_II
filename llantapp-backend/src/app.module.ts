@@ -5,11 +5,12 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './core/prisma/prisma/prisma.module';
 
 // Módulos de dominio (features)
-import { AuthModule } from './features/autenticacion/auth/auth.module';
+import { AuthModule } from './features/autenticacion/autenticacion/auth.module';
 import { UsuarioModule } from './features/usuarios/usuario/usuario.module';
 import { VehiculosModule } from './features/vehiculos/vehiculos/vehiculo.module';
 import { NotificacionesModule } from './features/notificaciones/notificaciones/notificaciones.module';
 import { CitasModule } from './features/mantenimientos/citas/citas.module';
+import { HistorialModule } from './features/historial/historial/historial.module';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { CitasModule } from './features/mantenimientos/citas/citas.module';
     AuthModule,           // Autenticación
     VehiculosModule,      // Gestión de vehículos
     NotificacionesModule, // Envío y lectura de notificaciones
-    CitasModule           // Citas de mantenimiento
+    CitasModule,           // Citas de mantenimiento
+    HistorialModule        // Historial de mantenimientos
   ],
 })
 export class AppModule {}

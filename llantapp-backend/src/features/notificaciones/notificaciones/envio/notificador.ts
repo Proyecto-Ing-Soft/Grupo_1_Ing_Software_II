@@ -15,7 +15,7 @@ export class Notificador {
   constructor(private readonly repo: NotificacionPrismaRepo) {}
 
   async enviar(data: EnvioNotificacion): Promise<void> {
-    // Tu modelo tiene un solo campo `mensaje`, unimos título + mensaje
+
     const cuerpo = `${data.titulo}: ${data.mensaje}`;
     await this.repo.crear({
       usuarioId: data.usuarioId,

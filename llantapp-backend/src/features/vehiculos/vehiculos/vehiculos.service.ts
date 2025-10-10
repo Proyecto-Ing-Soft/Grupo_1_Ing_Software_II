@@ -34,7 +34,7 @@ export class VehiculosService {
   }
 
   async crear(dto: CrearVehiculoDto, creadorId: number) {
-    // 1) Ejecutar validadores (SRP del servicio: orquestación de reglas)
+    // 1) Validaciones
     const errores: string[] = [];
     for (const v of this.validadores) {
       const msg = await v.validar(dto);
@@ -42,57 +42,81 @@ export class VehiculosService {
     }
     if (errores.length) throw new BadRequestException(errores.join(' | '));
 
-    // 2) Tomar datos del PROPIETARIO elegido
+    // 2) Propietario
     const propietario = await this.prisma.usuario.findUnique({
       where: { id: dto.propietarioUsuarioId },
       select: { id: true, empresaId: true },
     });
-
     if (!propietario) throw new BadRequestException('Propietario no existe');
 
-    // 3) Persistir con propietario elegido + auditoría del creador
-    return this.prisma.vehiculo.create({
-      data: {
-        placa: dto.placa.trim().toUpperCase(),
-        marca: dto.marca.trim(),
-        modelo: dto.modelo.trim(),
-        anio: dto.anio,
-        color: dto.color.trim(),
-        vin: dto.vin?.trim() || null,
+    // 3) Crear y ENGANCHAR citas preliminares en una transacción
+    const placa = dto.placa.trim().toUpperCase();
 
-        propietarioUsuarioId: propietario.id,
-        creadoPorId: creadorId,
-        empresaId: propietario.empresaId ?? null,
-      },
-      select: { id: true, placa: true, marca: true, modelo: true },
+    const vehiculo = await this.prisma.$transaction(async (tx) => {
+      // 3.1 crear vehículo canónico
+      const nuevo = await tx.vehiculo.create({
+        data: {
+          placa,
+          marca: dto.marca.trim(),
+          modelo: dto.modelo.trim(),
+          anio: dto.anio,
+          color: dto.color.trim(),
+          vin: dto.vin?.trim() || null,
+
+          propietarioUsuarioId: propietario.id,
+          creadoPorId: creadorId,
+          empresaId: propietario.empresaId ?? null,
+        },
+        select: {
+          id: true, placa: true, marca: true, modelo: true, anio: true, color: true, vin: true,
+        },
+      });
+
+      // 3.2 ENGANCHAR y SOBREESCRIBIR snapshot preliminar de citas sin vehiculoId
+      await tx.citaMantenimiento.updateMany({
+        where: {
+          vehiculoId: null,
+          placaPreliminar: nuevo.placa,
+          clienteId: propietario.id,          // seguridad: evita enganchar citas de otro usuario con la misma placa
+        },
+        data: {
+          vehiculoId: nuevo.id,
+          // sobrescribe el snapshot con la fuente canónica del vehículo
+          marcaPreliminar: nuevo.marca,
+          modeloPreliminar: nuevo.modelo,
+          anioPreliminar: nuevo.anio,
+          colorPreliminar: nuevo.color,
+          vinPreliminar: nuevo.vin,
+        },
+      });
+
+      return nuevo;
     });
+
+    return { id: vehiculo.id, placa: vehiculo.placa, marca: vehiculo.marca, modelo: vehiculo.modelo };
   }
 
-  // ... dentro de la clase VehiculosService
   async obtenerHistorial(vehiculoId: number, usuario: { sub: number; rol: Rol }) {
-    // 1. Buscamos el vehículo y su propietario
+    // 1. Vehículo y permisos
     const vehiculo = await this.prisma.vehiculo.findUnique({
       where: { id: vehiculoId },
       select: { id: true, placa: true, marca: true, modelo: true, propietarioUsuarioId: true },
     });
+    if (!vehiculo) throw new NotFoundException('Vehículo no encontrado');
 
-    if (!vehiculo) {
-      throw new NotFoundException('Vehículo no encontrado');
-    }
-
-    // 2. Validación de permisos (Seguridad)
     const esPropietario = vehiculo.propietarioUsuarioId === usuario.sub;
     const esPersonalTaller = usuario.rol === Rol.ADMIN || usuario.rol === Rol.MECANICO;
-
     if (!esPropietario && !esPersonalTaller) {
       throw new ForbiddenException('No tienes permiso para ver este historial.');
     }
 
-    // 3. Consultar Citas Terminadas (Historial)
+    // 2. Historial: TERMINADA
     const trabajosRealizados = await this.prisma.citaMantenimiento.findMany({
       where: {
-        vehiculoId: vehiculoId,
-        estado: 'TERMINADA',
+        OR: [
+          { vehiculoId: vehiculoId, estado: 'TERMINADA' },
+          { AND: [{ vehiculoId: null }, { placaPreliminar: vehiculo.placa }, { estado: 'TERMINADA' }] }, // fallback por placa
+        ],
       },
       orderBy: { fechaMantenimiento: 'desc' },
       select: {
@@ -104,11 +128,13 @@ export class VehiculosService {
       },
     });
 
-    // 4. Consultar Citas Próximas
+    // 3. Próximos: SOLICITADA | EN_PROGRESO
     const proximosServicios = await this.prisma.citaMantenimiento.findMany({
       where: {
-        vehiculoId: vehiculoId,
-        estado: { in: ['SOLICITADA', 'EN_PROGRESO'] },
+        OR: [
+          { vehiculoId: vehiculoId, estado: { in: ['SOLICITADA', 'EN_PROGRESO'] } },
+          { AND: [{ vehiculoId: null }, { placaPreliminar: vehiculo.placa }, { estado: { in: ['SOLICITADA', 'EN_PROGRESO'] } }] },
+        ],
       },
       orderBy: { programadaPara: 'asc' },
       select: {
@@ -121,12 +147,10 @@ export class VehiculosService {
       },
     });
 
-    // 5. Devolver todo el paquete de datos
     return {
-      vehiculo,
+      vehiculo: { id: vehiculo.id, placa: vehiculo.placa, marca: vehiculo.marca, modelo: vehiculo.modelo },
       trabajosRealizados,
       proximosServicios,
     };
   }
-
 }

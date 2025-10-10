@@ -8,7 +8,7 @@ import { TipoMantenimiento } from '@prisma/client';
 
 export class CrearCitaDto {
   @IsEnum(TipoMantenimiento)
-  tipo!: TipoMantenimiento; // TS: definite assignment
+  tipo!: TipoMantenimiento;
 
   // 🆕 Datos preliminares del vehículo
   @IsString() placaPreliminar!: string;

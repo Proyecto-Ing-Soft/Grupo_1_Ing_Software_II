@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import { esquemaLogin } from "../../features/usuarios/usuarioSchemas";
 import { useAuth } from "../../core/auth/AuthContext";
 import { useNavigate, Link, useParams, useSearchParams } from "react-router-dom";
+import { Rol as RolApi } from "./api"
 import "./authLogin.css";
 
-import logo from "../../assets/img/logo.jpg";
+import logo from "../../assets/img/logo.png";
 import fondo from "../../assets/img/taller.jpeg";
 
 type RolUi = "cliente" | "taller";
-type RolApi = "ADMIN" | "MECANICO" | "CLIENTE";
 
 const ROL_MAP: Record<RolUi, RolApi> = {
   cliente: "CLIENTE",

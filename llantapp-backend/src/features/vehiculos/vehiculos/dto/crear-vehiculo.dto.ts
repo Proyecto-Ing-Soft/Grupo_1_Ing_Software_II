@@ -36,8 +36,8 @@ export class CrearVehiculoDto {
   vin?: string;
 
   /**
-   * El ADMIN/MECÁNICO elige a quién se le registra el vehículo.
-   * Regla: debe ser un usuario con rol CHOFER o EMPRESA (ver validador).
+   * El ADMIN elige a quién se le registra el vehículo.
+   * Regla: debe ser un usuario con rol CLIENTE (ver validador).
    */
   @IsInt()
   @Min(1)

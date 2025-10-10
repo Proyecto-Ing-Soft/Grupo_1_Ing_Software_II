@@ -30,7 +30,7 @@ import GestionUsuariosPagina from '../features/usuarios/GestionUsuariosPagina';
 import RegistrarMantenimientoPagina from '../features/mantenimientos/RegistrarMantenimientoPagina';
 // --- NUEVAS PÁGINAS ---
 import MisVehiculosPagina from '../features/vehiculos/MisVehiculosPagina';
-import HistorialDeServiciosPagina from '../features/vehiculos/HistorialDeServiciosPagina';
+import HistorialDeServiciosPagina from '../features/historial/HistorialDeServiciosPagina';
 
 // GUARDS / LAYOUT
 import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';

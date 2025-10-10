@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import logo from "../../assets/img/logo.jpg";
+import logo from "../../assets/img/logo.png";
 
 export default function HeaderPublico(){
   const [scrolled, setScrolled] = useState(false);
