@@ -10,7 +10,7 @@ export default function Hero(){
       rol: "Cliente",
       bullets: [
         "Consulta el historial de servicios por vehículo.",
-        "Recibe recordatorios y alertas de mantenimiento y de vencimiento de llanta.",
+        "Recibe recordatorios y alertas de mantenimiento.",
         "Califica el servicio al finalizar."
       ] // US-02, US-03/US-10, US-16
     },
@@ -33,7 +33,7 @@ export default function Hero(){
     <section className="container hero-2col" aria-label="Presentación">
       <article className="hero-card">
         <h2 style={{fontSize:"clamp(22px,3.2vw,36px)", lineHeight:1.1, marginBottom:8}}>
-          Transparencia técnica. Control real.
+          Transparencia técnica. <br />Control real.
         </h2>
         <p className="hero-sub">
           Historial, evidencias y avisos automáticos en un solo lugar.
