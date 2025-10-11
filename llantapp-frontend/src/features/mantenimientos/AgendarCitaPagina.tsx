@@ -5,6 +5,7 @@ import { apiCitas } from "./api";
 import { apiVehiculos } from "../vehiculos/api";
 import { esquemaCita, CitaForm } from "./citaSchemas";
 import PreviewCita from "./componentes/PreviewCita";
+import agendarCitaImg from "../../assets/priv/cliente/agendar-cita.png";
 import "./agendarCita.css";
 
 type VehiculoLite = { id: number; placa: string; marca: string; modelo: string };
@@ -62,11 +63,6 @@ export default function AgendarCitaPagina() {
     })();
     return () => { alive = false; };
   }, [usuario?.token]);
-
-  const vehiculoSel = useMemo(
-    () => vehiculos.find((v) => v.id === Number(form.vehiculoId)),
-    [vehiculos, form.vehiculoId]
-  );
 
   const onChangeCampo = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -163,15 +159,19 @@ export default function AgendarCitaPagina() {
       (form.modeloPreliminar ?? "").trim()
     );
 
+  const mostrandoSelector = !loadingVeh && vehiculos.length > 0;
+  const vehiculoSel = useMemo(
+    () => vehiculos.find((v) => v.id === Number(form.vehiculoId)),
+    [vehiculos, form.vehiculoId]
+  );
+
   const soloFechaBonita = (v?: string) =>
     v ? new Date(v).toLocaleDateString("es-PE", { dateStyle: "medium" }) : "—";
 
-  const mostrandoSelector = !loadingVeh && vehiculos.length > 0;
-
   return (
     <main className="agendar">
-      <section className="agendar__split">
-        <div className="agendar__left">
+      <section className="agendar__card">
+        <div className="agendar__formCol">
           <header className="agendar__head">
             <h1 className="agendar__title">Agendar cita</h1>
             <p className="agendar__sub">
@@ -179,190 +179,191 @@ export default function AgendarCitaPagina() {
             </p>
           </header>
 
-          <form className="form" onSubmit={enviar} noValidate>
-            <div className="form-group">
-              <label className="label" htmlFor="tipo">Servicio</label>
-              <div className="input-wrap">
-                <select id="tipo" name="tipo" className="input" value={form.tipo} onChange={onChangeCampo}>
-                  <option value="PREVENTIVO">Mantenimiento preventivo</option>
-                  <option value="CORRECTIVO">Correctivo</option>
-                  <option value="LEGAL_ITV">Legal / ITV</option>
-                  <option value="EXTRAS">Extras</option>
-                </select>
-              </div>
-            </div>
-
-            {loadingVeh ? (
-              <div className="helper">Cargando vehículos…</div>
-            ) : mostrandoSelector ? (
+          <div className="agendar__formScroll">
+            <form className="form" onSubmit={enviar} noValidate>
               <div className="form-group">
-                <label className="label" htmlFor="vehiculoId">Vehículo</label>
-                <div className="input-wrap">
-                  <select
-                    id="vehiculoId"
-                    name="vehiculoId"
-                    className="input"
-                    value={
-                      form.vehiculoId
-                        ? String(form.vehiculoId)
-                        : (mostrarFormNuevo ? OPCION_NUEVO : "")
-                    }
-                    onChange={onChangeCampo}
-                  >
-                    <option value="" disabled>Elige uno…</option>
-                    {vehiculos.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.placa} — {v.marca} {v.modelo}
-                      </option>
-                    ))}
-                    <option value={OPCION_NUEVO}>Registrar nuevo vehículo…</option>
+                <label className="label" htmlFor="tipo">Servicio</label>
+                <div className="input-wrap" data-ico="service">
+                  <select id="tipo" name="tipo" className="input" value={form.tipo} onChange={onChangeCampo}>
+                    <option value="PREVENTIVO">Mantenimiento preventivo</option>
+                    <option value="CORRECTIVO">Correctivo</option>
+                    <option value="LEGAL_ITV">Legal / ITV</option>
+                    <option value="EXTRAS">Extras</option>
                   </select>
                 </div>
               </div>
-            ) : (
-              <div className="helper">Aún no tienes vehículos registrados. Completa los datos abajo.</div>
-            )}
 
-            {(!mostrandoSelector || mostrarFormNuevo) && (
-              <>
+              {loadingVeh ? (
+                <div className="helper">Cargando vehículos…</div>
+              ) : (vehiculos.length > 0) ? (
                 <div className="form-group">
-                  <label className="label" htmlFor="placaPreliminar">Placa</label>
-                  <div className="input-wrap">
-                    <input
-                      id="placaPreliminar"
-                      name="placaPreliminar"
+                  <label className="label" htmlFor="vehiculoId">Vehículo</label>
+                  <div className="input-wrap" data-ico="vehicle">
+                    <select
+                      id="vehiculoId"
+                      name="vehiculoId"
                       className="input"
-                      placeholder="ABC-123"
-                      value={form.placaPreliminar ?? ""}
+                      value={
+                        form.vehiculoId
+                          ? String(form.vehiculoId)
+                          : (mostrarFormNuevo ? "__nuevo__" : "")
+                      }
+                      onChange={onChangeCampo}
+                    >
+                      <option value="" disabled>Elige uno…</option>
+                      {vehiculos.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.placa} — {v.marca} {v.modelo}
+                        </option>
+                      ))}
+                      <option value="__nuevo__">Registrar nuevo vehículo…</option>
+                    </select>
+                  </div>
+                </div>
+              ) : (
+                <div className="helper">Aún no tienes vehículos registrados. Completa los datos abajo.</div>
+              )}
+
+              {(!(vehiculos.length > 0) || mostrarFormNuevo) && (
+                <>
+                  <div className="form-group">
+                    <label className="label" htmlFor="placaPreliminar">Placa</label>
+                    <div className="input-wrap" data-ico="plate">
+                      <input
+                        id="placaPreliminar"
+                        name="placaPreliminar"
+                        className="input"
+                        placeholder="ABC-123"
+                        value={form.placaPreliminar ?? ""}
+                        onChange={onChangeCampo}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="label" htmlFor="marcaPreliminar">Marca</label>
+                      <div className="input-wrap" data-ico="brand">
+                        <input
+                          id="marcaPreliminar"
+                          name="marcaPreliminar"
+                          className="input"
+                          placeholder="Toyota"
+                          value={form.marcaPreliminar ?? ""}
+                          onChange={onChangeCampo}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="label" htmlFor="modeloPreliminar">Modelo</label>
+                      <div className="input-wrap" data-ico="model">
+                        <input
+                          id="modeloPreliminar"
+                          name="modeloPreliminar"
+                          className="input"
+                          placeholder="Corolla"
+                          value={form.modeloPreliminar ?? ""}
+                          onChange={onChangeCampo}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="label" htmlFor="anioPreliminar">Año (opcional)</label>
+                      <div className="input-wrap" data-ico="year">
+                        <input
+                          id="anioPreliminar"
+                          name="anioPreliminar"
+                          className="input"
+                          type="number"
+                          min={1950}
+                          max={new Date().getFullYear() + 1}
+                          placeholder="2020"
+                          value={form.anioPreliminar ?? ""}
+                          onChange={onChangeCampo}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="label" htmlFor="colorPreliminar">Color (opcional)</label>
+                      <div className="input-wrap" data-ico="color">
+                        <input
+                          id="colorPreliminar"
+                          name="colorPreliminar"
+                          className="input"
+                          placeholder="Plata"
+                          value={form.colorPreliminar ?? ""}
+                          onChange={onChangeCampo}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="label" htmlFor="vinPreliminar">VIN (opcional)</label>
+                    <div className="input-wrap" data-ico="vin">
+                      <input
+                        id="vinPreliminar"
+                        name="vinPreliminar"
+                        className="input"
+                        placeholder="XXXXXXXXXXXXXXX"
+                        value={form.vinPreliminar ?? ""}
+                        onChange={onChangeCampo}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="label" htmlFor="programadaPara">Fecha programada</label>
+                  <div className="input-wrap" data-ico="date">
+                    <input
+                      id="programadaPara"
+                      name="programadaPara"
+                      className="input"
+                      type="date"
+                      min={new Date().toISOString().slice(0, 10)}
+                      value={form.programadaPara}
                       onChange={onChangeCampo}
                     />
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="label" htmlFor="marcaPreliminar">Marca</label>
-                    <div className="input-wrap">
-                      <input
-                        id="marcaPreliminar"
-                        name="marcaPreliminar"
-                        className="input"
-                        placeholder="Toyota"
-                        value={form.marcaPreliminar ?? ""}
-                        onChange={onChangeCampo}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="label" htmlFor="modeloPreliminar">Modelo</label>
-                    <div className="input-wrap">
-                      <input
-                        id="modeloPreliminar"
-                        name="modeloPreliminar"
-                        className="input"
-                        placeholder="Corolla"
-                        value={form.modeloPreliminar ?? ""}
-                        onChange={onChangeCampo}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="label" htmlFor="anioPreliminar">Año (opcional)</label>
-                    <div className="input-wrap">
-                      <input
-                        id="anioPreliminar"
-                        name="anioPreliminar"
-                        className="input"
-                        type="number"
-                        min={1950}
-                        max={new Date().getFullYear() + 1}
-                        placeholder="2020"
-                        value={form.anioPreliminar ?? ""}
-                        onChange={onChangeCampo}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="label" htmlFor="colorPreliminar">Color (opcional)</label>
-                    <div className="input-wrap">
-                      <input
-                        id="colorPreliminar"
-                        name="colorPreliminar"
-                        className="input"
-                        placeholder="Plata"
-                        value={form.colorPreliminar ?? ""}
-                        onChange={onChangeCampo}
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 <div className="form-group">
-                  <label className="label" htmlFor="vinPreliminar">VIN (opcional)</label>
-                  <div className="input-wrap">
+                  <label className="label" htmlFor="comentario">Comentario (opcional)</label>
+                  <div className="input-wrap" data-ico="comment">
                     <input
-                      id="vinPreliminar"
-                      name="vinPreliminar"
+                      id="comentario"
+                      name="comentario"
                       className="input"
-                      placeholder="XXXXXXXXXXXXXXX"
-                      value={form.vinPreliminar ?? ""}
+                      placeholder="Observaciones…"
+                      value={form.comentario ?? ""}
                       onChange={onChangeCampo}
                     />
                   </div>
                 </div>
-              </>
-            )}
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="label" htmlFor="programadaPara">Fecha programada</label>
-                <div className="input-wrap">
-                  <input
-                    id="programadaPara"
-                    name="programadaPara"
-                    className="input"
-                    type="date"
-                    min={new Date().toISOString().slice(0, 10)}
-                    value={form.programadaPara}
-                    onChange={onChangeCampo}
-                  />
-                </div>
               </div>
 
-              <div className="form-group">
-                <label className="label" htmlFor="comentario">Comentario (opcional)</label>
-                <div className="input-wrap">
-                  <input
-                    id="comentario"
-                    name="comentario"
-                    className="input"
-                    placeholder="Observaciones…"
-                    value={form.comentario ?? ""}
-                    onChange={onChangeCampo}
-                  />
-                </div>
-              </div>
-            </div>
+              <button type="submit" className="btn btn-primary" disabled={enviando || !puedeEnviar}>
+                {enviando ? "Agendando…" : "Agendar"}
+              </button>
 
-            <button type="submit" className="btn btn-primary" disabled={enviando || !puedeEnviar}>
-              {enviando ? "Agendando…" : "Agendar"}
-            </button>
+              {error && <div className="error-message" role="alert">{error}</div>}
+              {ok && <div className="success-message" role="status">Solicitud enviada.</div>}
 
-            {error && <div className="error-message" role="alert">{error}</div>}
-            {ok && <div className="success-message" role="status">Solicitud enviada.</div>}
-
-            <p className="helper" style={{ marginTop: 8 }}>
-              ¿Quieres salir?{" "}
-              <span className="textlink" onClick={() => navigate("/inicio")}>Volver al inicio</span>
-            </p>
-          </form>
+              <p className="helper" style={{ marginTop: 8 }}>
+                ¿Quieres salir?{" "}
+                <span className="textlink" onClick={() => navigate("/inicio")}>Volver al inicio</span>
+              </p>
+            </form>
+          </div>
         </div>
-
-        <aside className="agendar__right">
-          <div className="preview-card">
+        <div className="agendar__previewCol">
+          <div className="agendar__preview">
             <PreviewCita
               form={{
                 tipo: form.tipo,
@@ -373,6 +374,9 @@ export default function AgendarCitaPagina() {
               }}
             />
           </div>
+        </div>
+        <aside className="agendar__art">
+          <img src={agendarCitaImg} alt="Agendar cita — cliente" className="agendar__img" />
         </aside>
       </section>
     </main>
