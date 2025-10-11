@@ -1,4 +1,3 @@
-// src/features/usuarios/GestionUsuariosPagina.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./gestionarUsuarios.css";
@@ -28,15 +27,13 @@ export default function GestionUsuariosPagina() {
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 
-  // ⬇️ NUEVO: estado para confirmación inline (sin window.confirm)
+  // Confirmación de eliminación (sin window.confirm)
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!tieneRol(["ADMIN"])) {
-      navigate("/inicio", { replace: true });
-    }
+    if (!tieneRol(["ADMIN"])) navigate("/inicio", { replace: true });
   }, [tieneRol, navigate]);
 
   const cargar = async () => {
@@ -68,6 +65,30 @@ export default function GestionUsuariosPagina() {
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usuario?.token]);
+
+  // Animación reveal segura (visible por defecto)
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    if (!nodes.length) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const el = e.target as HTMLElement;
+          if (e.isIntersecting) {
+            el.classList.add("animate-in");
+            obs.unobserve(el);
+          }
+        }
+      },
+      { threshold: 0.12 }
+    );
+    nodes.forEach((n, i) => {
+      n.dataset.reveal = String(Math.min(i + 1, 5));
+      n.classList.add("will-animate");
+      obs.observe(n);
+    });
+    return () => obs.disconnect();
+  }, [items.length, formCrear, formEditar]);
 
   const filtrados = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -110,12 +131,9 @@ export default function GestionUsuariosPagina() {
 
   const guardarCrear = async () => {
     if (!formCrear || !usuario?.token) return;
-    setErr(null);
-    setOk(null);
-
+    setErr(null); setOk(null);
     const val = esquemaUsuarioTallerCrear.safeParse(formCrear);
     if (!val.success) return setErr(val.error.issues?.[0]?.message || "Datos inválidos");
-
     try {
       const nuevo = await apiUsuarios.crearTaller(val.data, usuario.token);
       setItems((prev) => [nuevo, ...prev]);
@@ -128,12 +146,9 @@ export default function GestionUsuariosPagina() {
 
   const guardarEditar = async () => {
     if (!formEditar || !usuario?.token || !editId) return;
-    setErr(null);
-    setOk(null);
-
+    setErr(null); setOk(null);
     const val = esquemaUsuarioTallerEditar.safeParse(formEditar);
     if (!val.success) return setErr(val.error.issues?.[0]?.message || "Datos inválidos");
-
     try {
       const upd = await apiUsuarios.actualizarTaller(editId, val.data, usuario.token);
       setItems((prev) => prev.map((u) => (u.id === upd.id ? upd : u)));
@@ -144,7 +159,6 @@ export default function GestionUsuariosPagina() {
     }
   };
 
-  // ⬇️ CAMBIO: ya NO usamos window.confirm aquí.
   const pedirConfirmacionEliminar = (id: number) => {
     setDeleteErr(null);
     setDeleteId(id);
@@ -184,10 +198,9 @@ export default function GestionUsuariosPagina() {
               type="button"
               className="mc-btn mc-btn--gradient"
               onClick={() => navigate("/inicio")}
+              title="Volver al inicio"
             >
-              <span className="mc-icon" aria-hidden>
-                ⬅️
-              </span>
+              <span className="mc-icon" aria-hidden>⬅️</span>
               <span className="mc-btn__text">Volver al inicio</span>
             </button>
             <button type="button" className="mc-btn mc-btn--ghost" onClick={startCrear}>
@@ -220,9 +233,7 @@ export default function GestionUsuariosPagina() {
 
             <div className="usr__form">
               <div className="form-group">
-                <label className="label" htmlFor="nombreCompleto">
-                  Nombre
-                </label>
+                <label className="label" htmlFor="nombreCompleto">Nombre</label>
                 <div className="input-wrap">
                   <input
                     id="nombreCompleto"
@@ -230,23 +241,15 @@ export default function GestionUsuariosPagina() {
                     value={(formCrear ?? formEditar)?.nombreCompleto ?? ""}
                     onChange={(e) =>
                       formCrear
-                        ? setFormCrear((f) => ({
-                            ...(f as CrearUsuarioTallerDto),
-                            nombreCompleto: e.target.value,
-                          }))
-                        : setFormEditar((f) => ({
-                            ...(f as ActualizarUsuarioTallerDto),
-                            nombreCompleto: e.target.value,
-                          }))
+                        ? setFormCrear((f) => ({ ...(f as CrearUsuarioTallerDto), nombreCompleto: e.target.value }))
+                        : setFormEditar((f) => ({ ...(f as ActualizarUsuarioTallerDto), nombreCompleto: e.target.value }))
                     }
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label className="label" htmlFor="correo">
-                  Correo
-                </label>
+                <label className="label" htmlFor="correo">Correo</label>
                 <div className="input-wrap">
                   <input
                     id="correo"
@@ -255,14 +258,8 @@ export default function GestionUsuariosPagina() {
                     value={(formCrear ?? formEditar)?.correo ?? ""}
                     onChange={(e) =>
                       formCrear
-                        ? setFormCrear((f) => ({
-                            ...(f as CrearUsuarioTallerDto),
-                            correo: e.target.value,
-                          }))
-                        : setFormEditar((f) => ({
-                            ...(f as ActualizarUsuarioTallerDto),
-                            correo: e.target.value,
-                          }))
+                        ? setFormCrear((f) => ({ ...(f as CrearUsuarioTallerDto), correo: e.target.value }))
+                        : setFormEditar((f) => ({ ...(f as ActualizarUsuarioTallerDto), correo: e.target.value }))
                     }
                   />
                 </div>
@@ -270,9 +267,7 @@ export default function GestionUsuariosPagina() {
 
               {formCrear && (
                 <div className="form-group">
-                  <label className="label" htmlFor="clave">
-                    Contraseña inicial
-                  </label>
+                  <label className="label" htmlFor="clave">Contraseña inicial</label>
                   <div className="input-wrap">
                     <input
                       id="clave"
@@ -280,10 +275,7 @@ export default function GestionUsuariosPagina() {
                       type="password"
                       value={(formCrear as CrearUsuarioTallerDto).clave}
                       onChange={(e) =>
-                        setFormCrear((f) => ({
-                          ...(f as CrearUsuarioTallerDto),
-                          clave: e.target.value,
-                        }))
+                        setFormCrear((f) => ({ ...(f as CrearUsuarioTallerDto), clave: e.target.value }))
                       }
                     />
                   </div>
@@ -291,9 +283,7 @@ export default function GestionUsuariosPagina() {
               )}
 
               <div className="form-group">
-                <label className="label" htmlFor="rol">
-                  Rol
-                </label>
+                <label className="label" htmlFor="rol">Rol</label>
                 <div className="input-wrap">
                   <select
                     id="rol"
@@ -301,14 +291,8 @@ export default function GestionUsuariosPagina() {
                     value={(formCrear ?? formEditar)?.rol ?? "MECANICO"}
                     onChange={(e) =>
                       formCrear
-                        ? setFormCrear((f) => ({
-                            ...(f as CrearUsuarioTallerDto),
-                            rol: e.target.value as TallerRol,
-                          }))
-                        : setFormEditar((f) => ({
-                            ...(f as ActualizarUsuarioTallerDto),
-                            rol: e.target.value as TallerRol,
-                          }))
+                        ? setFormCrear((f) => ({ ...(f as CrearUsuarioTallerDto), rol: e.target.value as TallerRol }))
+                        : setFormEditar((f) => ({ ...(f as ActualizarUsuarioTallerDto), rol: e.target.value as TallerRol }))
                     }
                   >
                     <option value="ADMIN">ADMIN</option>
@@ -319,13 +303,9 @@ export default function GestionUsuariosPagina() {
 
               <div className="usr__formActions">
                 {formCrear ? (
-                  <button type="button" className="mc-btn mc-btn--gradient" onClick={guardarCrear}>
-                    💾 Crear
-                  </button>
+                  <button type="button" className="mc-btn mc-btn--gradient" onClick={guardarCrear}>💾 Crear</button>
                 ) : (
-                  <button type="button" className="mc-btn mc-btn--gradient" onClick={guardarEditar}>
-                    💾 Guardar
-                  </button>
+                  <button type="button" className="mc-btn mc-btn--gradient" onClick={guardarEditar}>💾 Guardar</button>
                 )}
               </div>
 
@@ -342,7 +322,7 @@ export default function GestionUsuariosPagina() {
               <article
                 key={u.id}
                 role="listitem"
-                className={`usr__card is-toned`}
+                className="usr__card is-toned"
                 data-reveal={String((idx % 5) + 1)}
               >
                 <header className="usr__cardHeader">
@@ -351,12 +331,8 @@ export default function GestionUsuariosPagina() {
                     <span className="badge badge--rol">{u.rol}</span>
                   </div>
                   <div className="usr__cardActions">
-                    <button className="btnActionDark" onClick={() => startEditar(u)}>
-                      ✏️ Editar
-                    </button>
-                    <button className="btnGhost" onClick={() => pedirConfirmacionEliminar(u.id)}>
-                      🗑️ Eliminar
-                    </button>
+                    <button className="btnActionDark" onClick={() => startEditar(u)}>✏️ Editar</button>
+                    <button className="btnGhost" onClick={() => pedirConfirmacionEliminar(u.id)}>🗑️ Eliminar</button>
                   </div>
                 </header>
 
@@ -379,50 +355,18 @@ export default function GestionUsuariosPagina() {
         </div>
       </section>
 
-      {/* ⬇️ Barra de confirmación inline fija abajo */}
       {deleteId !== null && (
-        <div
-          className="
-            fixed left-1/2 -translate-x-1/2 bottom-4 z-50
-            w-[calc(100%-1.5rem)] max-w-3xl
-            bg-white border border-slate-200 rounded-2xl
-            shadow-[0_16px_36px_rgba(2,6,23,.12)]
-            px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3
-          "
-          role="alert"
-          aria-live="assertive"
-        >
-          <div className="text-slate-900 font-semibold flex-1">
-            ¿Seguro que quieres eliminar este usuario?
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={confirmarEliminar}
-              disabled={deleting}
-              className="
-                px-3 py-2 rounded-xl font-semibold text-white
-                bg-rose-600 hover:bg-rose-700
-                disabled:opacity-70 disabled:cursor-not-allowed
-              "
-            >
+        <div className="confirmBar" role="alert" aria-live="assertive">
+          <div className="confirmBar__text">¿Seguro que quieres eliminar este usuario?</div>
+          <div className="confirmBar__actions">
+            <button onClick={confirmarEliminar} disabled={deleting} className="confirmBar__btn confirmBar__btn--danger">
               {deleting ? "Eliminando…" : "Sí, eliminar"}
             </button>
-
-            <button
-              onClick={cancelarEliminar}
-              disabled={deleting}
-              className="
-                px-3 py-2 rounded-xl font-semibold
-                text-slate-800 bg-white border border-slate-300 hover:bg-slate-50
-                disabled:opacity-70 disabled:cursor-not-allowed
-              "
-            >
+            <button onClick={cancelarEliminar} disabled={deleting} className="confirmBar__btn confirmBar__btn--ghost">
               Cancelar
             </button>
           </div>
-
-          {deleteErr && <div className="text-sm text-rose-700">{deleteErr}</div>}
+          {deleteErr && <div className="confirmBar__err">{deleteErr}</div>}
         </div>
       )}
     </main>

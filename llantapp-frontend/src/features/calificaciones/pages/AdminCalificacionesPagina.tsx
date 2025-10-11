@@ -1,13 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiCalificaciones } from '../api';
+import './AdminCalificacionesPagina.css';
+
+type Dist = { estrellas: number; total: number };
+type TopMec = { mecanicoId: number; nombre: string; promedio: number; n: number };
+type Stats = {
+  promedioGlobal?: number;
+  totalCalificaciones?: number;
+  distribucion?: Dist[];
+  promedioPorMecanico?: TopMec[];
+};
 
 export default function AdminCalificacionesPagina() {
+  const navigate = useNavigate();
+
   const [items, setItems] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  const [stats, setStats] = useState<any | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
@@ -19,10 +32,12 @@ export default function AdminCalificacionesPagina() {
   const [fHasta, setFHasta] = useState('');
 
   const cargar = async () => {
-    setLoading(true); setErr(null);
+    setLoading(true);
+    setErr(null);
     try {
       const list = await apiCalificaciones.adminList({
-        page, pageSize,
+        page,
+        pageSize,
         mecanicoId: fMecanico ? Number(fMecanico) : undefined,
         estrellas: fEstrellas ? Number(fEstrellas) : undefined,
         placa: fPlaca || undefined,
@@ -41,117 +56,220 @@ export default function AdminCalificacionesPagina() {
     }
   };
 
-  useEffect(() => { cargar(); /* eslint-disable-next-line */ }, [page]);
+  useEffect(() => {
+    cargar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
-  const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [total]);
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(total / pageSize)),
+    [total, pageSize]
+  );
 
   const fmt = (s?: string) => (s ? new Date(s).toLocaleString() : '—');
+  const starText = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
+
+  const resetFiltros = () => {
+    setFMecanico('');
+    setFEstrellas('');
+    setFPlaca('');
+    setFDesde('');
+    setFHasta('');
+    setPage(1);
+    cargar();
+  };
+
+  const aplicarFiltros = () => {
+    setPage(1);
+    cargar();
+  };
 
   return (
-    <div className="container mx-auto max-w-6xl p-4">
-      <h1 className="text-2xl font-semibold mb-2">Calificaciones (Admin)</h1>
+    <main className="calif-page">
+      <header className="calif-header">
+        <div className="calif-titlewrap">
+          <h1 className="title">Calificaciones (Admin)</h1>
+        </div>
+        <div className="calif-actions">
+          <button
+            type="button"
+            className="mc-btn mc-btn--gradient"
+            onClick={() => navigate('/inicio')}
+            title="Volver al inicio"
+          >
+            <span className="mc-icon" aria-hidden>⬅️</span>
+            <span className="mc-btn__text">Volver al inicio</span>
+          </button>
+        </div>
+      </header>
 
       {/* Filtros */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
-        <input className="border rounded p-2" placeholder="ID Mecánico" value={fMecanico} onChange={e=>setFMecanico(e.target.value)} />
-        <select className="border rounded p-2" value={fEstrellas} onChange={e=>setFEstrellas(e.target.value)}>
-          <option value="">Estrellas</option>
-          {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
-        <input className="border rounded p-2" placeholder="Placa" value={fPlaca} onChange={e=>setFPlaca(e.target.value)} />
-        <input type="date" className="border rounded p-2" value={fDesde} onChange={e=>setFDesde(e.target.value)} />
-        <input type="date" className="border rounded p-2" value={fHasta} onChange={e=>setFHasta(e.target.value)} />
-      </div>
+      <section className="filters card fade-in" aria-label="Filtros de búsqueda">
+        <div className="filters-grid">
+          <input
+            className="input"
+            placeholder="ID Mecánico"
+            value={fMecanico}
+            onChange={(e) => setFMecanico(e.target.value)}
+            inputMode="numeric"
+          />
+          <select
+            className="input"
+            value={fEstrellas}
+            onChange={(e) => setFEstrellas(e.target.value)}
+          >
+            <option value="">Estrellas</option>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+          <input
+            className="input"
+            placeholder="Placa"
+            value={fPlaca}
+            onChange={(e) => setFPlaca(e.target.value)}
+          />
+          <input
+            type="date"
+            className="input"
+            value={fDesde}
+            onChange={(e) => setFDesde(e.target.value)}
+          />
+          <input
+            type="date"
+            className="input"
+            value={fHasta}
+            onChange={(e) => setFHasta(e.target.value)}
+          />
+        </div>
 
-      <div className="flex gap-2 mb-4">
-        <button className="px-3 py-2 border rounded" onClick={()=>{ setPage(1); cargar(); }}>Aplicar filtros</button>
-        <button className="px-3 py-2 border rounded" onClick={()=>{
-          setFMecanico(''); setFEstrellas(''); setFPlaca(''); setFDesde(''); setFHasta(''); setPage(1); cargar();
-        }}>Limpiar</button>
-      </div>
+        <div className="filters-actions">
+          <button className="btn btn-soft" onClick={aplicarFiltros}>
+            Aplicar filtros
+          </button>
+          <button className="btn btn-soft-ghost" onClick={resetFiltros}>
+            Limpiar
+          </button>
+        </div>
+      </section>
 
-      {loading && <p>Cargando…</p>}
-      {err && <p className="text-red-600">{err}</p>}
+      {loading && <p className="muted">Cargando…</p>}
+      {err && <p className="error">{err}</p>}
 
       {/* Stats */}
       {stats && (
-        <div className="grid md:grid-cols-3 gap-3 mb-4">
-          <div className="border rounded p-3">
-            <div className="text-sm text-gray-500">Promedio global</div>
-            <div className="text-2xl font-semibold">{stats.promedioGlobal} ★</div>
-            <div className="text-xs text-gray-500">{stats.totalCalificaciones} calificaciones</div>
+        <section className="stats-grid" aria-label="Estadísticas">
+          <div className="card fade-in">
+            <div className="muted small">Promedio global</div>
+            <div className="stat-big">
+              {typeof stats.promedioGlobal === 'number'
+                ? stats.promedioGlobal.toFixed(2)
+                : '0.00'}{' '}
+              <span className="stars-inline">★</span>
+            </div>
+            <div className="muted xsmall">
+              {stats.totalCalificaciones ?? 0} calificaciones
+            </div>
           </div>
-          <div className="border rounded p-3">
-            <div className="font-medium mb-1">Distribución</div>
-            <ul className="text-sm">
-              {stats.distribucion.map((d: any) => (
-                <li key={d.estrellas}>{d.estrellas}★ — {d.total}</li>
+
+          <div className="card fade-in">
+            <div className="stat-title">Distribución</div>
+            <ul className="list">
+              {(stats.distribucion ?? []).length === 0 && (
+                <li className="muted small">Sin datos</li>
+              )}
+              {(stats.distribucion ?? []).map((d) => (
+                <li key={d.estrellas} className="list-row">
+                  <span className="stars-inline">{starText(d.estrellas)}</span>
+                  <span className="list-badge">{d.total}</span>
+                </li>
               ))}
             </ul>
           </div>
-          <div className="border rounded p-3">
-            <div className="font-medium mb-1">Top mecánicos</div>
-            <ol className="text-sm list-decimal pl-5">
-              {stats.promedioPorMecanico.slice(0,5).map((m: any) => (
-                <li key={m.mecanicoId}>{m.nombre}: {m.promedio}★ ({m.n})</li>
+
+          <div className="card fade-in">
+            <div className="stat-title">Top mecánicos</div>
+            <ol className="list numbered">
+              {(stats.promedioPorMecanico ?? []).length === 0 && (
+                <li className="muted small">Sin datos</li>
+              )}
+              {(stats.promedioPorMecanico ?? []).slice(0, 5).map((m) => (
+                <li key={m.mecanicoId} className="list-row">
+                  <span className="grow">
+                    {m.nombre}: {m.promedio?.toFixed?.(2) ?? '—'}{' '}
+                    <span className="stars-inline">★</span>
+                  </span>
+                  <span className="muted small">({m.n})</span>
+                </li>
               ))}
             </ol>
           </div>
-        </div>
+        </section>
       )}
 
       {/* Tabla */}
       {!loading && (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border rounded">
-            <thead className="bg-gray-50">
+        <div className="table-wrap fade-in">
+          <table className="table">
+            <thead>
               <tr>
-                <th className="p-2 text-left">Fecha</th>
-                <th className="p-2 text-left">Cita</th>
-                <th className="p-2 text-left">Mecánico</th>
-                <th className="p-2 text-left">Cliente</th>
-                <th className="p-2 text-left">Placa</th>
-                <th className="p-2 text-left">★</th>
-                <th className="p-2 text-left">Comentario</th>
+                <th>Fecha</th>
+                <th>Cita</th>
+                <th>Mecánico</th>
+                <th>Cliente</th>
+                <th>Placa</th>
+                <th>★</th>
+                <th>Comentario</th>
               </tr>
             </thead>
             <tbody>
               {items.map((it) => (
-                <tr key={it.id} className="border-t">
-                  <td className="p-2">{fmt(it.creadaEn)}</td>
-                  <td className="p-2">#{it.citaId}</td>
-                  <td className="p-2">{it.cita?.mecanico?.nombreCompleto ?? '—'}</td>
-                  <td className="p-2">{it.cliente?.nombreCompleto ?? '—'}</td>
-                  <td className="p-2">{it.cita?.placaPreliminar ?? '—'}</td>
-                  <td className="p-2">{it.estrellas}</td>
-                  <td className="p-2">{it.comentario ?? ''}</td>
+                <tr key={it.id}>
+                  <td>{fmt(it.creadaEn)}</td>
+                  <td>#{it.citaId}</td>
+                  <td>{it?.cita?.mecanico?.nombreCompleto ?? '—'}</td>
+                  <td>{it?.cliente?.nombreCompleto ?? '—'}</td>
+                  <td>{it?.cita?.placaPreliminar ?? '—'}</td>
+                  <td className="nowrap">
+                    <span className="stars-inline" aria-label={`${it.estrellas} estrellas`}>
+                      {starText(it.estrellas ?? 0)}
+                    </span>
+                  </td>
+                  <td className="comment">{it.comentario ?? ''}</td>
                 </tr>
               ))}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="muted center">
+                    No hay registros para mostrar.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       )}
 
       {/* Paginación */}
-      <div className="flex items-center justify-between pt-3">
+      <div className="pagination">
         <button
-          className="px-3 py-1 rounded border disabled:opacity-50"
+          className="btn"
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={page <= 1}
         >
           ← Anterior
         </button>
-        <div className="text-sm text-gray-600">
+        <div className="muted small">
           Página {page} de {totalPages} · {total} registros
         </div>
         <button
-          className="px-3 py-1 rounded border disabled:opacity-50"
+          className="btn"
           onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           disabled={page >= totalPages}
         >
           Siguiente →
         </button>
       </div>
-    </div>
+    </main>
   );
 }

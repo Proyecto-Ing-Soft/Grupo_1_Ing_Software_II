@@ -15,34 +15,52 @@ export default function InicioProtegido() {
     ? "Gestiona tu taller desde un solo lugar"
     : "Gestiona tus vehículos desde un solo lugar";
 
+  // Animación reveal robusta: visible por defecto y se aplica también a nodos insertados tras login
   useEffect(() => {
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
-    if (nodes.length === 0) return;
+    const scope = document.querySelector<HTMLElement>(".inicio-container") ?? document;
 
-    const timeouts: number[] = [];
-    let destroyed = false;
-
-    nodes.forEach((el) => el.classList.add("will-animate"));
-
-    requestAnimationFrame(() => {
-      nodes.forEach((el, i) => {
+    const applyReveal = (els: HTMLElement[]) => {
+      els.forEach((el, i) => {
+        if (el.classList.contains("animate-in")) return; // ya animada
+        el.classList.add("will-animate");
         const delay = Number(el.dataset.delay ?? i * 80);
         const id = window.setTimeout(() => {
-          if (destroyed) return;
           el.classList.add("animate-in");
-          const onEnd = () => el.classList.remove("will-animate");
-          el.addEventListener("animationend", onEnd, { once: true });
+          // al terminar la transición, retiramos el flag de preparación
+          const handler = () => el.classList.remove("will-animate");
+          el.addEventListener("transitionend", handler, { once: true });
+          el.addEventListener("animationend", handler, { once: true });
         }, delay);
-        timeouts.push(id);
+        (el as any)._rid = id;
       });
+    };
+
+    // 1) Aplica a los reveals ya presentes
+    applyReveal(Array.from(scope.querySelectorAll<HTMLElement>(".reveal")));
+
+    // 2) Observa inserciones (cuando llegan tarjetas por rol)
+    const mo = new MutationObserver(muts => {
+      const added: HTMLElement[] = [];
+      muts.forEach(m => {
+        m.addedNodes.forEach(n => {
+          if (!(n instanceof HTMLElement)) return;
+          if (n.matches(".reveal")) added.push(n);
+          added.push(...Array.from(n.querySelectorAll<HTMLElement>(".reveal")));
+        });
+      });
+      if (added.length) applyReveal(added);
     });
+    mo.observe(scope, { childList: true, subtree: true });
 
     return () => {
-      destroyed = true;
-      timeouts.forEach(clearTimeout);
-      nodes.forEach((el) => el.classList.remove("will-animate", "animate-in"));
+      mo.disconnect();
+      scope.querySelectorAll<HTMLElement>(".reveal").forEach(el => {
+        const rid = (el as any)._rid;
+        if (rid) clearTimeout(rid);
+        el.classList.remove("will-animate", "animate-in");
+      });
     };
-  }, []);
+  }, [sesion?.perfil?.rol]); // se reprocesa cuando cambia el rol / llega sesión
 
   return (
     <div className="inicio-container">
@@ -177,7 +195,6 @@ export default function InicioProtegido() {
             </Link>
           )}
 
-          {/* === NUEVO: CALIFICACIONES === */}
           {tieneRol(["CLIENTE"]) && (
             <Link to="/calificaciones/mias" className="btn-card btn-highlight reveal" data-delay="820">
               <div className="btn-icon">⭐</div>
