@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards, Param, ParseIntPipe } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards, Param, ParseIntPipe, UnauthorizedException } from '@nestjs/common';
 import { VehiculosService } from './vehiculos.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CrearVehiculoDto } from './dto/crear-vehiculo.dto';
@@ -15,7 +15,11 @@ export class VehiculosController {
 
   @Get('mios')
   async mios(@Req() req: any) {
-    const uid = req.user?.sub ?? req.user?.id;
+    const uidRaw = req.user?.sub ?? req.user?.id;
+    const uid = Number(uidRaw);
+    if (!Number.isFinite(uid)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
     return this.svc.listarDelPropietario(uid);
   }
 
