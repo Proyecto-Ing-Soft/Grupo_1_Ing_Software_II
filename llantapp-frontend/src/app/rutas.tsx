@@ -1,5 +1,5 @@
 import React from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
 // PÁGINAS PÚBLICAS
 import InicioPublico from '../paginas/inicio-publico/InicioPublico';
@@ -43,6 +43,8 @@ import { RutaProtegidaPorRol } from '../common/componentes/RutaProtegidaPorRol';
 import { RutaProtegida } from '../common/componentes/RutaProtegida';
 import LayoutProtegido from '../common/componentes/LayoutProtegido';
 
+import NoEncontrada404 from "../common/paginas/NoEncontrada404";
+
 const router = createBrowserRouter(
   [
     // Públicas
@@ -53,6 +55,8 @@ const router = createBrowserRouter(
     { path: '/terminos', element: <TerminosPagina /> },
     { path: '/privacidad', element: <PrivacidadPagina /> },
     { path: '/cookies', element: <CookiesPagina /> },
+    { path: '/llantapp', element: <Navigate to="/" replace /> },
+    { path: '/llantapp/*', element: <NoEncontrada404 /> },
 
     // Login / Registro
     {
@@ -90,7 +94,6 @@ const router = createBrowserRouter(
 
     // Protegidas
     {
-      path: '/',
       element: (
         <RutaProtegida>
           <LayoutProtegido />
@@ -267,7 +270,7 @@ const router = createBrowserRouter(
       ],
     },
 
-    { path: '*', element: <InicioPublico /> },
+    { path: '*', element: <NoEncontrada404 /> },
   ],
   {
     basename: (import.meta.env.BASE_URL || '/').replace(/\/$/, ''),
