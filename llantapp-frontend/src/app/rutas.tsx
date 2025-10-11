@@ -30,6 +30,10 @@ import RegistrarMantenimientoPagina from '../features/mantenimientos/RegistrarMa
 // --- NUEVAS PÁGINAS ---
 import MisVehiculosPagina from '../features/vehiculos/MisVehiculosPagina';
 import HistorialDeServiciosPagina from '../features/historial/HistorialDeServiciosPagina';
+import MisCalificacionesPagina from '../features/calificaciones/pages/MisCalificacionesPagina';
+import CalificarServicioPagina from '../features/calificaciones/pages/CalificarServicioPagina';
+import CalificacionesRecibidasPagina from '../features/calificaciones/pages/CalificacionesRecibidasPagina';
+import AdminCalificacionesPagina from '../features/calificaciones/pages/AdminCalificacionesPagina';
 
 // GUARDS / LAYOUT
 import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';
@@ -213,6 +217,41 @@ const router = createBrowserRouter(
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['CLIENTE', 'MECANICO']}>
               <NotificacionesLeerPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+        // Calificaciones (CLIENTE)
+        {
+          path: 'calificaciones/mias',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
+              <MisCalificacionesPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+        {
+          path: 'calificaciones/cita/:citaId',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
+              <CalificarServicioPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+        {
+          path: 'calificaciones/recibidas',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
+              <CalificacionesRecibidasPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
+        // Admin: Calificaciones (placeholder, cámbialo por tu página real si la tienes)
+            {
+          path: 'admin/calificaciones',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+              <AdminCalificacionesPagina />
             </RutaProtegidaPorRol>
           ),
         },

@@ -57,6 +57,8 @@ model Usuario {
   // === NUEVO: Citas como cliente y como mecánico ===
   citasComoCliente  CitaMantenimiento[] @relation("CitasCliente")
   citasComoMecanico CitaMantenimiento[] @relation("CitasMecanico")
+
+  calificacionesHechas CalificacionCita[]
 }
 
 model Empresa {
@@ -140,6 +142,8 @@ model CitaMantenimiento {
   evidenciaMime        String?
   evidenciaNombre      String?
 
+  calificacion CalificacionCita?
+
   @@index([clienteId])
   @@index([mecanicoId, estado])
   @@index([vehiculoId])
@@ -166,3 +170,22 @@ model Notificacion {
   @@index([citaId])
 }
 
+model CalificacionCita {
+  id          Int      @id @default(autoincrement())
+  citaId      Int      @unique
+  clienteId   Int
+  estrellas   Int      @db.SmallInt  // 1..5 (validar en servicio)
+  comentario  String?
+  creadaEn    DateTime @default(now())
+
+  // Relaciones
+  cita        CitaMantenimiento @relation(fields: [citaId], references: [id], onDelete: Cascade)
+  cliente     Usuario           @relation(fields: [clienteId], references: [id])
+
+  @@index([clienteId])
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "./erd.svg"
+}

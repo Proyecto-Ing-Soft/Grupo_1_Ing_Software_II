@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCalificacion } from '../hooks/useCalificacion';
-import { EstrellasCalificacion } from './EstrellasCalificacion';
-import { FormularioCalificacion } from './FormularioCalificacion';
+import { EstrellasCalificacion } from '../componentes/EstrellasCalificacion';
+import { FormularioCalificacion } from '../componentes/FormularioCalificacion';
 
 export const CalificarServicioModal: React.FC<{
   citaId: number;

@@ -21,6 +21,7 @@ export default function NotificacionesLeerPagina() {
   const navigate = useNavigate();
 
   const isMecanico = usuario?.rol === "MECANICO";
+  const isCliente  = usuario?.rol === "CLIENTE"; // 👈 NUEVO
 
   const toneClass = (s?: string | null) =>
     s === "SOLICITADA"   ? "notif--solicitada" :
@@ -168,6 +169,10 @@ export default function NotificacionesLeerPagina() {
                 };
                 const estadoCita = n.citaEstado ?? inferirEstado();
                 const mostrarAccionesMecanico = isMecanico && estadoCita === "EN_PROGRESO" && !!n.citaId;
+
+                // 👇 NUEVO: botón calificar para CLIENTE si la cita está TERMINADA y hay citaId
+                const mostrarAccionesCliente = isCliente && estadoCita === "TERMINADA" && !!n.citaId;
+
                 const mensajeMecanico =
                   mostrarAccionesMecanico
                     ? `Se te asignó la cita #${n.citaId}. Confirma los datos del vehículo.`
@@ -236,6 +241,29 @@ export default function NotificacionesLeerPagina() {
                           >
                             <span className="mc-icon" aria-hidden>🛠️</span>
                             <span className="mc-btn__text">Registrar mantenimiento</span>
+                          </button>
+
+                          {n.estado === "PENDIENTE" && (
+                            <button
+                              type="button"
+                              className="btnGhost"
+                              onClick={() => marcarLeidaOptimista(n.id)}
+                              title="Marcar como leída"
+                            >
+                              ✅ Marcar como leída
+                            </button>
+                          )}
+                        </div>
+                      ) : mostrarAccionesCliente ? (
+                        <div className="btnRow">
+                          <button
+                            type="button"
+                            className="mc-btn mc-btn--gradient"
+                            onClick={() => navigate(`/calificaciones/cita/${n.citaId}`)}
+                            title="Calificar este servicio"
+                          >
+                            <span className="mc-icon" aria-hidden>⭐</span>
+                            <span className="mc-btn__text">Calificar servicio</span>
                           </button>
 
                           {n.estado === "PENDIENTE" && (

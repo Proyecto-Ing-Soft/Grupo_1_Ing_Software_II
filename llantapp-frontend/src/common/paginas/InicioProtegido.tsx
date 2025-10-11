@@ -88,13 +88,13 @@ export default function InicioProtegido() {
 
         <div className="acciones">
           {tieneRol(["CLIENTE"]) && (
-          <Link to="/vehiculos/mios" className="btn-card btn-primary reveal" data-delay="160">
-            <div className="btn-icon">📋</div>
-            <div className="btn-text">
-              <div className="btn-title">Mis Vehículos</div>
-              <div className="btn-sub">Consulta el historial de tus unidades</div>
-            </div>
-          </Link>
+            <Link to="/vehiculos/mios" className="btn-card btn-primary reveal" data-delay="160">
+              <div className="btn-icon">📋</div>
+              <div className="btn-text">
+                <div className="btn-title">Mis Vehículos</div>
+                <div className="btn-sub">Consulta el historial de tus unidades</div>
+              </div>
+            </Link>
           )}
 
           {tieneRol(["MECANICO"]) && (
@@ -173,6 +173,37 @@ export default function InicioProtegido() {
               <div className="btn-text">
                 <div className="btn-title">Usuarios del taller</div>
                 <div className="btn-sub">Crea y gestiona usuarios</div>
+              </div>
+            </Link>
+          )}
+
+          {/* === NUEVO: CALIFICACIONES === */}
+          {tieneRol(["CLIENTE"]) && (
+            <Link to="/calificaciones/mias" className="btn-card btn-highlight reveal" data-delay="820">
+              <div className="btn-icon">⭐</div>
+              <div className="btn-text">
+                <div className="btn-title">Mis calificaciones</div>
+                <div className="btn-sub">Revisa o evalúa tus servicios</div>
+              </div>
+            </Link>
+          )}
+
+          {tieneRol(["MECANICO"]) && (
+            <Link to="/calificaciones/recibidas" className="btn-card btn-highlight reveal" data-delay="840">
+              <div className="btn-icon">🌟</div>
+              <div className="btn-text">
+                <div className="btn-title">Calificaciones recibidas</div>
+                <div className="btn-sub">Opiniones de tus clientes</div>
+              </div>
+            </Link>
+          )}
+
+          {tieneRol(["ADMIN"]) && (
+            <Link to="/admin/calificaciones" className="btn-card btn-highlight reveal" data-delay="860">
+              <div className="btn-icon">📊</div>
+              <div className="btn-text">
+                <div className="btn-title">Revisar calificaciones</div>
+                <div className="btn-sub">Analiza desempeño y calidad del servicio</div>
               </div>
             </Link>
           )}

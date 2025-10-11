@@ -11,6 +11,7 @@ import { VehiculosModule } from './features/vehiculos/vehiculos/vehiculo.module'
 import { NotificacionesModule } from './features/notificaciones/notificaciones/notificaciones.module';
 import { CitasModule } from './features/mantenimientos/citas/citas.module';
 import { HistorialModule } from './features/historial/historial/historial.module';
+import { CalificacionesModule } from './features/calificaciones/calificaciones/calificaciones.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { HistorialModule } from './features/historial/historial/historial.module
     VehiculosModule,      // Gestión de vehículos
     NotificacionesModule, // Envío y lectura de notificaciones
     CitasModule,           // Citas de mantenimiento
-    HistorialModule        // Historial de mantenimientos
+    HistorialModule,        // Historial de mantenimientos
+    CalificacionesModule    // Calificaciones
   ],
 })
 export class AppModule {}
