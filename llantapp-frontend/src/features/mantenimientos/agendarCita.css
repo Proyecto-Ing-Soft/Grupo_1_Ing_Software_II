@@ -46,13 +46,13 @@ html, body{
 }
 
 .agendar__right{ position: relative; }
-.preview-card{
-  position: sticky; top: 18px;
-  background: #fbfdff;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 16px;
-  box-shadow: 0 12px 24px rgba(2,6,23,.06);
+.preview-card {
+  position: sticky;
+  top: 18px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 
 /* ====== Header ====== */
@@ -104,6 +104,18 @@ select.input{
   background-repeat: no-repeat;
 }
 textarea.input{ resize: vertical; min-height: 96px; }
+
+textarea.input {
+  width: 100%;
+}
+
+.form-row .form-group textarea.input {
+  grid-column: 1 / -1;   /* hace que abarque toda la fila si usas grid */
+}
+
+.form-row .form-group:last-child {
+  grid-column: 1 / -1;   /* asegura que la última columna se expanda */
+}
 
 /* ====== Botón enviar (coloreado) ====== */
 /* Alta especificidad para vencer estilos globales */
