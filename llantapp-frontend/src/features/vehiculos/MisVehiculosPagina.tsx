@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../core/auth/AuthContext";
 import { apiVehiculos } from "./api";
 import "./misVehiculos.css";
+import noVehiculosImg from "../../assets/priv/cliente/no_vehiculos_registrados.png";
 
 type VehiculoLite = {
   id: number;
@@ -92,6 +93,12 @@ export default function MisVehiculosPagina() {
               <div className="mv__emptyEmoji" aria-hidden>🚘</div>
               <div className="mv__emptyTitle">No tienes vehículos registrados</div>
               <div className="mv__emptySub">Cuando registres uno, aparecerá aquí.</div>
+              <img
+                className="mv__emptyImg"
+                src={noVehiculosImg}
+                alt="Ilustración: no hay vehículos registrados"
+                loading="lazy"
+              />
             </div>
           </div>
         ) : (

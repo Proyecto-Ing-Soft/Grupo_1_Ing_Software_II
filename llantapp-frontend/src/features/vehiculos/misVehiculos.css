@@ -123,6 +123,15 @@
 .mv .mv__emptyEmoji{ font-size:42px; line-height:1; }
 .mv .mv__emptyTitle{ font-weight:900; color:#0b1220; }
 .mv .mv__emptySub{ color: var(--muted); }
+.mv .mv__emptyImg{
+  display:block;
+  margin: 2px auto 0;
+  max-width: min(480px, 85%);
+  height:auto;
+  -webkit-user-drag: none;
+  user-select: none;
+  filter: drop-shadow(0 10px 24px rgba(2,6,23,.12));
+}
 
 .mv .reveal{ will-change: transform, opacity; transition: transform .5s cubic-bezier(.2,.8,.2,1), opacity .5s ease; }
 .mv .will-animate{ opacity:0; transform: translateY(14px) scale(.985); }
