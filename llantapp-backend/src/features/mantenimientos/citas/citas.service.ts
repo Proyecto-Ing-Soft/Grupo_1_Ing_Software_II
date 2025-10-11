@@ -23,65 +23,100 @@ export class CitasService {
   // DRY: YYYY-MM-DD (solo fecha)
   private toYMD(d: Date) { return d.toISOString().slice(0, 10); }
 
-  // === CREAR CITA (estado inicial: SOLICITADA) ===
-  async crear(dto: CrearCitaDto, clienteId: number) {
-    // Validación de fecha futura/actual (sin TZ)
-    if (!dto.programadaPara || !/^\d{4}-\d{2}-\d{2}$/.test(dto.programadaPara)) {
-      throw new BadRequestException('Fecha inválida (usa AAAA-MM-DD)');
-    }
-    const hoyYMD = this.toYMD(new Date()); // e.g. "2025-10-07"
-    const ymd = dto.programadaPara.slice(0, 10);
-    if (ymd < hoyYMD) {
-      throw new BadRequestException('La fecha programada debe ser hoy o una fecha futura');
-    }
-
-    if (!dto.placaPreliminar || !dto.marcaPreliminar || !dto.modeloPreliminar) {
-      throw new BadRequestException('Faltan datos del vehículo');
-    }
-
-    // Crear cita
-    const cita = await this.prisma.citaMantenimiento.create({
-      data: {
-        tipo: dto.tipo,
-        comentario: dto.comentario ?? '',
-        programadaPara: new Date(dto.programadaPara + 'T00:00:00Z'),
-        estado: EstadoCita.SOLICITADA,
-        clienteId,
-        vehiculoId: null,
-        placaPreliminar: dto.placaPreliminar.trim().toUpperCase(),
-        marcaPreliminar: dto.marcaPreliminar.trim(),
-        modeloPreliminar: dto.modeloPreliminar.trim(),
-        anioPreliminar: dto.anioPreliminar ?? null,
-        colorPreliminar: dto.colorPreliminar ?? null,
-        vinPreliminar: dto.vinPreliminar ?? null,
-      },
-    });
-
-    // Notificación a administradores
-    const admins = await this.prisma.usuario.findMany({ where: { rol: 'ADMIN' } });
-    await Promise.all(
-      admins.map(a =>
-        this.noti.enviar({
-          usuarioId: a.id,
-          citaId: cita.id,
-          vehiculoId: null,
-          titulo: 'Nueva cita pendiente',
-          mensaje: `Cita #${cita.id} solicitada por cliente #${clienteId}`,
-        }),
-      ),
-    );
-
-    // Notificación al cliente
-    await this.noti.enviar({
-      usuarioId: clienteId,
-      citaId: cita.id,
-      vehiculoId: null,
-      titulo: 'Solicitud registrada',
-      mensaje: 'Recibimos tu solicitud de mantenimiento. Un administrador la revisará y asignará un mecánico pronto.',
-    });
-
-    return cita;
+// === CREAR CITA (estado inicial: SOLICITADA) ===
+async crear(dto: CrearCitaDto, clienteId: number) {
+  // Validación de fecha (AAAA-MM-DD) y que no sea pasada
+  if (!dto.programadaPara || !/^\d{4}-\d{2}-\d{2}$/.test(dto.programadaPara)) {
+    throw new BadRequestException('Fecha inválida (usa AAAA-MM-DD)');
   }
+  const hoyYMD = this.toYMD(new Date());
+  const ymd = dto.programadaPara.slice(0, 10);
+  if (ymd < hoyYMD) {
+    throw new BadRequestException('La fecha programada debe ser hoy o una fecha futura');
+  }
+
+  // Si viene vehiculoId: validar pertenencia y tomar snapshot del vehículo.
+  // Si NO viene vehiculoId: exigir placa/marca/modelo preliminares.
+  let vehiculoId: number | undefined = undefined;
+
+  type Snapshot = {
+    placaPreliminar?: string;
+    marcaPreliminar?: string;
+    modeloPreliminar?: string;
+    anioPreliminar?: number;
+    colorPreliminar?: string;
+    vinPreliminar?: string;
+  };
+  let snapshot: Snapshot = {};
+
+  if (dto.vehiculoId) {
+    const vehiculo = await this.prisma.vehiculo.findFirst({
+      where: { id: dto.vehiculoId, propietarioUsuarioId: clienteId },
+      select: { id: true, placa: true, marca: true, modelo: true, anio: true, color: true, vin: true },
+    });
+    if (!vehiculo) throw new BadRequestException('Vehículo no válido para este usuario');
+
+    vehiculoId = vehiculo.id;
+    snapshot = {
+      ...(vehiculo.placa  ? { placaPreliminar: vehiculo.placa.toUpperCase() } : {}),
+      ...(vehiculo.marca  ? { marcaPreliminar: vehiculo.marca } : {}),
+      ...(vehiculo.modelo ? { modeloPreliminar: vehiculo.modelo } : {}),
+      ...(vehiculo.anio != null ? { anioPreliminar: vehiculo.anio } : {}),
+      ...(vehiculo.color ? { colorPreliminar: vehiculo.color } : {}),
+      ...(vehiculo.vin   ? { vinPreliminar: vehiculo.vin } : {}),
+    };
+  } else {
+    if (!dto.placaPreliminar || !dto.marcaPreliminar || !dto.modeloPreliminar) {
+      throw new BadRequestException('Selecciona un vehículo o completa placa, marca y modelo');
+    }
+    snapshot = {
+      ...(dto.placaPreliminar  ? { placaPreliminar: dto.placaPreliminar.trim().toUpperCase() } : {}),
+      ...(dto.marcaPreliminar  ? { marcaPreliminar: dto.marcaPreliminar.trim() } : {}),
+      ...(dto.modeloPreliminar ? { modeloPreliminar: dto.modeloPreliminar.trim() } : {}),
+      ...(dto.anioPreliminar != null ? { anioPreliminar: dto.anioPreliminar } : {}),
+      ...(dto.colorPreliminar ? { colorPreliminar: dto.colorPreliminar.trim() } : {}),
+      ...(dto.vinPreliminar   ? { vinPreliminar: dto.vinPreliminar.trim() } : {}),
+    };
+  }
+
+  const data: any = {
+    tipo: dto.tipo,
+    comentario: dto.comentario ?? '',
+    programadaPara: new Date(dto.programadaPara + 'T00:00:00Z'),
+    estado: EstadoCita.SOLICITADA,
+    clienteId,
+    ...(vehiculoId ? { vehiculoId } : {}),
+    ...snapshot,
+  };
+
+  const cita = await this.prisma.citaMantenimiento.create({ data });
+
+  // Notificación a administradores
+  const admins = await this.prisma.usuario.findMany({ where: { rol: 'ADMIN' } });
+  await Promise.all(
+    admins.map((a) =>
+      this.noti.enviar({
+        usuarioId: a.id,
+        citaId: cita.id,
+        vehiculoId: cita.vehiculoId ?? null,
+        titulo: 'Nueva cita pendiente',
+        mensaje: `Cita #${cita.id} solicitada por cliente #${clienteId}`,
+      }),
+    ),
+  );
+
+  // Notificación al cliente
+  await this.noti.enviar({
+    usuarioId: clienteId,
+    citaId: cita.id,
+    vehiculoId: cita.vehiculoId ?? null,
+    titulo: 'Solicitud registrada',
+    mensaje: 'Recibimos tu solicitud de mantenimiento. Un administrador la revisará y asignará un mecánico pronto.',
+  });
+
+  return cita;
+}
+
 
   // === ASIGNAR MECÁNICO (pasa a EN_PROGRESO) ===
   async asignarMecanico(citaId: number, mecanicoId: number, _adminId: number) {

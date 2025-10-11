@@ -20,7 +20,7 @@ import RegistroPagina from '../features/autenticacion/RegistroPagina';
 import InicioProtegido from '../common/paginas/InicioProtegido';
 import RegistrarVehiculoPagina from '../features/vehiculos/RegistrarVehiculoPagina';
 import NotificacionesLeerPagina from '../features/notificaciones/NotificacionesLeerPagina';
-import AgendarCitaPagina from '../paginas/AgendarCitaPagina';
+import AgendarCitaPagina from '../features/mantenimientos/AgendarCitaPagina';
 import MisCitasPagina from '../features/mantenimientos/MisCitasPagina';
 import CitasMecanicoPagina from '../features/mantenimientos/CitasMecanicoPagina';
 import AdminCitasPendientes from '../features/asignaciones/AsociarMecanicoPagina';

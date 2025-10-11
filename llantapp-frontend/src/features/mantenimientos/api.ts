@@ -42,34 +42,75 @@ export interface CitaDetalle {
   programadaPara?: string | null;
 }
 
+function readAuthToken(explicit?: string) {
+  return explicit ?? tokenMemoria.get() ?? localStorage.getItem('access_token') ?? undefined;
+}
+
+async function getAuthed<T>(url: string, token?: string): Promise<T> {
+  const auth = readAuthToken(token);
+  const r = await fetch(`${API_BASE}${url}`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
+    },
+    credentials: 'include',
+  });
+  if (!r.ok) {
+    const text = await r.text().catch(() => r.statusText);
+    throw new Error(text || r.statusText);
+  }
+  return r.json() as Promise<T>;
+}
+
+async function postAuthed<T>(url: string, body?: any, token?: string): Promise<T> {
+  const auth = readAuthToken(token);
+  const r = await fetch(`${API_BASE}${url}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+    credentials: 'include',
+  });
+  if (!r.ok) {
+    const text = await r.text().catch(() => r.statusText);
+    throw new Error(text || r.statusText);
+  }
+  return r.json() as Promise<T>;
+}
+
 // PRINCIPIOS: Facade (rutas), DRY (tipos/payload unificados), KISS
 export const apiCitas = {
   crear: (payload: {
     tipo: Tipo;
-    placaPreliminar: string;
-    marcaPreliminar: string;
-    modeloPreliminar: string;
+    vehiculoId?: number;
+    placaPreliminar?: string;
+    marcaPreliminar?: string;
+    modeloPreliminar?: string;
     anioPreliminar?: number;
     colorPreliminar?: string;
     vinPreliminar?: string;
     comentario?: string;
     programadaPara: string;
-  }) => postJSON('/citas-mantenimiento', payload),
+  }) => postAuthed('/citas-mantenimiento', payload),
 
-  pendientesAdmin: () => getJSON<any[]>('/citas-mantenimiento/admin/pendientes'),
+  pendientesAdmin: () => getAuthed<any[]>('/citas-mantenimiento/admin/pendientes'),
 
   asignar: (id: number, mecanicoId: number) =>
-    postJSON(`/citas-mantenimiento/${id}/asignar`, { mecanicoId }),
+    postAuthed(`/citas-mantenimiento/${id}/asignar`, { mecanicoId }),
 
   registrarMantenimiento: (id: number, payload: TerminarCitaPayload) =>
-    postJSON(`/citas-mantenimiento/${id}/terminar`, payload),
+    postAuthed(`/citas-mantenimiento/${id}/terminar`, payload),
 
-  terminar: (id: number) => postJSON(`/citas-mantenimiento/${id}/terminar`, {}),
+  terminar: (id: number) => postAuthed(`/citas-mantenimiento/${id}/terminar`, {}),
 
-  mias: () => getJSON<any[]>('/citas-mantenimiento/mias'),
-  asignadas: () => getJSON<any[]>('/citas-mantenimiento/asignadas'),
+  mias: () => getAuthed<any[]>('/citas-mantenimiento/mias'),
+  asignadas: () => getAuthed<any[]>('/citas-mantenimiento/asignadas'),
 
-  detalle: (id: number) => getJSON<CitaDetalle>(`/citas-mantenimiento/${id}`),
+  detalle: (id: number) => getAuthed<CitaDetalle>(`/citas-mantenimiento/${id}`),
 };
 
 function getAuthToken(explicit?: string) {
