@@ -14,13 +14,21 @@
   --danger:#d32f2f;
   --radius:16px;
   --radius-lg:22px;
+
+  --form-min: 460px;
+  --prev-w: 300px;
+  --img-w: 460px;
+  --img-h: min(80vh, 820px);
+  --base: 610px;
+
+  max-width: calc(var(--base) + var(--prev-w) + var(--img-w));
+
+  margin: 0 auto;
+  padding: 24px clamp(12px,3vw,20px);
   background:var(--bg);
   color:var(--ink);
   font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,"Noto Sans";
 }
-.agendar ::selection{ background:#e0f2fe; }
-
-.agendar{ max-width:1200px; margin:0 auto; padding:24px clamp(12px,3vw,20px); }
 
 .agendar__split{ display:grid; grid-template-columns:1.15fr .85fr; gap:24px; }
 @media (max-width:1024px){ .agendar__split{ grid-template-columns:1fr; } }
@@ -36,11 +44,18 @@
 .agendar__right{ position:relative; }
 .preview-card{ position:sticky; top:18px; background:transparent; border:none; box-shadow:none; padding:0; }
 
-.agendar__head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.agendar__head{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;
+  margin-bottom:12px;
+}
 .agendar__title{ margin:0; font-size:clamp(28px,3.4vw,40px); font-weight:900; letter-spacing:-.01em; color:#0b1220; }
 .agendar__sub{ color:var(--muted); margin:4px 0 0; }
 
 .form{ display:grid; gap:16px; margin-top:12px; }
+.form .input-wrap:first-child{ margin-top: 6px; }
 
 .form-row{ display:grid; gap:16px; grid-template-columns:1fr 1fr; }
 @media (max-width:720px){ .form-row{ grid-template-columns:1fr; } }
@@ -49,29 +64,141 @@
 .label{ font-size:13px; font-weight:800; color:var(--ink); }
 
 .input-wrap{
-  position:relative; border:1px solid var(--line); border-radius:14px; background:#fff;
-  box-shadow:0 1px 0 rgba(15,23,42,.02);
+  position:relative;
+  display:flex;
+  align-items:center;
+  box-sizing:border-box;
+  min-height:44px;
+  border:1px solid var(--line-2);
+  border-radius:14px;
+  background:#fff;
+  background-clip: padding-box;
+  box-shadow: inset 0 0 0 1px rgba(2,6,23,.08);
+  transition:
+    border-color .18s ease,
+    box-shadow .18s ease,
+    background-color .18s ease;
 }
+
+.input-wrap:hover{
+  border-color: var(--line-2);
+  box-shadow: inset 0 0 0 1px rgba(2,6,23,.14);
+}
+
+.input-wrap:focus-within{
+  border-color: var(--pri-2);
+  box-shadow:
+    0 0 0 3px var(--ring),
+    inset 0 0 0 1px var(--pri-2);
+  outline: none;
+}
+
+.input-wrap[data-ico]{ --inset: 40px; }
+.input-wrap[data-ico] .input{ padding-left: var(--inset); }
+.input-wrap[data-ico]::before{
+  content:"✦";
+  position:absolute; left:12px; top:50%;
+  transform:translateY(-50%);
+  font-size:18px; line-height:1; opacity:.9;
+}
+
+.input-wrap:has(select) .input{ padding-right: 2.6rem; }
+.input-wrap:has(select)::after{
+  content:"";
+  position:absolute; right:14px; top:50%;
+  width:8px; height:8px;
+  border-right:2px solid var(--pri-1);
+  border-bottom:2px solid var(--pri-1);
+  transform: translateY(-50%) rotate(45deg);
+  pointer-events:none; opacity:.9;
+}
+.input-wrap:has(select):focus-within::after{ border-color: var(--pri-2); }
+
+.input-wrap[data-ico]{
+  --inset: 40px;
+}
+.input-wrap[data-ico] .input{
+  padding-left: var(--inset);
+}
+
+.input-wrap[data-ico]::before{
+  content: "✦";
+  position:absolute;
+  left:12px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:18px;
+  line-height:1;
+  opacity:.9;
+}
+
+.input-wrap[data-ico="service"]::before{ content:"🔧"; }
+.input-wrap[data-ico="vehicle"]::before{ content:"🚗"; }
+.input-wrap[data-ico="plate"]::before{ content:"🏷️"; }
+.input-wrap[data-ico="brand"]::before{ content:"🏭"; }
+.input-wrap[data-ico="model"]::before{ content:"📦"; }
+.input-wrap[data-ico="year"]::before{ content:"📅"; }
+.input-wrap[data-ico="color"]::before{ content:"🎨"; }
+.input-wrap[data-ico="vin"]::before{ content:"#️⃣"; }
+.input-wrap[data-ico="date"]::before{ content:"📅"; }
+.input-wrap[data-ico="comment"]::before{ content:"💬"; }
+
+.input-wrap[data-ico] select.input{
+  padding-left: var(--inset);
+}
+.input-wrap:has(select) .input{
+  padding-right: 2.6rem;
+}
+
+.input-wrap:has(select)::after{
+  content:"";
+  position:absolute;
+  right:14px;
+  top:50%;
+  width:8px; height:8px;
+  border-right:2px solid var(--pri-1);
+  border-bottom:2px solid var(--pri-1);
+  transform: translateY(-50%) rotate(45deg);
+  pointer-events:none;
+  opacity:.9;
+}
+
+.input-wrap:has(select):focus-within::after{
+  border-color: var(--pri-2);
+}
+
 .input{
-  width:100%; border:0; outline:none; background:transparent;
-  padding:11px 12px; font-size:15px; color:#0b1220; border-radius:14px;
-  transition:box-shadow .18s ease, transform .15s ease;
+  width:100%;
+  border:0;
+  outline:none;
+  background:transparent;
+  padding:11px 12px;
+  font-size:15px;
+  color:#0b1220;
+  border-radius:14px;
+  transition: box-shadow .18s ease, border-color .18s ease, background-color .18s ease;
 }
-.input:focus{ box-shadow:0 0 0 4px var(--ring); }
+.input:focus{
+  outline: none;
+  box-shadow: none;
+}
 
 select.input{
   appearance:none;
-  background-image:linear-gradient(45deg, transparent 50%, var(--pri-1) 50%),
-                   linear-gradient(135deg, var(--pri-1) 50%, transparent 50%),
-                   linear-gradient(to right, rgba(15,23,42,.08), rgba(15,23,42,0));
-  background-position:calc(100% - 18px) calc(1.1em), calc(100% - 12px) calc(1.1em), calc(100% - 2.4rem) 50%;
-  background-size:6px 6px, 6px 6px, 1px 60%;
-  background-repeat:no-repeat;
+  -webkit-appearance:none;
+  -moz-appearance:none;
+  background:transparent;
+  padding-right: 2.6rem;
 }
+
 textarea.input{ resize:vertical; min-height:96px; }
 textarea.input{ width:100%; }
 .form-row .form-group textarea.input{ grid-column:1 / -1; }
 .form-row .form-group:last-child{ grid-column:1 / -1; }
+.form-row .form-group:has(.input-wrap[data-ico="brand"]),
+.form-row .form-group:has(.input-wrap[data-ico="year"]){
+  grid-column: 1 / -1;
+}
 
 .agendar .btn.btn-primary{
   appearance:none; display:inline-flex; align-items:center; justify-content:center;
@@ -88,7 +215,14 @@ textarea.input{ width:100%; }
   color:var(--danger); font-size:.92rem; margin-top:4px; padding-left:2px; font-weight:600;
   animation:fadeIn .22s ease-in-out;
 }
-.input-wrap.has-error .input{ border:1.5px solid var(--danger); background:#ffeaea; transition:border-color .25s ease, background-color .25s ease; }
+.input-wrap.has-error{
+  border-color: var(--danger);
+  background:#ffeaea;
+  transition:border-color .25s ease, background-color .25s ease;
+}
+.input-wrap.has-error .input{
+  border:0;
+}
 
 .success-message{
   color:var(--success); background:#e6f4ea; border:1px solid #b6e0b8;
@@ -115,4 +249,82 @@ textarea.input{ width:100%; }
 .agendar textarea:-webkit-autofill{
   -webkit-text-fill-color:var(--ink) !important;
   box-shadow:0 0 0 1000px #fff inset !important;
+}
+
+.agendar__card{
+  --pad: clamp(18px,3vw,28px);
+  display:grid;
+  grid-template-columns: minmax(var(--form-min), 1fr) var(--prev-w) var(--img-w);
+  gap:24px;
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  box-shadow:0 16px 36px rgba(2,6,23,.08);
+  padding: var(--pad);
+  align-items: stretch;
+  height: var(--img-h);
+  overflow: hidden;
+}
+
+.agendar__formCol{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  height:100%;
+  min-height:0;
+}
+.agendar__formScroll{
+  overflow:auto;
+  flex:1;
+  padding: 16px 6px 0 0;
+  min-height:0;
+  overscroll-behavior: contain;
+  scroll-padding-top: 16px;
+}
+
+.agendar__previewCol{
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  min-width: var(--prev-w);
+}
+.agendar__preview{
+  position: sticky;
+  top: 8px;
+  width: 100%;
+  max-width: var(--prev-w);
+}
+
+.agendar__art{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  align-self:stretch;
+  height:100%;
+}
+.agendar__img{
+  display:block;
+  width: var(--img-w);
+  height: calc(var(--img-h) - (2 * var(--pad)));
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: calc(var(--radius-lg) - 4px);
+}
+
+@media (max-width:1024px){
+  .agendar{ max-width:100%; }
+  .agendar__card{
+    grid-template-columns:1fr;
+    height:auto;
+  }
+  .agendar__preview{
+    position:static;
+    max-width:100%;
+    margin-top:12px;
+  }
+  .agendar__img{
+    width:100%;
+    height:auto;
+  }
+  .agendar__formScroll{ max-height:none; }
 }
