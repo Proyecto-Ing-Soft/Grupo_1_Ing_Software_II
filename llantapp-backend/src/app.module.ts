@@ -13,6 +13,9 @@ import { CitasModule } from './features/mantenimientos/citas/citas.module';
 import { HistorialModule } from './features/historial/historial/historial.module';
 import { CalificacionesModule } from './features/calificaciones/calificaciones/calificaciones.module';
 
+// <-- NUEVO: catálogo de servicios
+import { CatalogoServiciosModule } from './features/catalogo-servicios/catalogo-servicios/catalogo-servicios.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -21,13 +24,16 @@ import { CalificacionesModule } from './features/calificaciones/calificaciones/c
     PrismaModule,
 
     // Features del dominio
-    UsuarioModule,        // Lógica de usuario
-    AuthModule,           // Autenticación
-    VehiculosModule,      // Gestión de vehículos
-    NotificacionesModule, // Envío y lectura de notificaciones
-    CitasModule,           // Citas de mantenimiento
-    HistorialModule,        // Historial de mantenimientos
-    CalificacionesModule    // Calificaciones
+    UsuarioModule,           // Lógica de usuario
+    AuthModule,              // Autenticación
+    VehiculosModule,         // Gestión de vehículos
+    NotificacionesModule,    // Envío y lectura de notificaciones
+    CitasModule,             // Citas de mantenimiento
+    HistorialModule,         // Historial de mantenimientos
+    CalificacionesModule,    // Calificaciones
+
+    // NUEVO
+    CatalogoServiciosModule, // Catálogo + habilitación de mecánicos (US-06)
   ],
 })
 export class AppModule {}
