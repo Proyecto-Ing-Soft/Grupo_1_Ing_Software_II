@@ -20,103 +20,114 @@ export class CitasService {
     private noti: Notificador, // DIP: fachada de notificaciones
   ) {}
 
-  // DRY: YYYY-MM-DD (solo fecha)
-  private toYMD(d: Date) { return d.toISOString().slice(0, 10); }
-
-// === CREAR CITA (estado inicial: SOLICITADA) ===
-async crear(dto: CrearCitaDto, clienteId: number) {
-  // Validación de fecha (AAAA-MM-DD) y que no sea pasada
-  if (!dto.programadaPara || !/^\d{4}-\d{2}-\d{2}$/.test(dto.programadaPara)) {
-    throw new BadRequestException('Fecha inválida (usa AAAA-MM-DD)');
-  }
-  const hoyYMD = this.toYMD(new Date());
-  const ymd = dto.programadaPara.slice(0, 10);
-  if (ymd < hoyYMD) {
-    throw new BadRequestException('La fecha programada debe ser hoy o una fecha futura');
+  // DRY: YYYY-MM-DD en HORA LOCAL (sin UTC)
+  private toYMD(d: Date) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
-  // Si viene vehiculoId: validar pertenencia y tomar snapshot del vehículo.
-  // Si NO viene vehiculoId: exigir placa/marca/modelo preliminares.
-  let vehiculoId: number | undefined = undefined;
+  // Helper: parsear "YYYY-MM-DD" como Date LOCAL (medianoche local)
+  private parseYMDLocal(ymd: string) {
+    const [y, m, d] = ymd.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
 
-  type Snapshot = {
-    placaPreliminar?: string;
-    marcaPreliminar?: string;
-    modeloPreliminar?: string;
-    anioPreliminar?: number;
-    colorPreliminar?: string;
-    vinPreliminar?: string;
-  };
-  let snapshot: Snapshot = {};
-
-  if (dto.vehiculoId) {
-    const vehiculo = await this.prisma.vehiculo.findFirst({
-      where: { id: dto.vehiculoId, propietarioUsuarioId: clienteId },
-      select: { id: true, placa: true, marca: true, modelo: true, anio: true, color: true, vin: true },
-    });
-    if (!vehiculo) throw new BadRequestException('Vehículo no válido para este usuario');
-
-    vehiculoId = vehiculo.id;
-    snapshot = {
-      ...(vehiculo.placa  ? { placaPreliminar: vehiculo.placa.toUpperCase() } : {}),
-      ...(vehiculo.marca  ? { marcaPreliminar: vehiculo.marca } : {}),
-      ...(vehiculo.modelo ? { modeloPreliminar: vehiculo.modelo } : {}),
-      ...(vehiculo.anio != null ? { anioPreliminar: vehiculo.anio } : {}),
-      ...(vehiculo.color ? { colorPreliminar: vehiculo.color } : {}),
-      ...(vehiculo.vin   ? { vinPreliminar: vehiculo.vin } : {}),
-    };
-  } else {
-    if (!dto.placaPreliminar || !dto.marcaPreliminar || !dto.modeloPreliminar) {
-      throw new BadRequestException('Selecciona un vehículo o completa placa, marca y modelo');
+  // === CREAR CITA (estado inicial: SOLICITADA) ===
+  async crear(dto: CrearCitaDto, clienteId: number) {
+    // Validación de fecha (AAAA-MM-DD) y que no sea pasada
+    if (!dto.programadaPara || !/^\d{4}-\d{2}-\d{2}$/.test(dto.programadaPara)) {
+      throw new BadRequestException('Fecha inválida (usa AAAA-MM-DD)');
     }
-    snapshot = {
-      ...(dto.placaPreliminar  ? { placaPreliminar: dto.placaPreliminar.trim().toUpperCase() } : {}),
-      ...(dto.marcaPreliminar  ? { marcaPreliminar: dto.marcaPreliminar.trim() } : {}),
-      ...(dto.modeloPreliminar ? { modeloPreliminar: dto.modeloPreliminar.trim() } : {}),
-      ...(dto.anioPreliminar != null ? { anioPreliminar: dto.anioPreliminar } : {}),
-      ...(dto.colorPreliminar ? { colorPreliminar: dto.colorPreliminar.trim() } : {}),
-      ...(dto.vinPreliminar   ? { vinPreliminar: dto.vinPreliminar.trim() } : {}),
+    const hoyYMD = this.toYMD(new Date());        // ← hoy local
+    const ymd = dto.programadaPara.slice(0, 10);  // normalizamos a YYYY-MM-DD
+    if (ymd < hoyYMD) {
+      throw new BadRequestException('La fecha programada debe ser hoy o una fecha futura');
+    }
+
+    // Si viene vehiculoId: validar pertenencia y tomar snapshot del vehículo.
+    // Si NO viene vehiculoId: exigir placa/marca/modelo preliminares.
+    let vehiculoId: number | undefined = undefined;
+
+    type Snapshot = {
+      placaPreliminar?: string;
+      marcaPreliminar?: string;
+      modeloPreliminar?: string;
+      anioPreliminar?: number;
+      colorPreliminar?: string;
+      vinPreliminar?: string;
     };
+    let snapshot: Snapshot = {};
+
+    if (dto.vehiculoId) {
+      const vehiculo = await this.prisma.vehiculo.findFirst({
+        where: { id: dto.vehiculoId, propietarioUsuarioId: clienteId },
+        select: { id: true, placa: true, marca: true, modelo: true, anio: true, color: true, vin: true },
+      });
+      if (!vehiculo) throw new BadRequestException('Vehículo no válido para este usuario');
+
+      vehiculoId = vehiculo.id;
+      snapshot = {
+        ...(vehiculo.placa  ? { placaPreliminar: vehiculo.placa.toUpperCase() } : {}),
+        ...(vehiculo.marca  ? { marcaPreliminar: vehiculo.marca } : {}),
+        ...(vehiculo.modelo ? { modeloPreliminar: vehiculo.modelo } : {}),
+        ...(vehiculo.anio != null ? { anioPreliminar: vehiculo.anio } : {}),
+        ...(vehiculo.color ? { colorPreliminar: vehiculo.color } : {}),
+        ...(vehiculo.vin   ? { vinPreliminar: vehiculo.vin } : {}),
+      };
+    } else {
+      if (!dto.placaPreliminar || !dto.marcaPreliminar || !dto.modeloPreliminar) {
+        throw new BadRequestException('Selecciona un vehículo o completa placa, marca y modelo');
+      }
+      snapshot = {
+        ...(dto.placaPreliminar  ? { placaPreliminar: dto.placaPreliminar.trim().toUpperCase() } : {}),
+        ...(dto.marcaPreliminar  ? { marcaPreliminar: dto.marcaPreliminar.trim() } : {}),
+        ...(dto.modeloPreliminar ? { modeloPreliminar: dto.modeloPreliminar.trim() } : {}),
+        ...(dto.anioPreliminar != null ? { anioPreliminar: dto.anioPreliminar } : {}),
+        ...(dto.colorPreliminar ? { colorPreliminar: dto.colorPreliminar.trim() } : {}),
+        ...(dto.vinPreliminar   ? { vinPreliminar: dto.vinPreliminar.trim() } : {}),
+      };
+    }
+
+    const data: any = {
+      tipo: dto.tipo,
+      comentario: dto.comentario ?? '',
+      // Guardar como Date LOCAL (no UTC-Z)
+      programadaPara: this.parseYMDLocal(ymd),
+      estado: EstadoCita.SOLICITADA,
+      clienteId,
+      ...(vehiculoId ? { vehiculoId } : {}),
+      ...snapshot,
+    };
+
+    const cita = await this.prisma.citaMantenimiento.create({ data });
+
+    // Notificación a administradores
+    const admins = await this.prisma.usuario.findMany({ where: { rol: 'ADMIN' } });
+    await Promise.all(
+      admins.map((a) =>
+        this.noti.enviar({
+          usuarioId: a.id,
+          citaId: cita.id,
+          vehiculoId: cita.vehiculoId ?? null,
+          titulo: 'Nueva cita pendiente',
+          mensaje: `Cita #${cita.id} solicitada por cliente #${clienteId}`,
+        }),
+      ),
+    );
+
+    // Notificación al cliente
+    await this.noti.enviar({
+      usuarioId: clienteId,
+      citaId: cita.id,
+      vehiculoId: cita.vehiculoId ?? null,
+      titulo: 'Solicitud registrada',
+      mensaje: 'Recibimos tu solicitud de mantenimiento. Un administrador la revisará y asignará un mecánico pronto.',
+    });
+
+    return cita;
   }
-
-  const data: any = {
-    tipo: dto.tipo,
-    comentario: dto.comentario ?? '',
-    programadaPara: new Date(dto.programadaPara + 'T00:00:00Z'),
-    estado: EstadoCita.SOLICITADA,
-    clienteId,
-    ...(vehiculoId ? { vehiculoId } : {}),
-    ...snapshot,
-  };
-
-  const cita = await this.prisma.citaMantenimiento.create({ data });
-
-  // Notificación a administradores
-  const admins = await this.prisma.usuario.findMany({ where: { rol: 'ADMIN' } });
-  await Promise.all(
-    admins.map((a) =>
-      this.noti.enviar({
-        usuarioId: a.id,
-        citaId: cita.id,
-        vehiculoId: cita.vehiculoId ?? null,
-        titulo: 'Nueva cita pendiente',
-        mensaje: `Cita #${cita.id} solicitada por cliente #${clienteId}`,
-      }),
-    ),
-  );
-
-  // Notificación al cliente
-  await this.noti.enviar({
-    usuarioId: clienteId,
-    citaId: cita.id,
-    vehiculoId: cita.vehiculoId ?? null,
-    titulo: 'Solicitud registrada',
-    mensaje: 'Recibimos tu solicitud de mantenimiento. Un administrador la revisará y asignará un mecánico pronto.',
-  });
-
-  return cita;
-}
-
 
   // === ASIGNAR MECÁNICO (pasa a EN_PROGRESO) ===
   async asignarMecanico(citaId: number, mecanicoId: number, _adminId: number) {
@@ -165,7 +176,7 @@ async crear(dto: CrearCitaDto, clienteId: number) {
     if (cita.estado !== EstadoCita.EN_PROGRESO) throw new BadRequestException('La cita no está en proceso');
     if (!cita.programadaPara) throw new BadRequestException('La cita no tiene fecha programada');
 
-    // permite terminar el mismo día o después
+    // permite terminar el mismo día o después (comparación por YMD local)
     const hoy = this.toYMD(new Date());
     const programada = this.toYMD(new Date(cita.programadaPara));
     if (hoy < programada) throw new BadRequestException('Aún no es el día programado');

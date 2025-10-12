@@ -12,6 +12,21 @@ type VehiculoLite = { id: number; placa: string; marca: string; modelo: string }
 
 const OPCION_NUEVO = "__nuevo__";
 
+// Fecha local "YYYY-MM-DD" (sin UTC)
+const yyyymmddLocal = (d = new Date()) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+// Parsear "YYYY-MM-DD" como Date LOCAL (para preview)
+const parseYMDLocal = (ymd?: string) => {
+  if (!ymd) return undefined;
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(y, m - 1, d); // medianoche local
+};
+
 export default function AgendarCitaPagina() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
@@ -36,7 +51,7 @@ export default function AgendarCitaPagina() {
     colorPreliminar: "",
     vinPreliminar: "",
     comentario: "",
-    programadaPara: new Date().toISOString().slice(0, 10),
+    programadaPara: yyyymmddLocal(), // default hoy en local
   });
 
   useEffect(() => {
@@ -48,13 +63,10 @@ export default function AgendarCitaPagina() {
         const data = await apiVehiculos.mios();
         if (!alive) return;
         setVehiculos(data ?? []);
-        // Regla: si hay vehículos → ocultar formulario (no preseleccionar ninguno).
-        //        si no hay      → mostrar formulario.
         setMostrarFormNuevo((data ?? []).length === 0);
       } catch (e: any) {
         if (alive) {
           setError(e?.message || "No se pudieron cargar tus vehículos");
-          // En error, dejar visible el formulario para no bloquear al usuario.
           setMostrarFormNuevo(true);
         }
       } finally {
@@ -71,18 +83,15 @@ export default function AgendarCitaPagina() {
 
     if (name === "vehiculoId") {
       if (value === OPCION_NUEVO) {
-        // Eligió "Registrar nuevo…" → mostrar formulario y limpiar selección
         setMostrarFormNuevo(true);
         setForm((s) => ({ ...s, vehiculoId: undefined }));
         return;
       }
       if (value === "") {
-        // Volvió al placeholder “Elige uno…”
         setMostrarFormNuevo(false);
         setForm((s) => ({ ...s, vehiculoId: undefined }));
         return;
       }
-      // Seleccionó un vehículo existente → ocultar formulario
       setMostrarFormNuevo(false);
       setForm((s) => ({ ...s, vehiculoId: Number(value) }));
       return;
@@ -111,6 +120,7 @@ export default function AgendarCitaPagina() {
 
     const payload: any = {
       tipo: form.tipo,
+      // El backend exige exactamente "YYYY-MM-DD"
       programadaPara: form.programadaPara,
       comentario: form.comentario || undefined,
     };
@@ -159,14 +169,19 @@ export default function AgendarCitaPagina() {
       (form.modeloPreliminar ?? "").trim()
     );
 
-  const mostrandoSelector = !loadingVeh && vehiculos.length > 0;
   const vehiculoSel = useMemo(
     () => vehiculos.find((v) => v.id === Number(form.vehiculoId)),
     [vehiculos, form.vehiculoId]
   );
 
-  const soloFechaBonita = (v?: string) =>
-    v ? new Date(v).toLocaleDateString("es-PE", { dateStyle: "medium" }) : "—";
+  // Preview con parseo LOCAL del "YYYY-MM-DD"
+  const soloFechaBonita = (v?: string) => {
+    const d = parseYMDLocal(v);
+    return d ? d.toLocaleDateString("es-PE", { dateStyle: "medium" }) : "—";
+  };
+
+  // min del date en local
+  const hoyLocal = useMemo(() => yyyymmddLocal(), []);
 
   return (
     <main className="agendar">
@@ -326,7 +341,7 @@ export default function AgendarCitaPagina() {
                       name="programadaPara"
                       className="input"
                       type="date"
-                      min={new Date().toISOString().slice(0, 10)}
+                      min={hoyLocal}
                       value={form.programadaPara}
                       onChange={onChangeCampo}
                     />
