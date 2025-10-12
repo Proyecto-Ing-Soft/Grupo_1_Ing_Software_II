@@ -8,7 +8,7 @@ export default function LayoutProtegido() {
       <header className="lp__topbar">
         {/* Hacemos clickeable toda la marca */}
         <Link to="/inicio" className="lp__brand" aria-label="Ir al inicio">
-          <span className="lp__logo">🔨</span>
+          <span className="lp__logo">🚙</span>
           <span className="lp__title">LlantApp</span>
         </Link>
 
