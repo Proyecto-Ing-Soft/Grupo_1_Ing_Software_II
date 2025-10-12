@@ -1,35 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./catalogoServicios.css";
-
-type Estado = "ACTIVO" | "INACTIVO";
-type Servicio = { id: number; nombre: string; descripcion: string; estado: Estado };
-
-// === Config API ===
-const API_URL = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:3001";
-const BASE = `${API_URL}/catalogo-servicios`;
-
-function authHeaders(): HeadersInit {
-  const token =
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("token") ||
-    localStorage.getItem("jwt");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-// Map BE ⇄ FE
-type ServicioBE = { id: number; nombre: string; descripcion: string; activo: boolean };
-const toFE = (s: ServicioBE): Servicio => ({
-  id: s.id,
-  nombre: s.nombre,
-  descripcion: s.descripcion,
-  estado: s.activo ? "ACTIVO" : "INACTIVO",
-});
-const toBE = (f: Partial<Servicio>) => ({
-  nombre: (f.nombre ?? "").trim(),
-  descripcion: (f.descripcion ?? "").trim(),
-  activo: (f.estado ?? "ACTIVO") === "ACTIVO",
-});
+import {
+  apiCatalogoServicios,
+  parseHttpError,
+  type Estado,
+  type Servicio,
+} from "./api";
 
 export default function CatalogoServiciosPagina() {
   const navigate = useNavigate();
@@ -46,26 +23,18 @@ export default function CatalogoServiciosPagina() {
     );
   }, [q, items]);
 
-  // formulario
   const [form, setForm] = useState<Partial<Servicio>>({});
   const [editId, setEditId] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 
-  // Carga inicial
   useEffect(() => {
     (async () => {
       setLoading(true);
       setErr(null);
       try {
-        const res = await fetch(`${BASE}`, {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json", ...authHeaders() },
-        });
-        if (!res.ok) throw new Error(await res.text());
-        const data: ServicioBE[] = await res.json();
-        setItems(data.map(toFE));
+        const data = await apiCatalogoServicios.listar();
+        setItems(data);
       } catch (e: any) {
         setErr(e?.message || "Error al cargar el catálogo");
       } finally {
@@ -74,7 +43,6 @@ export default function CatalogoServiciosPagina() {
     })();
   }, []);
 
-  // reveal animations (igual que antes)
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
     const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
@@ -110,49 +78,28 @@ export default function CatalogoServiciosPagina() {
 
     try {
       if (editId) {
-        const res = await fetch(`${BASE}/${editId}`, {
-          method: "PUT",
-          credentials: "include",
-          headers: { "Content-Type": "application/json", ...authHeaders() },
-          body: JSON.stringify(toBE({ nombre, descripcion, estado })),
-        });
-        if (!res.ok) throw new Error(await res.text());
-        const actualizado: ServicioBE = await res.json();
-        setItems(prev => prev.map(s => (s.id === editId ? toFE(actualizado) : s)));
+        const actualizado = await apiCatalogoServicios.actualizar(editId, { nombre, descripcion, estado });
+        setItems(prev => prev.map(s => (s.id === editId ? actualizado : s)));
         setOk("Servicio actualizado.");
       } else {
-        const res = await fetch(`${BASE}`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json", ...authHeaders() },
-          body: JSON.stringify(toBE({ nombre, descripcion, estado })),
-        });
-        if (!res.ok) throw new Error(await res.text());
-        const creado: ServicioBE = await res.json();
-        setItems(prev => [toFE(creado), ...prev]);
+        const creado = await apiCatalogoServicios.crear({ nombre, descripcion, estado });
+        setItems(prev => [creado, ...prev]);
         setOk("Servicio creado.");
       }
       setEditId(null);
       setForm({});
     } catch (e: any) {
-      setErr(parseHttpError(e?.message));
+      setErr(e?.message || "Error al guardar");
     }
   };
 
-  // ← TOGGLE Activar / Desactivar con mensaje dinámico
   const toggleEstado = async (s: Servicio) => {
     const activar = s.estado === "INACTIVO";
     if (!confirm(`${activar ? "¿Activar" : "¿Desactivar"} servicio?`)) return;
 
     setErr(null); setOk(null);
     try {
-      const res = await fetch(`${BASE}/${s.id}/estado`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ activo: activar }),
-      });
-      if (!res.ok) throw new Error(await res.text());
+      await apiCatalogoServicios.cambiarEstado(s.id, activar);
       setItems(prev => prev.map(x => (x.id === s.id ? { ...x, estado: activar ? "ACTIVO" : "INACTIVO" } : x)));
       setOk(activar ? "Servicio activado." : "Servicio inactivado.");
     } catch (e: any) {
@@ -183,7 +130,12 @@ export default function CatalogoServiciosPagina() {
       <section className="svc__content svc__stack-xl">
         <div className="svc__filters reveal" data-reveal="2">
           <div className="input-wrap">
-            <input className="input" placeholder="Buscar por nombre o descripción…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input
+              className="input"
+              placeholder="Buscar por nombre o descripción…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
           </div>
           {loading && <div className="mt8">Cargando…</div>}
         </div>
@@ -199,19 +151,35 @@ export default function CatalogoServiciosPagina() {
               <div className="form-group">
                 <label className="label" htmlFor="nombre">Nombre</label>
                 <div className="input-wrap">
-                  <input id="nombre" className="input" value={form.nombre ?? ""} onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))} />
+                  <input
+                    id="nombre"
+                    className="input"
+                    value={form.nombre ?? ""}
+                    onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))}
+                  />
                 </div>
               </div>
               <div className="form-group">
                 <label className="label" htmlFor="descripcion">Descripción</label>
                 <div className="input-wrap">
-                  <textarea id="descripcion" className="input" rows={3} value={form.descripcion ?? ""} onChange={(e) => setForm(f => ({ ...f, descripcion: e.target.value }))} />
+                  <textarea
+                    id="descripcion"
+                    className="input"
+                    rows={3}
+                    value={form.descripcion ?? ""}
+                    onChange={(e) => setForm(f => ({ ...f, descripcion: e.target.value }))}
+                  />
                 </div>
               </div>
               <div className="form-group">
                 <label className="label" htmlFor="estado">Estado</label>
                 <div className="input-wrap">
-                  <select id="estado" className="input" value={form.estado ?? "ACTIVO"} onChange={(e) => setForm(f => ({ ...f, estado: e.target.value as Estado }))}>
+                  <select
+                    id="estado"
+                    className="input"
+                    value={form.estado ?? "ACTIVO"}
+                    onChange={(e) => setForm(f => ({ ...f, estado: e.target.value as Estado }))}
+                  >
                     <option value="ACTIVO">Activo</option>
                     <option value="INACTIVO">Inactivo</option>
                   </select>
@@ -260,15 +228,4 @@ export default function CatalogoServiciosPagina() {
       </section>
     </main>
   );
-}
-
-// === Helpers ===
-function parseHttpError(raw: string): string {
-  try {
-    const obj = JSON.parse(raw);
-    if (obj?.message) {
-      return Array.isArray(obj.message) ? obj.message.join(", ") : String(obj.message);
-    }
-  } catch {}
-  return raw || "Error en la operación";
 }
