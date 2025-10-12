@@ -124,3 +124,13 @@
 @media (prefers-reduced-motion: reduce){
   .mcals .reveal, .mcals .will-animate, .mcals .animate-in{ transition:none !important; transform:none !important; opacity:1 !important; }
 }
+
+.mcals__emptyImg{
+  width: min(370px, 90%);
+  height: auto;
+  display: block;
+  margin-top: 4px;
+  filter: drop-shadow(0 10px 24px rgba(2,6,23,.08));
+  user-select: none;
+  pointer-events: none;
+}

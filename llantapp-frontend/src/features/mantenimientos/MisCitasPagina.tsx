@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiCitas } from "./api";
 import "./miscitas.css";
+import noCitasImg from "../../assets/priv/cliente/no_citas.png";
 
 type Cita = {
   id: number;
@@ -134,7 +135,13 @@ export default function MisCitasPagina() {
                 <div className="mc__emptyInner mc__stack-md">
                   <div className="mc__emptyEmoji" aria-hidden>📭</div>
                   <div className="mc__emptyTitle">No tienes citas</div>
-                  <div className="mc__emptySub">Cuando agendes, las verás aquí.</div>
+                  <div className="mc__emptySub">Cuando agendes, las verás aquí.</div> 
+                  <img
+                    src={noCitasImg}
+                    alt="Sin citas programadas"
+                    className="mc__emptyImg"
+                    loading="lazy"
+                  />
                 </div>
               </div>
 

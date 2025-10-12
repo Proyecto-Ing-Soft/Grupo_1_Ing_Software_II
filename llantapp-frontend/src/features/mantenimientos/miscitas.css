@@ -125,6 +125,14 @@
 .mc__emptyEmoji{ font-size:44px; line-height:1; }
 .mc__emptyTitle{ font-weight:900; color:#0b1220; }
 .mc__emptySub{ color:var(--muted); }
+.mc__emptyImg{
+  width: min(260px, 100%);
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin-inline: auto;
+  margin-top: 6px;
+}
 .mc__ctaRow{ display:flex; justify-content:center; margin-top:18px; }
 
 .reveal{ will-change:transform, opacity; transition:transform .5s cubic-bezier(.2,.8,.2,1), opacity .5s ease; }

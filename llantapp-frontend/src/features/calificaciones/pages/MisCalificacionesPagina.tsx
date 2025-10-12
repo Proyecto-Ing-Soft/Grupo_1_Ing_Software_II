@@ -1,10 +1,10 @@
-// src/features/calificaciones/pages/MisCalificacionesPagina.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiCalificaciones } from '../api';
 import { Calificacion } from '../type';
 import { EstrellasCalificacion } from '../componentes/EstrellasCalificacion';
 import './MisCalificacionesPagina.css';
+import imgNoServicios from '../../../assets/priv/cliente/no_servicios_calificados.png';
 
 function formatDate(iso: string) {
   try {
@@ -103,6 +103,12 @@ export default function MisCalificacionesPagina() {
                 <div className="mcals__emptyEmoji" aria-hidden>📝</div>
                 <div className="mcals__emptyTitle">Aún no has registrado calificaciones.</div>
                 <div className="mcals__emptySub">Cuando califiques un servicio, lo verás aquí.</div>
+                <img
+                  src={imgNoServicios}
+                  alt="Estado vacío: sin servicios calificados"
+                  className="mcals__emptyImg"
+                  loading="lazy"
+                />
               </div>
             </div>
           ) : (
