@@ -22,6 +22,7 @@
     "cron": "^4.3.3",
     "csurf": "^1.2.2",
     "helmet": "^7.1.0",
+    "nodemailer": "^7.0.9",
     "passport": "^0.7.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
@@ -33,6 +34,7 @@
     "@types/cookie-parser": "^1.4.9",
     "@types/express": "^5.0.3",
     "@types/node": "^24.7.0",
+    "@types/nodemailer": "^7.0.2",
     "prisma": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

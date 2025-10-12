@@ -2,6 +2,13 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "assets": [
+      {
+        "include": "src/features/solicitudes/solicitudes/banner-solicitud-mail.png",
+        "outDir": "dist/features/solicitudes/solicitudes"
+      }
+    ],
+    "watchAssets": true
   }
 }

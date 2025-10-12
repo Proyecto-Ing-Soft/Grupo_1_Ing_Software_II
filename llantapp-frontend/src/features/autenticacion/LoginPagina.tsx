@@ -2,25 +2,26 @@ import React, { useState, useEffect } from "react";
 import { esquemaLogin } from "../../features/usuarios/usuarioSchemas";
 import { useAuth } from "../../core/auth/AuthContext";
 import { useNavigate, Link, useParams, useSearchParams } from "react-router-dom";
-import { Rol as RolApi } from "./api"
+import { Rol as RolApi } from "./api";
+
+import HeaderPublico from "../../paginas/inicio-publico/HeaderPublico";
+
+import "../../features/autenticacion/authRegister.css";
+import "./authAuth.css";
 import "./authLogin.css";
 
 import logo from "../../assets/img/logo.png";
-import fondo from "../../assets/img/taller.jpeg";
+import llontoppEsquina from "../../assets/img/llontopp.png";
+
+// Fondos por rol
+import imgLoginCliente from "../../assets/login/login-cliente.png";
+import imgLoginTaller from "../../assets/login/login-admin.png";
+import imgLoginDefault from "../../assets/login/login-default.png";
 
 type RolUi = "cliente" | "taller";
-
-const ROL_MAP: Record<RolUi, RolApi> = {
-  cliente: "CLIENTE",
-  taller: "ADMIN",
-};
-
-const rolApiToUi = (r: RolApi): RolUi =>
-  r === "ADMIN" ? "taller" : "cliente";
-
-function esRolUi(x: any): x is RolUi {
-  return x === "cliente" || x === "taller";
-}
+const ROL_MAP: Record<RolUi, RolApi> = { cliente: "CLIENTE", taller: "ADMIN" };
+const rolApiToUi = (r: RolApi): RolUi => (r === "ADMIN" ? "taller" : "cliente");
+const esRolUi = (x: any): x is RolUi => x === "cliente" || x === "taller";
 
 function parseJsonish(s: string) { try { return JSON.parse(s); } catch { return null; } }
 async function normalizarError(e: unknown): Promise<string> {
@@ -55,6 +56,12 @@ export default function LoginPagina() {
   const rolParam = params.rol || q.get("rol") || "cliente";
   const rolUi: RolUi = esRolUi(rolParam) ? rolParam : "cliente";
 
+  const fondoPorRol: Record<RolUi, string> = {
+    cliente: imgLoginCliente,
+    taller: imgLoginTaller,
+  };
+  const fondo = fondoPorRol[rolUi] || imgLoginDefault;
+
   const [form, setForm] = useState({ correo: "", clave: "" });
   const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
@@ -67,7 +74,6 @@ export default function LoginPagina() {
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
     const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
-
     const obs = new IntersectionObserver((entries) => {
       for (const e of entries) {
         const el = e.target as HTMLElement;
@@ -75,17 +81,8 @@ export default function LoginPagina() {
         else el.classList.remove("animate-in");
       }
     }, { threshold: 0.12 });
-
-    nodes.forEach((n, i) => {
-      n.dataset.reveal = String(Math.min(i + 1, 5));
-      obs.observe(n);
-    });
-
-    return () => {
-      window.clearTimeout(t);
-      nodes.forEach(n => obs.unobserve(n));
-      obs.disconnect();
-    };
+    nodes.forEach((n, i) => { n.dataset.reveal = String(Math.min(i + 1, 5)); obs.observe(n); });
+    return () => { window.clearTimeout(t); nodes.forEach(n => obs.unobserve(n)); obs.disconnect(); };
   }, []);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,101 +131,112 @@ export default function LoginPagina() {
     }
   };
 
-  const titulo =
-    rolUi === "taller" ? "Bienvenido Taller"
-    : "Bienvenido Cliente";
-
-  const linkRegistro = `/registro/${rolUi}`;
+  const titulo = rolUi === "taller" ? "Bienvenido Taller" : "Bienvenido Cliente";
+  const linkRegistroCliente = `/registro/cliente`;
+  const linkSolicitudTaller = `/registro/taller`;
 
   return (
-    <main className="auth-page">
-      <section className="auth-split" role="region" aria-label={`Formulario de inicio de sesión (${rolUi})`}>
-        <div className="auth-left">
-          <div className="logo-wrap reveal" data-reveal="1">
-            <img src={logo} alt="LlantApp" />
-            <span className="logo-title">LlantApp</span>
-          </div>
+    <>
+      <HeaderPublico />
+      <main className="auth-page auth-register auth-clone" style={{ paddingTop: 24 }}>
+        <section className="auth-split card-azul" role="region" aria-label={`Formulario de inicio de sesión (${rolUi})`}>
+          <div className="auth-left">
+            <div className="logo-wrap reveal" data-reveal="1">
+              <img src={logo} alt="LlantApp" />
+              <span className="logo-title">LlantApp</span>
+            </div>
 
-          <h1 className="brand reveal" data-reveal="2">{titulo}</h1>
-          <p className="sub reveal" data-reveal="2">Ingresa tus credenciales para acceder a tu cuenta</p>
+            <h1 className="brand reveal" data-reveal="2">{titulo}</h1>
+            <p className="sub reveal" data-reveal="2">Ingresa tus credenciales para acceder a tu cuenta</p>
 
-          <form className="form reveal" data-reveal="3" onSubmit={enviar} noValidate>
-            <div className="form-group">
-              <label className="label" htmlFor="correo">Correo electrónico</label>
-              <div className={`input-wrap ${fieldErr["correo"] ? "has-error" : ""}`}>
-                <span className="iconbox fa-regular fa-envelope" aria-hidden="true" />
-                <input
-                  id="correo"
-                  className="input"
-                  name="correo"
-                  type="email"
-                  placeholder="tu@email.com"
-                  value={form.correo}
-                  onChange={onChange}
-                  autoComplete="username"
-                  aria-invalid={!!fieldErr["correo"]}
-                  aria-describedby={fieldErr["correo"] ? "err-correo" : undefined}
-                />
+            <form className="form reveal" data-reveal="3" onSubmit={enviar} noValidate>
+              <div className="form-group">
+                <label className="label" htmlFor="correo">Correo electrónico</label>
+                <div className={`input-wrap ${fieldErr["correo"] ? "has-error" : ""}`}>
+                  <span className="iconbox fa-regular fa-envelope" aria-hidden="true" />
+                  <input
+                    id="correo"
+                    className="input"
+                    name="correo"
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={form.correo}
+                    onChange={onChange}
+                    autoComplete="username"
+                    aria-invalid={!!fieldErr["correo"]}
+                    aria-describedby={fieldErr["correo"] ? "err-correo" : undefined}
+                  />
+                </div>
+                {fieldErr["correo"] && <div id="err-correo" className="error-message">{fieldErr["correo"]}</div>}
               </div>
-              {fieldErr["correo"] && <div id="err-correo" className="error-message">{fieldErr["correo"]}</div>}
-            </div>
 
-            <div className="form-group">
-              <label className="label" htmlFor="clave">Contraseña</label>
-              <div className={`input-wrap ${fieldErr["clave"] ? "has-error" : ""}`}>
-                <span className="iconbox fa-solid fa-lock" aria-hidden="true" />
-                <input
-                  id="clave"
-                  className="input"
-                  name="clave"
-                  type={showPass ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={form.clave}
-                  onChange={onChange}
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  className="toggle-pass"
-                  onClick={() => setShowPass(s => !s)}
-                  aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
-                  title={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
-                >
-                  <span className={showPass ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"} aria-hidden="true" />
-                </button>
+              <div className="form-group">
+                <label className="label" htmlFor="clave">Contraseña</label>
+                <div className={`input-wrap ${fieldErr["clave"] ? "has-error" : ""}`}>
+                  <span className="iconbox fa-solid fa-lock" aria-hidden="true" />
+                  <input
+                    id="clave"
+                    className="input"
+                    name="clave"
+                    type={showPass ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={form.clave}
+                    onChange={onChange}
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    className="toggle-pass"
+                    onClick={() => setShowPass(s => !s)}
+                    aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    title={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    <span className={showPass ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"} aria-hidden="true" />
+                  </button>
+                </div>
+                {fieldErr["clave"] && <div id="err-clave" className="error-message">{fieldErr["clave"]}</div>}
               </div>
-              {fieldErr["clave"] && <div id="err-clave" className="error-message">{fieldErr["clave"]}</div>}
-            </div>
 
-            <button type="submit" className="btn" disabled={enviando}>
-              {enviando ? "Ingresando…" : `Iniciar sesión (${rolUi})`}
-            </button>
-            {formErr && <div className="error-message" style={{ marginTop: 8 }}>{formErr}</div>}
-          </form>
+              <button type="submit" className="btn btn-cta" disabled={enviando}>
+                {enviando ? "Ingresando…" : `Iniciar sesión`}
+              </button>
+              {formErr && <div className="error-message" style={{ marginTop: 8 }}>{formErr}</div>}
+            </form>
 
-          <p className="helper reveal" data-reveal="4">
-            ¿No tienes cuenta? <Link to={linkRegistro} className="textlink">Regístrate aquí</Link>
-          </p>
-        </div>
-
-        <aside
-          className="auth-right"
-          style={{ backgroundImage: `url(${fondo})` }}
-          aria-hidden="true"
-        >
-          <div className="auth-right-inner">
-            <h2 className="hero-title reveal" data-reveal="1">Tu solución integral para neumáticos</h2>
-            <div className="hero-pill reveal" data-reveal="2">
-              <span className="fa-solid fa-truck" aria-hidden="true" />
-              <span>Alertas automáticas de mantenimiento</span>
-            </div>
+            {/* CTA: SOLO cliente puede crear cuenta. Taller va a la solicitud. */}
+            {rolUi === "cliente" ? (
+              <p className="helper reveal" data-reveal="4">
+                ¿No tienes cuenta? <Link to={linkRegistroCliente} className="textlink">Regístrate aquí</Link>
+              </p>
+            ) : (
+              <p className="helper reveal" data-reveal="4">
+                ¿Tienes un taller y quieres usar LlantApp?{" "}
+                <Link to={linkSolicitudTaller} className="textlink">Completa el formulario</Link>
+              </p>
+            )}
           </div>
 
-          <div className="bg-bubbles">
-            <span></span><span></span><span></span>
-          </div>
-        </aside>
-      </section>
-    </main>
+          <aside
+            className="auth-right"
+            style={{ backgroundImage: `url(${fondo})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}
+            aria-hidden="true"
+          >
+            <img className="auth-right-bg" src={fondo} alt="" aria-hidden="true" />
+
+            <div className="auth-right-inner">
+              <h2 className="hero-title reveal" data-reveal="1">
+                {rolUi === "cliente" ? "Tu historial y evidencias, en un solo lugar" : "Transparencia técnica para tu taller"}
+              </h2>
+              <div className="hero-pill reveal" data-reveal="2">
+                <span className="fa-solid fa-shield-halved" aria-hidden="true" />
+                <span>{rolUi === "cliente" ? "Notificaciones y estados claros" : "Onboarding guiado y soporte"}</span>
+              </div>
+            </div>
+            <div className="bg-bubbles"><span></span><span></span><span></span></div>
+          </aside>
+          <img className="corner-mascot" src={llontoppEsquina} alt="Llontopp" aria-hidden="true" />
+        </section>
+      </main>
+    </>
   );
 }
