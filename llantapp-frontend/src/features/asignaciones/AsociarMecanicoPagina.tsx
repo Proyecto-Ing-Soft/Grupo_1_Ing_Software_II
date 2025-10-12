@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { apiCitas } from "../mantenimientos/api";
 import { apiUsuarios } from "./api";
 import "./asociarMecanico.css";
+import noResultadosImg from "../../assets/priv/cliente/no-resultados.png";
 
 // Tipos (idénticos a la vista original)
 type TipoMantenimientoFE = "PREVENTIVO" | "CORRECTIVO" | "LEGAL_ITV" | "EXTRAS";
@@ -125,6 +126,12 @@ export default function AdminCitasPendientes() {
         {filtradas.length === 0 ? (
           <div className="ams__box reveal" data-reveal="3" role="status">
             <div className="helper">No hay citas pendientes que coincidan con tu búsqueda.</div>
+            <img
+              src={noResultadosImg}
+              alt="Sin resultados para tu búsqueda de citas pendientes"
+              className="ams__emptyImg"
+              loading="lazy"
+            />
           </div>
         ) : (
           <div className="ams__split reveal" data-reveal="3">

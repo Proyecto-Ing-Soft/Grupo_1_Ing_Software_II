@@ -4,6 +4,7 @@ import { apiNotificacion } from "./api";
 import { useAuth } from "../../core/auth/AuthContext";
 import type { NotificacionDTO as _BaseDTO } from "./tipos";
 import "./notificaciones.css";
+import noNotificacionesImg from "../../assets/priv/cliente/no_notificaciones.png";
 
 type NotificacionDTO = _BaseDTO & {
   titulo?: string;
@@ -143,6 +144,12 @@ export default function NotificacionesLeerPagina() {
                   <div className="ntf__emptyEmoji" aria-hidden>📋</div>
                   <div className="ntf__emptyTitle">Sin notificaciones</div>
                   <div className="ntf__emptySub">No tienes cambios de cita por ahora.</div>
+                  <img
+                    src={noNotificacionesImg}
+                    alt="Sin notificaciones: no tienes cambios de cita por ahora."
+                    className="ntf__emptyImg"
+                    loading="lazy"
+                  />
                 </div>
               </div>
 

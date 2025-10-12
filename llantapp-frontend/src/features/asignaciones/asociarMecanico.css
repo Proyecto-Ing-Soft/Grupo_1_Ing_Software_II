@@ -163,3 +163,17 @@
   -webkit-text-fill-color: var(--text) !important;
   box-shadow: 0 0 0 1000px #fff inset !important;
 }
+.ams-scope .ams__box[role="status"] {
+  text-align: center;
+}
+
+.ams-scope .ams__emptyImg {
+  display: block;
+  width: min(390px, 86%);
+  max-width: 100%;
+  height: auto;
+  margin: 12px auto 4px;
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 18px rgba(2,6,23,.10));
+}
