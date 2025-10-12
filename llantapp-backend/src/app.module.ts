@@ -30,7 +30,7 @@ import { SolicitudesModule } from './features/solicitudes/solicitudes/solicitude
     VehiculosModule,         // Gestión de vehículos
     NotificacionesModule,    // Envío y lectura de notificaciones
     CitasModule,            // Citas de mantenimiento
-    HistorialModule, ,      // Historial de mantenimientos
+    HistorialModule,        // Historial de mantenimientos
     CalificacionesModule,    // Calificaciones
 
     CatalogoServiciosModule, // Catálogo + habilitación de mecánicos (US-06)
