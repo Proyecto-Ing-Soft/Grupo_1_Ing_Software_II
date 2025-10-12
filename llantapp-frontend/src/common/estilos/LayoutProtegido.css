@@ -1062,7 +1062,7 @@ body.linea-activa .steps{
 .historias-grid > article:nth-of-type(3){ --span: 4; --min-h: 20px; --pad: 18px; }
 
 .historias-grid > article:nth-of-type(1) .story-thumb.bl{
-  bottom: 30px;
+  bottom: 40px;
   left:  -62px;
 }
 .historias-grid > article:nth-of-type(1) .wrap-shape.left{
@@ -1073,8 +1073,8 @@ body.linea-activa .steps{
 .historias-grid > article:nth-of-type(1) .free-lines .l1{ --w: 480px; --x: 0px;   --mb: 2px; }
 .historias-grid > article:nth-of-type(1) .free-lines .l2{ --w: 300px; --x: 0px;   --mb: 0px; }
 
-.historias-grid > article:nth-of-type(2) .story-thumb.tl{ top: -45px;  left: -45px; }
-.historias-grid > article:nth-of-type(2) .story-thumb.br{ bottom: -90px; right: -10px; }
+.historias-grid > article:nth-of-type(2) .story-thumb.tl{ top: -35px;  left: -45px; }
+.historias-grid > article:nth-of-type(2) .story-thumb.br{ bottom: -95px; right: -25px; }
 .historias-grid > article:nth-of-type(2) .wrap-shape.left{
   width:  110px; height: 10px; margin: 0px 0px 0px 0;  shape-margin: 10px;
 }
@@ -1082,11 +1082,11 @@ body.linea-activa .steps{
   width:  0px; height: 10px; margin: 0px 0 0px 0px;  shape-margin: 10px;
 }
 .historias-grid > article:nth-of-type(2) .free-lines .l1{ --w: 460px; --x: 110px; --mb: 2px; } /* salta la imagen izq */
-.historias-grid > article:nth-of-type(2) .free-lines .l2{ --w: 300px; --x: 0px;    --mb: 2px; }
+.historias-grid > article:nth-of-type(2) .free-lines .l2{ --w: 400px; --x: 0px;    --mb: 2px; }
 .historias-grid > article:nth-of-type(2) .free-lines .l3{ --w: 480px; --x: 0px;    --mb: 0px; }
 
 .historias-grid > article:nth-of-type(3) .story-thumb.tr{
-  top: 0px; right: -70px;
+  top: 0px; right: -85px;
 }
 .historias-grid > article:nth-of-type(3) .wrap-shape.right{
   width:  0px; height: 0px; margin: 8px 0 10px 16px; shape-margin: 10px;
