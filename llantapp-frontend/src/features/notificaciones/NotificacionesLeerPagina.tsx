@@ -21,11 +21,12 @@ export default function NotificacionesLeerPagina() {
   const navigate = useNavigate();
 
   const isMecanico = usuario?.rol === "MECANICO";
+  const isCliente = usuario?.rol === "CLIENTE";
 
   const toneClass = (s?: string | null) =>
-    s === "SOLICITADA"   ? "notif--solicitada" :
-    s === "EN_PROGRESO"  ? "notif--progreso"  :
-    s === "TERMINADA"    ? "notif--terminada" : "";
+    s === "SOLICITADA" ? "notif--solicitada" :
+    s === "EN_PROGRESO" ? "notif--progreso" :
+    s === "TERMINADA" ? "notif--terminada" : "";
 
   const cargar = async () => {
     try {
@@ -61,6 +62,7 @@ export default function NotificacionesLeerPagina() {
     }
   };
 
+  // Animaciones de entrada (reveal)
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
     const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
@@ -159,15 +161,17 @@ export default function NotificacionesLeerPagina() {
           ) : (
             <div className="ntf__grid reveal" data-reveal="3" role="list">
               {ordenadas.map((n, idx) => {
-                const inferirEstado = (): "SOLICITADA"|"EN_PROGRESO"|"TERMINADA"|undefined => {
+                const inferirEstado = (): "SOLICITADA" | "EN_PROGRESO" | "TERMINADA" | undefined => {
                   const txt = `${n.titulo ?? ""} ${n.mensaje ?? ""}`.toLowerCase();
                   if (/(completad|finalizad)/.test(txt)) return "TERMINADA";
-                  if (/(proceso|asignad)/.test(txt))     return "EN_PROGRESO";
+                  if (/(proceso|asignad)/.test(txt)) return "EN_PROGRESO";
                   if (/(registrad|solicitud)/.test(txt)) return "SOLICITADA";
                   return undefined;
                 };
                 const estadoCita = n.citaEstado ?? inferirEstado();
                 const mostrarAccionesMecanico = isMecanico && estadoCita === "EN_PROGRESO" && !!n.citaId;
+                const mostrarAccionesCliente = isCliente && estadoCita === "TERMINADA" && !!n.citaId;
+
                 const mensajeMecanico =
                   mostrarAccionesMecanico
                     ? `Se te asignó la cita #${n.citaId}. Confirma los datos del vehículo.`
@@ -180,13 +184,13 @@ export default function NotificacionesLeerPagina() {
                     className={`ntf__card is-toned ${toneClass(estadoCita)}`}
                     data-reveal={String((idx % 5) + 1)}
                     aria-live="polite"
-                    aria-label={`Notificación ${n.prioridad ?? ''} - ${n.estado}`}
+                    aria-label={`Notificación ${n.prioridad ?? ""} - ${n.estado}`}
                   >
                     <div className="ntf__cardHeader">
                       <div className="badges">
                         {estadoCita && (
                           <span className="badge badge--cita" title={`Cita: ${estadoCita}`}>
-                            {String(estadoCita).replace("_"," ")}
+                            {String(estadoCita).replace("_", " ")}
                           </span>
                         )}
                         <span className="badge badge--estado" data-e={n.estado} title={`Notificación: ${n.estado}`}>
@@ -217,7 +221,9 @@ export default function NotificacionesLeerPagina() {
                           <button
                             type="button"
                             className="mc-btn mc-btn--gradient"
-                            onClick={() => navigate(`/vehiculos/registrar?cita=${n.citaId}`, { state: { citaId: n.citaId } })}
+                            onClick={() =>
+                              navigate(`/vehiculos/registrar?cita=${n.citaId}`, { state: { citaId: n.citaId } })
+                            }
                             title="Confirmar datos preliminares / Registrar vehículo"
                           >
                             <span className="mc-icon" aria-hidden>🚗</span>
@@ -236,6 +242,29 @@ export default function NotificacionesLeerPagina() {
                           >
                             <span className="mc-icon" aria-hidden>🛠️</span>
                             <span className="mc-btn__text">Registrar mantenimiento</span>
+                          </button>
+
+                          {n.estado === "PENDIENTE" && (
+                            <button
+                              type="button"
+                              className="btnGhost"
+                              onClick={() => marcarLeidaOptimista(n.id)}
+                              title="Marcar como leída"
+                            >
+                              ✅ Marcar como leída
+                            </button>
+                          )}
+                        </div>
+                      ) : mostrarAccionesCliente ? (
+                        <div className="btnRow">
+                          <button
+                            type="button"
+                            className="mc-btn mc-btn--gradient"
+                            onClick={() => navigate(`/calificaciones/cita/${n.citaId}`)}
+                            title="Calificar este servicio"
+                          >
+                            <span className="mc-icon" aria-hidden>⭐</span>
+                            <span className="mc-btn__text">Calificar servicio</span>
                           </button>
 
                           {n.estado === "PENDIENTE" && (

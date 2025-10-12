@@ -33,6 +33,7 @@ export default function MisCitasPagina() {
     })();
   }, []);
 
+  // Animaciones de entrada (reveal)
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
     const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
@@ -90,6 +91,7 @@ export default function MisCitasPagina() {
           Cargando…
         </div>
       )}
+
       {err && !cargando && (
         <div className="mc__state mc__state--error reveal" data-reveal="2" role="alert">
           {err}

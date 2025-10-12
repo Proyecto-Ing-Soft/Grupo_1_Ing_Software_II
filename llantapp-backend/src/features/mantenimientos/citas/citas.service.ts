@@ -25,7 +25,7 @@ export class CitasService {
 
   // === CREAR CITA (estado inicial: SOLICITADA) ===
   async crear(dto: CrearCitaDto, clienteId: number) {
-    // ✅ Validación de fecha futura/actual (sin TZ)
+    // Validación de fecha futura/actual (sin TZ)
     if (!dto.programadaPara || !/^\d{4}-\d{2}-\d{2}$/.test(dto.programadaPara)) {
       throw new BadRequestException('Fecha inválida (usa AAAA-MM-DD)');
     }

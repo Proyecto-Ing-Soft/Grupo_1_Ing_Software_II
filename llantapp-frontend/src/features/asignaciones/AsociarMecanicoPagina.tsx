@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { apiCitas } from "../mantenimientos/api";
-import { apiUsuarios } from "../usuarios/api";
-import "../mantenimientos/asociarMecanico.css";
+import { apiUsuarios } from "./api";
+import "./asociarMecanico.css";
 
 // Tipos (idénticos a la vista original)
 type TipoMantenimientoFE = "PREVENTIVO" | "CORRECTIVO" | "LEGAL_ITV" | "EXTRAS";
@@ -45,31 +45,21 @@ export default function AdminCitasPendientes() {
       setCitas(cs);
       setMecanicos(ms);
     })();
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, []);
 
+  // Animaciones de entrada (reveal)
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
     const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
     const obs = new IntersectionObserver(
-      entries => {
-        for (const e of entries) {
-          (e.target as HTMLElement).classList.toggle("animate-in", e.isIntersecting);
-        }
-      },
+      entries => entries.forEach(e =>
+        (e.target as HTMLElement).classList.toggle("animate-in", e.isIntersecting)
+      ),
       { threshold: 0.12 }
     );
-    nodes.forEach((n, i) => {
-      n.dataset.reveal = String(Math.min(i + 1, 5));
-      obs.observe(n);
-    });
-    return () => {
-      window.clearTimeout(t);
-      nodes.forEach(n => obs.unobserve(n));
-      obs.disconnect();
-    };
+    nodes.forEach((n, i) => { n.dataset.reveal = String(Math.min(i + 1, 5)); obs.observe(n); });
+    return () => { window.clearTimeout(t); nodes.forEach(n => obs.unobserve(n)); obs.disconnect(); };
   }, [citas.length]);
 
   const fmtFechaCorta = (s?: string | null) =>
@@ -104,23 +94,21 @@ export default function AdminCitasPendientes() {
             Asigna un mecánico a cada solicitud de mantenimiento.
           </p>
           <div className="ams__toolbar">
+            {/* Botón igual al de Admin Calificaciones */}
             <button
               type="button"
-              className="btn btn--ghost"
+              className="mc-btn mc-btn--gradient"
               onClick={() => navigate("/inicio")}
               title="Volver al inicio"
             >
-              <span aria-hidden>⬅️</span>&nbsp;Volver al inicio
+              <span className="mc-icon" aria-hidden>⬅️</span>
+              <span className="mc-btn__text">Volver al inicio</span>
             </button>
           </div>
         </header>
 
-        <form
-          className="form reveal"
-          data-reveal="2"
-          onSubmit={e => e.preventDefault()}
-        >
-          <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+        <form className="form reveal" data-reveal="2" onSubmit={e => e.preventDefault()}>
+          <div className="form-group form-group--full">
             <label className="label" htmlFor="buscar">Buscar</label>
             <div className="input-wrap">
               <input
@@ -136,45 +124,26 @@ export default function AdminCitasPendientes() {
 
         {filtradas.length === 0 ? (
           <div className="ams__box reveal" data-reveal="3" role="status">
-            <div className="helper">
-              No hay citas pendientes que coincidan con tu búsqueda.
-            </div>
+            <div className="helper">No hay citas pendientes que coincidan con tu búsqueda.</div>
           </div>
         ) : (
           <div className="ams__split reveal" data-reveal="3">
             {filtradas.map(c => (
               <article key={c.id} className="ams__box" aria-label={`Cita #${c.id}`}>
-                <header
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    alignItems: "center",
-                    marginBottom: 8,
-                  }}
-                >
-                  <span className="pill">
-                    <span className="pill__dot" />#{c.id}
-                  </span>
+                <header className="box__meta">
+                  <span className="pill"><span className="pill__dot" />#{c.id}</span>
                   <span className="pill">{c.tipo.replace("_", " ")}</span>
                   <span className="pill">{c.estado.replace("_", " ")}</span>
                 </header>
 
-                <div className="selList" style={{ marginBottom: 8 }}>
-                  <div className="selRow">
-                    <strong>Placa</strong>
-                    <span>{c.vehiculo?.placa ?? "—"}</span>
-                  </div>
-                  <div className="selRow">
-                    <strong>Fecha</strong>
-                    <span>{fmtFechaCorta(c.programadaPara)}</span>
-                  </div>
+                <div className="selList">
+                  <div className="selRow"><strong>Placa</strong><span>{c.vehiculo?.placa ?? "—"}</span></div>
+                  <div className="selRow"><strong>Fecha</strong><span>{fmtFechaCorta(c.programadaPara)}</span></div>
                 </div>
 
-                <div className="form" style={{ gridTemplateColumns: "1fr" }}>
+                <div className="form form--one">
                   <div className="form-group">
-                    <label className="label" htmlFor={`mec-${c.id}`}>
-                      Mecánico
-                    </label>
+                    <label className="label" htmlFor={`mec-${c.id}`}>Mecánico</label>
                     <div className="input-wrap">
                       <select
                         id={`mec-${c.id}`}
@@ -182,15 +151,11 @@ export default function AdminCitasPendientes() {
                         value={seleccion[c.id] ?? ""}
                         onChange={e => {
                           const val = Number(e.target.value);
-                          setSeleccion(s => ({ ...s, [c.id]: val || undefined as any }));
+                          setSeleccion(s => ({ ...s, [c.id]: (val || undefined) as any }));
                         }}
                       >
                         <option value="">Asignar…</option>
-                        {mecanicos.map(m => (
-                          <option key={m.id} value={m.id}>
-                            {m.nombreCompleto}
-                          </option>
-                        ))}
+                        {mecanicos.map(m => (<option key={m.id} value={m.id}>{m.nombreCompleto}</option>))}
                       </select>
                     </div>
                   </div>
@@ -210,9 +175,8 @@ export default function AdminCitasPendientes() {
             ))}
           </div>
         )}
-        {okMsg && <div className="success-message mt8">{okMsg}</div>}
+        {okMsg && <div className="success-message mt8" role="alert">{okMsg}</div>}
       </section>
     </main>
   );
 }
-

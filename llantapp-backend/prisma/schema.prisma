@@ -15,7 +15,6 @@ enum Rol {
   CLIENTE
 }
 
-
 enum TipoMantenimiento {
   PREVENTIVO
   CORRECTIVO
@@ -54,9 +53,15 @@ model Usuario {
   // Notificaciones recibidas
   notificaciones Notificacion[]
 
-  // === NUEVO: Citas como cliente y como mecánico ===
+  // Citas como cliente y como mecánico
   citasComoCliente  CitaMantenimiento[] @relation("CitasCliente")
   citasComoMecanico CitaMantenimiento[] @relation("CitasMecanico")
+
+  // Calificaciones hechas
+  calificacionesHechas CalificacionCita[]
+
+  // === NUEVO: servicios para los que el usuario (mecánico) está habilitado ===
+  serviciosHabilitados ServicioMecanico[] @relation("MecanicosHabilitados")
 }
 
 model Empresa {
@@ -92,7 +97,7 @@ model Vehiculo {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  // === NUEVO: Citas de mantenimiento asociadas a este vehículo ===
+  // Citas de mantenimiento asociadas a este vehículo
   citas CitaMantenimiento[]
 
   // Notificaciones ligadas al vehículo (si aplica)
@@ -101,19 +106,51 @@ model Vehiculo {
   @@index([empresaId])
 }
 
-// === CitaMantenimiento ahora guarda datos preliminares del vehículo ===
-// Principios: KISS (campos claros), SRP (persistimos snapshot), OCP (podemos añadir más campos)
+// === NUEVO: Catálogo de servicios ===
+model Servicio {
+  id               Int       @id @default(autoincrement())
+  nombre           String    @unique
+  descripcion      String    @db.Text
+  activo           Boolean   @default(true)
+  precioSugerido   Decimal?  @db.Decimal(10, 2) // opcional
+  duracionMinutos  Int?                           // opcional
 
+  creadoEn         DateTime  @default(now())
+  actualizadoEn    DateTime  @updatedAt
+
+  // Mecánicos habilitados (muchos-a-muchos explícito)
+  mecanicosHabilitados ServicioMecanico[]
+
+  // Citas que referencian este servicio (opcional en citas para compatibilidad)
+  citas CitaMantenimiento[]
+}
+
+// === NUEVO: Relación Servicio <-> Mecánico con habilitación ===
+model ServicioMecanico {
+  servicioId  Int
+  mecanicoId  Int
+  habilitado  Boolean  @default(true)
+  creadoEn    DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  servicio Servicio @relation(fields: [servicioId], references: [id])
+  mecanico Usuario  @relation("MecanicosHabilitados", fields: [mecanicoId], references: [id])
+
+  @@id([servicioId, mecanicoId])
+  @@index([mecanicoId])
+}
+
+// Cita de mantenimiento con snapshot de vehículo
 model CitaMantenimiento {
-  id             Int               @id @default(autoincrement())
-  tipo           TipoMantenimiento
-  comentario     String            @db.Text
-  estado         EstadoCita        @default(SOLICITADA)
-  programadaPara DateTime?
+  id                 Int               @id @default(autoincrement())
+  tipo               TipoMantenimiento
+  comentario         String            @db.Text
+  estado             EstadoCita        @default(SOLICITADA)
+  programadaPara     DateTime?
   fechaMantenimiento DateTime?
 
-  creadoEn       DateTime          @default(now())
-  actualizadoEn  DateTime          @updatedAt
+  creadoEn           DateTime          @default(now())
+  actualizadoEn      DateTime          @updatedAt
 
   clienteId Int
   cliente   Usuario @relation("CitasCliente", fields: [clienteId], references: [id])
@@ -124,6 +161,11 @@ model CitaMantenimiento {
   vehiculoId Int?
   vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id])
 
+  // === NUEVO: referencia al ítem del catálogo (opcional para compatibilidad) ===
+  servicioId Int?
+  servicio   Servicio? @relation(fields: [servicioId], references: [id])
+
+  // Snapshot preliminar del vehículo
   placaPreliminar  String
   marcaPreliminar  String
   modeloPreliminar String
@@ -134,16 +176,19 @@ model CitaMantenimiento {
   notificaciones Notificacion[]
 
   trabajosRealizados String?
-  repuestos          Json? 
+  repuestos          Json?
 
-  evidenciaBytes       Bytes?
-  evidenciaMime        String?
-  evidenciaNombre      String?
+  evidenciaBytes  Bytes?
+  evidenciaMime   String?
+  evidenciaNombre String?
+
+  calificacion CalificacionCita?
 
   @@index([clienteId])
   @@index([mecanicoId, estado])
   @@index([vehiculoId])
   @@index([placaPreliminar])
+  @@index([servicioId])   // NUEVO: consultas por servicio
 }
 
 model Notificacion {
@@ -166,3 +211,22 @@ model Notificacion {
   @@index([citaId])
 }
 
+model CalificacionCita {
+  id          Int      @id @default(autoincrement())
+  citaId      Int      @unique
+  clienteId   Int
+  estrellas   Int      @db.SmallInt  // 1..5 (validar en servicio)
+  comentario  String?
+  creadaEn    DateTime @default(now())
+
+  // Relaciones
+  cita        CitaMantenimiento @relation(fields: [citaId], references: [id], onDelete: Cascade)
+  cliente     Usuario           @relation(fields: [clienteId], references: [id])
+
+  @@index([clienteId])
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "./erd.svg"
+}

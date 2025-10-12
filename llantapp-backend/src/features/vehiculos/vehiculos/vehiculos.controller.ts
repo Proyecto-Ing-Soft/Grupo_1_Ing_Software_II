@@ -47,4 +47,17 @@ export class VehiculosController {
     const usuario = req.user;
     return this.svc.obtenerHistorial(id, usuario);
   }
+
+  @UseGuards(RolesGuard)
+  @RolRequerido(Rol.MECANICO, Rol.ADMIN)
+  @Post('desde-cita/:citaId')
+  crearDesdeCita(
+    @Param('citaId', ParseIntPipe) citaId: number,
+    @Body() dto: CrearVehiculoDto,
+    @Req() req: any
+  ) {
+    const usuario = req.user; // { sub, rol }
+    const creador = { id: Number(usuario?.sub ?? usuario?.id), rol: usuario?.rol };
+    return this.svc.crearYEnlazarCita(citaId, dto, creador);
+  }
 }

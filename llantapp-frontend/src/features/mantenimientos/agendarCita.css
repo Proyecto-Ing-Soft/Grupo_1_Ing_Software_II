@@ -1,95 +1,195 @@
-.agendar__title {
+:root{
+  --bg: #f6f9fc;
+  --paper: #ffffff;
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --muted: #64748b;
+
+  --line: #e2e8f0;
+  --line-2: #cbd5e1;
+
+  --pri-1: #06b6d4;      /* turquesa */
+  --pri-2: #0891b2;
+  --pri-soft: #e9f8fb;   /* fondo muy suave */
+  --ring: rgba(6,182,212,.18);
+
+  --success: #059669;
+  --danger: #d32f2f;
+
+  --radius: 16px;
+  --radius-lg: 22px;
+}
+
+*{ box-sizing: border-box; }
+html, body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, "Noto Sans";
+}
+::selection{ background:#e0f2fe; }
+
+/* ====== Layout ====== */
+.agendar{ max-width: 1200px; margin: 0 auto; padding: 24px clamp(12px,3vw,20px); }
+
+.agendar__split{
+  display:grid; grid-template-columns: 1.15fr .85fr; gap: 24px;
+}
+@media (max-width: 1024px){
+  .agendar__split{ grid-template-columns: 1fr; }
+}
+
+.agendar__left{
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 36px rgba(2,6,23,.08);
+  padding: clamp(18px,3vw,28px);
+}
+
+.agendar__right{ position: relative; }
+.preview-card {
+  position: sticky;
+  top: 18px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* ====== Header ====== */
+.agendar__head{
+  display:flex; align-items:flex-start; justify-content:space-between; gap: 12px;
   margin-bottom: 10px;
 }
+.agendar__title{ margin:0; font-size: clamp(28px,3.4vw,40px); font-weight: 900; letter-spacing: -.01em; color:#0b1220; }
+.agendar__sub{ color: var(--muted); margin: 4px 0 0; }
 
-.agendar__sub {
-  margin-top: 0;
-  margin-bottom: 20px;
+/* ====== Form ====== */
+.form{
+  display:grid; gap: 16px; margin-top: 12px;
 }
 
-.agendar__split {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 28px;
+.form-row{
+  display:grid; gap:16px; grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 720px){
+  .form-row{ grid-template-columns: 1fr; }
+}
+
+.form-group{ display:flex; flex-direction:column; gap:6px; }
+.label{ font-size: 13px; font-weight: 800; color: var(--ink); }
+
+.input-wrap{
+  position:relative;
+  border:1px solid var(--line);
+  border-radius: 14px;
+  background:#fff;
+  box-shadow: 0 1px 0 rgba(15,23,42,.02);
+}
+.input{
+  width:100%; border:0; outline:none; background:transparent;
+  padding:11px 12px; font-size:15px; color:#0b1220; border-radius: 14px;
+  transition: box-shadow .18s ease, transform .15s ease;
+}
+.input:focus{ box-shadow: 0 0 0 4px var(--ring); }
+
+select.input{
+  appearance:none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--pri-1) 50%),
+                    linear-gradient(135deg, var(--pri-1) 50%, transparent 50%),
+                    linear-gradient(to right, rgba(15,23,42,.08), rgba(15,23,42,0));
+  background-position: calc(100% - 18px) calc(1.1em),
+                       calc(100% - 12px) calc(1.1em),
+                       calc(100% - 2.4rem) 50%;
+  background-size: 6px 6px, 6px 6px, 1px 60%;
+  background-repeat: no-repeat;
+}
+textarea.input{ resize: vertical; min-height: 96px; }
+
+textarea.input {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
-.agendar__left {
-  flex: 1 1 70%;
-  max-width: 880px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 10px 40px 40px;
-  padding-bottom: 20px;
+.form-row .form-group textarea.input {
+  grid-column: 1 / -1;   /* hace que abarque toda la fila si usas grid */
 }
 
-.agendar__left form .btn {
-  margin-top: 16px;
+.form-row .form-group:last-child {
+  grid-column: 1 / -1;   /* asegura que la última columna se expanda */
 }
 
-.agendar__left .helper {
-  margin-top: 25px;
+/* ====== Botón enviar (coloreado) ====== */
+/* Alta especificidad para vencer estilos globales */
+.agendar .btn.btn-primary{
+  appearance:none;
+  display:inline-flex; align-items:center; justify-content:center;
+  border:1px solid var(--pri-2) !important;
+  border-radius: 14px;
+  padding: 11px 18px;
+  font-weight: 800; font-size: 15px;
+  color:#fff !important;
+  background: linear-gradient(180deg, var(--pri-1), var(--pri-2)) !important;
+  cursor:pointer;
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+  box-shadow: 0 12px 26px rgba(6,182,212,.28);
+  width: max-content;
+}
+.agendar .btn.btn-primary:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+.agendar .btn.btn-primary:disabled{
+  opacity:.65; cursor:not-allowed; transform:none; box-shadow:none;
 }
 
-.agendar__right {
-  flex: 0 0 300px;
-}
-
-.agendar .input {
-  padding-left: 12px !important;
-  padding-right: 12px !important;
-  box-sizing: border-box;
-}
-
-.agendar select.input {
-  appearance: auto !important;
-  -webkit-appearance: menulist !important;
-  -moz-appearance: menulist !important;
-  background-color: #fff;
-  cursor: pointer;
-
-  padding-left: 12px !important;
-}
-
-.agendar .input::placeholder {
-  color: rgba(0, 0, 0, 0.3) !important;
-  font-weight: 400;
-}
-
-/* esto es para q los errores en el formulario se vean */
-.error-message {
-  color: #d32f2f;
-  font-size: 0.9rem;
+/* ====== Mensajes / Links ====== */
+.error-message{
+  color: var(--danger);
+  font-size: 0.92rem;
   margin-top: 4px;
   padding-left: 2px;
-  font-weight: 500;
-  animation: fadeIn 0.2s ease-in-out;
+  font-weight: 600;
+  animation: fadeIn .22s ease-in-out;
+}
+.input-wrap.has-error .input{
+  border:1.5px solid var(--danger);
+  background:#ffeaea;
+  transition: border-color .25s ease, background-color .25s ease;
 }
 
-.input-wrap.has-error .input {
-  border: 1.5px solid #d32f2f;
-  background-color: #ffeaea;
-  transition: border-color 0.3s ease, background-color 0.3s ease;
-}
-
-/* esto es para el mensaje de exito se vea */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-2px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.success-message {
-  color: #2e7d32;
-  background-color: #e6f4ea;
-  border: 1px solid #b6e0b8;
+.success-message{
+  color: var(--success);
+  background:#e6f4ea;
+  border:1px solid #b6e0b8;
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: 10px;
   margin-top: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  animation: fadeIn 0.25s ease-in-out;
+  font-size: .95rem;
+  font-weight: 600;
+  animation: fadeIn .25s ease-in-out;
+}
+
+.helper{ color: var(--muted); margin-top: 8px; }
+.textlink{
+  color: var(--pri-2); font-weight: 800; cursor: pointer;
+  border-bottom: 1px dashed rgba(6,182,212,.45);
+}
+.textlink:hover{ color: var(--pri-1); }
+
+/* ====== Animación reveal ====== */
+.reveal{ opacity:0; transform: translateY(12px) scale(.985); }
+.will-animate{ transition: opacity .5s ease, transform .5s ease; }
+.reveal.animate-in{ opacity:1; transform:none; }
+.reveal.will-animate[data-reveal="2"]{ transition-delay: .04s; }
+.reveal.will-animate[data-reveal="3"]{ transition-delay: .08s; }
+.reveal.will-animate[data-reveal="4"]{ transition-delay: .12s; }
+.reveal.will-animate[data-reveal="5"]{ transition-delay: .16s; }
+
+@keyframes fadeIn{
+  from{ opacity:0; transform: translateY(-2px); }
+  to{ opacity:1; transform: translateY(0); }
+}
+
+/* ====== Autofill ====== */
+input:-webkit-autofill,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill{
+  -webkit-text-fill-color: var(--ink) !important;
+  box-shadow: 0 0 0 1000px #fff inset !important;
 }

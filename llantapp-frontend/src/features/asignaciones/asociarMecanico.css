@@ -1,0 +1,196 @@
+/* ================= Base ================= */
+:root {
+  color-scheme: light;
+
+  /* Colores principales */
+  --bg: #f6f9ff;
+  --surface: #ffffff;
+  --card: #ebf5ff;
+  --card-line: #cfe8ff;
+
+  --text: #0f172a;
+  --muted: #475569;
+  --muted-2: #64748b;
+
+  --line: #e2e8f0;
+  --line-2: #cbd5e1;
+
+  /* Paleta página */
+  --primary: #0284c7;               /* azul base para botones normales */
+  --primary-700: #0369a1;
+  --primary-ring: rgba(14,165,233,.18);
+
+  --success: #059669;
+  --shadow-1: 0 16px 36px rgba(2,6,23,.08);
+  --shadow-2: 0 12px 28px rgba(2,6,23,.08);
+
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 22px;
+
+  /* === Botón “Volver al inicio” (idéntico a Admin Calificaciones) === */
+  --mc-grad-1: #22c55e;  /* verde */
+  --mc-grad-2: #10b981;  /* verde esmeralda */
+  --mc-grad-3: #06b6d4;  /* turquesa */
+  --mc-shadow: 0 12px 26px rgba(16,185,129,.28);
+  --mc-shadow-h: 0 16px 34px rgba(16,185,129,.35);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans";
+  color: var(--text);
+  background: var(--bg);
+}
+::placeholder { color: var(--muted-2); }
+
+/* ================= Layout ================= */
+.ams { max-width: 1120px; margin: 0 auto; padding: 24px clamp(12px, 3vw, 20px); }
+
+.agendar__left {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-1);
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.agendar__title { font-size: clamp(28px, 3.4vw, 40px); font-weight: 900; letter-spacing: -0.01em; color: #111827; margin: 0; }
+.agendar__sub { color: var(--muted); margin: 6px 0 0; }
+.ams__head { display: flex; flex-direction: column; gap: 12px; }
+
+.ams__toolbar { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ================= Botón “Volver al inicio” (mc-btn) ================= */
+.mc-btn{
+  appearance: none;
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 11px 18px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  font-weight: 800; font-size: 15px;
+  color: #fff;
+  cursor: pointer;
+  background-image: linear-gradient(90deg, var(--mc-grad-1) 0%, var(--mc-grad-2) 40%, var(--mc-grad-3) 100%);
+  background-size: 220% 100%;
+  box-shadow: var(--mc-shadow);
+  transition: transform .12s ease, box-shadow .2s ease, background-position .25s ease;
+}
+.mc-btn--gradient { /* la variante es solo semántica; los estilos ya están arriba */ }
+.mc-btn:hover{
+  transform: translateY(-1px);
+  background-position: 100% 0;
+  box-shadow: var(--mc-shadow-h);
+}
+.mc-icon{ line-height: 1; }
+.mc-btn__text{ display: inline-block; }
+
+/* ================= Botones “normales” de la página (Asignar) ================= */
+.btn{
+  appearance: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--primary);
+  border-radius: 14px;
+  padding: 10px 18px;
+  font-weight: 800; font-size: 15px;
+  color: #fff;
+  background: var(--primary);
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+  box-shadow: 0 10px 22px rgba(2,132,199,.25);
+}
+.btn:hover{ transform: translateY(-1px); box-shadow: 0 14px 26px rgba(2,132,199,.28); background: var(--primary-700); }
+.btn:focus{ outline: none; box-shadow: 0 0 0 4px var(--primary-ring); }
+
+/* ================= Formularios ================= */
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+.form--one { grid-template-columns: 1fr; }
+@media (max-width: 640px) { .form { grid-template-columns: 1fr; } }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group--full { grid-column: 1 / -1; }
+.label { font-size: 13px; font-weight: 800; color: var(--text); }
+
+.input-wrap {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(15,23,42,.02);
+}
+.input {
+  width: 100%; border: 0; outline: none; background: transparent;
+  padding: 11px 12px;
+  font-size: 15px; color: #0b1220; border-radius: 14px;
+  transition: box-shadow .2s ease, transform .15s ease;
+}
+.input:focus { box-shadow: 0 0 0 4px var(--primary-ring); }
+
+/* Select con flecha */
+select.input {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--primary) 50%),
+                    linear-gradient(135deg, var(--primary) 50%, transparent 50%),
+                    linear-gradient(to right, rgba(15,23,42,.08), rgba(15,23,42,0));
+  background-position: calc(100% - 18px) calc(1.1em),
+                       calc(100% - 12px) calc(1.1em),
+                       calc(100% - 2.4rem) 50%;
+  background-size: 6px 6px, 6px 6px, 1px 60%;
+  background-repeat: no-repeat;
+}
+
+/* ================= Split y tarjetas ================= */
+.ams__split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+@media (max-width: 1024px) { .ams__split { grid-template-columns: 1fr; } }
+
+.ams__box {
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-2);
+  padding: 20px;
+}
+.box__meta { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+
+/* ================= Chips/Pills ================= */
+.pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: 9999px;
+  background: #fff; border: 1px solid var(--line); font-weight: 800; color: var(--text);
+}
+.pill__dot { width: 10px; height: 10px; border-radius: 9999px; background: #10b981; display: inline-block; }
+
+/* ================= Lista de pares ================= */
+.selList { display: grid; gap: 12px; margin-bottom: 8px; }
+.selRow {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #f1f7ff;
+  border: 1px solid var(--card-line);
+  border-radius: 14px; padding: 10px 12px;
+}
+.selRow strong { font-size: 14px; }
+
+/* ================= Helper/Estados ================= */
+.helper { font-size: 14px; color: var(--muted); }
+.success-message { font-size: 14px; color: var(--success); }
+.mt8 { margin-top: 8px; }
+
+.actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+
+/* ================= Animaciones ================= */
+.reveal { opacity: 0; transform: translateY(10px); }
+.reveal.will-animate { transition: opacity .5s ease, transform .5s ease; }
+.reveal.will-animate[data-reveal="2"] { transition-delay: .04s; }
+.reveal.will-animate[data-reveal="3"] { transition-delay: .08s; }
+.reveal.will-animate[data-reveal="4"] { transition-delay: .12s; }
+.reveal.will-animate[data-reveal="5"] { transition-delay: .16s; }
+.reveal.animate-in { opacity: 1; transform: translateY(0); }
+
+/* ================= Autofill fix ================= */
+input:-webkit-autofill,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill {
+  -webkit-text-fill-color: var(--text) !important;
+  box-shadow: 0 0 0 1000px #fff inset !important;
+}

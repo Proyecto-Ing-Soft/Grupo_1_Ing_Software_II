@@ -10,7 +10,7 @@ export class CrearCitaDto {
   @IsEnum(TipoMantenimiento)
   tipo!: TipoMantenimiento;
 
-  // 🆕 Datos preliminares del vehículo
+  // Datos preliminares del vehículo
   @IsString() placaPreliminar!: string;
   @IsString() marcaPreliminar!: string;
   @IsString() modeloPreliminar!: string;
