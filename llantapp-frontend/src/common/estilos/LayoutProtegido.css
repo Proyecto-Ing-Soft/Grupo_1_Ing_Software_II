@@ -839,16 +839,18 @@ a.btn.btn-ghost, button.btn.btn-ghost, .btn.btn-ghost{
   user-select: none;
   display: block;
 
-  width: var(--linea-w, 1180px);
+  width: var(--linea-w, 1280px);
   height: var(--linea-h, 260px);
-  left: var(--linea-x, -24px);
+  left: var(--linea-x, -132px);
   top: var(--linea-y, 0px);
 
   transform-origin: left top;
   filter: drop-shadow(0 2px 0 rgba(0,0,0,.25));
   overflow: visible;
 }
-
+.timeline-group .steps-linea{
+  transform: scaleX(1.03);
+}
 @media (max-width: 1099px){
   .steps-linea{
     width: max(900px, 120%);
