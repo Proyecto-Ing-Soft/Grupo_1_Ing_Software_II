@@ -1,4 +1,3 @@
-// Lógica: basada en el componente original (apiCitas.pendientesAdmin, apiUsuarios.listarPorRol, asignación).
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +7,6 @@ import { apiUsuarios } from "./api";
 import "./asociarMecanico.css";
 import noResultadosImg from "../../assets/priv/cliente/no-resultados.png";
 
-// Tipos (idénticos a la vista original)
 type TipoMantenimientoFE = "PREVENTIVO" | "CORRECTIVO" | "LEGAL_ITV" | "EXTRAS";
 type EstadoCitaFE = "SOLICITADA" | "EN_PROGRESO" | "TERMINADA";
 
