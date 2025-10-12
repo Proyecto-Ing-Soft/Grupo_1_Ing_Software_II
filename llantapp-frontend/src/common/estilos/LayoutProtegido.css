@@ -187,8 +187,6 @@ a:not(.btn):not(.lp-nav a):hover{ background: rgba(0,0,0,.20); filter: brightnes
 .lp-logo img{height:28px; width:auto; border-radius:6px; box-shadow:var(--shadow)}
 .lp-logo span{opacity:.9; letter-spacing:.2px}
 
-.lp-lang{display:flex; align-items:center; gap:6px; color:var(--muted); font-size:.95rem}
-.lp-lang .globe{font-size:18px}
 .lp-sep-vert{width:1px; height:24px; background:var(--border)}
 
 .lp-nav{
@@ -327,7 +325,6 @@ a:focus-visible, button:focus-visible, .tab:focus-visible, .pill:focus-visible, 
 }
 
 .badge-role{
-  font-size:12px;
   opacity:.8;
   margin-left:6px;
 }
@@ -376,7 +373,6 @@ a.btn.btn-ghost, button.btn.btn-ghost, .btn.btn-ghost{
 
   padding: 8px 12px;
   border-radius: 10px;
-  font-size: .9rem;
   font-weight: 700;
 
   color: #eaf2ff !important;
@@ -402,7 +398,6 @@ a.btn.btn-ghost, button.btn.btn-ghost, .btn.btn-ghost{
   filter: grayscale(.2);
 }
 
-.badge-role{font-size:12px; opacity:.7}
 
 /* CARRUSEL (Hero superior) */
 .hero-carousel{
@@ -432,7 +427,6 @@ a.btn.btn-ghost, button.btn.btn-ghost, .btn.btn-ghost{
 }
 .hero-carousel .slides{position:absolute; inset:0; display:grid}
 .hero-carousel .slide{
-  grid-area:1/1; width:100%; height:100%; background-position:center; background-size:cover;
   opacity:0; transform:scale(1.04); transition:opacity .8s ease, transform 1.6s ease;
 }
 .hero-carousel .slide.active{opacity:1; transform:scale(1)}
@@ -516,10 +510,7 @@ a.btn.btn-ghost, button.btn.btn-ghost, .btn.btn-ghost{
   color: #ffffff !important;
   font-weight: 700;
   letter-spacing: .25px;
-  font-size: .85rem;
 }
-.hero-title{font-size:clamp(28px, 4.6vw, 56px); line-height:1.06; margin:.25rem 0 .5rem}
-.hero-sub{max-width:780px; color:var(--muted-2); opacity:.95; font-size:clamp(14px, 2.2vw, 18px)}
 .hero-pills{
   display: flex;
   flex-wrap: wrap;
@@ -528,7 +519,6 @@ a.btn.btn-ghost, button.btn.btn-ghost, .btn.btn-ghost{
   margin-top: 16px;
 }
 
-.pill{background:rgba(255,255,255,.06); border:1px solid var(--border); padding:8px 12px; border-radius:999px; color:#d1d8e2; font-weight:600; font-size:.9rem}
 .pill:not(.active):hover{
   background: rgba(0,0,0,.22);
   color: #dfe6ee;
@@ -575,7 +565,6 @@ a.btn.btn-ghost, button.btn.btn-ghost, .btn.btn-ghost{
 .hero-bullets{margin:16px 0 4px; display:grid; gap:10px}
 .hero-bullets li{display:flex; gap:10px; align-items:flex-start; color:var(--muted-2)}
 .hero-bullets .dot{width:9px; height:9px; margin-top:8px; border-radius:50%; background:linear-gradient(135deg, var(--brand), var(--brand-2)); box-shadow:0 0 0 3px rgb(27, 63, 111)}
-.hero-note{color:var(--muted); font-size:.9rem}
 
 /* TABS Rol */
 .tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap}
@@ -672,7 +661,6 @@ a.btn.btn-ghost, button.btn.btn-ghost, .btn.btn-ghost{
 }
 
 .card-service h4{ margin: 6px 0 4px; }
-.card-service p{ color: var(--muted); font-size: .92rem; min-height: 34px; }
 .card-service .btn.btn-mini{ margin-top: 12px; }
 
 /* === COMO FUNCIONA === */
@@ -788,7 +776,6 @@ a.btn.btn-ghost, button.btn.btn-ghost, .btn.btn-ghost{
   margin: 0;
   color: var(--muted-2);
   line-height: 1.25;
-  font-size: .98rem;
 
   display: flex;
   align-items: center;
@@ -801,7 +788,6 @@ a.btn.btn-ghost, button.btn.btn-ghost, .btn.btn-ghost{
   left: 25px; top: 20px;
   width: 25px; height: 25px;
   display: grid; place-items: center;
-  font-weight: 900; font-size: 14px; color: #fff;
   background: linear-gradient(135deg, var(--azul-noche-2), var(--azul-noche-3));
   border-radius: 999px;
   box-shadow: 0 0 0 4px rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.28);
@@ -823,7 +809,6 @@ a.btn.btn-ghost, button.btn.btn-ghost, .btn.btn-ghost{
   margin: 0;
   color: var(--muted-2);
   line-height: 1.25;
-  font-size: .98rem;
 }
 .exclaim{
   display: inline-flex;
@@ -895,7 +880,6 @@ body.linea-activa .timeline-group .steps{
     background-image: var(--linea-t);
     background-repeat: no-repeat;
     background-position: left top;
-    background-size: contain;
 
     z-index: 0;
     pointer-events: none;
@@ -919,7 +903,6 @@ body.linea-activa .steps{
   margin: 0 0 14px;
   font-weight: 900;
   letter-spacing: .2px;
-  font-size: clamp(28px, 4.2vw, 40px);
   line-height: 1.08;
 }
 
@@ -1137,7 +1120,6 @@ body.linea-activa .steps{
 .pills{display:flex; flex-wrap:wrap; gap:10px}
 .pill-next{border:1px dashed rgba(255,255,255,.2); background:rgba(255,255,255,.03); padding:8px 12px; border-radius:999px}
 .pill-next .tag{
-  font-size:.75rem;
   color:var(--muted-2);
   margin-left:8px;
 }
@@ -1202,7 +1184,7 @@ body.linea-activa .steps{
 
 .footer-bottom{display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; border-top:1px solid var(--border); padding-top:12px; margin-top:18px}
 .cookies{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-.cookies .btn{padding:6px 10px; border-radius:8px; font-size:.9rem}
+.cookies .btn{padding:6px 10px; border-radius:8px}
 
 :root{
   --surface:  rgba(255,255,255,.94);
