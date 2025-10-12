@@ -5,7 +5,7 @@ import "./css/contacto.css";
 import llontoppSvg from "../../assets/public/landing/Llontopp.svg";
 
 export default function ContactoPagina(){
-  const correo = "contacto.llantapp@gmail.com";
+  const correo = "soporte.llantapp@gmail.com";
   const telefono = "+51 915 060 423";
   const telHref = telefono.replace(/[^+\d]/g, "");
 

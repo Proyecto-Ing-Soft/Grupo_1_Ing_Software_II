@@ -226,7 +226,7 @@ model CalificacionCita {
   @@index([clienteId])
 }
 
-generator erd {
-  provider = "prisma-erd-generator"
-  output   = "./erd.svg"
-}
+// generator erd {
+//   provider = "prisma-erd-generator"
+//   output   = "./erd.svg"
+// }

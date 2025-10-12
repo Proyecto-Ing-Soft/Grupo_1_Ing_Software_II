@@ -46,6 +46,8 @@ export class HistorialService {
           fechaMantenimiento: true,
           programadaPara: true,
           trabajosRealizados: true,
+          evidenciaMime: true,
+          evidenciaNombre: true,
           mecanico: { select: { nombreCompleto: true } },
         },
       }),
@@ -77,6 +79,7 @@ export class HistorialService {
         fechaMantenimiento: t.fechaMantenimiento ?? t.programadaPara ?? null,
         trabajosRealizados: t.trabajosRealizados ?? null,
         mecanico: t.mecanico ?? { nombreCompleto: '—' },
+        evidenciaDisponible: Boolean((t as any).evidenciaMime || (t as any).evidenciaNombre),
       })),
       proximosServicios: proximosServicios.map(s => ({
         id: s.id,

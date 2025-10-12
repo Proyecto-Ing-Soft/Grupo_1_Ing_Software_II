@@ -18,28 +18,32 @@ export const apiAdminCalificaciones = {
     return getJSON<{ items: any[]; total: number; page: number; pageSize: number }>(`/calificaciones/admin?${p.toString()}`);
   },
   stats: () =>
-    getJSON<{ promedioGlobal: number; totalCalificaciones: number; distribucion: { estrellas: number; total: number }[]; promedioPorMecanico: { mecanicoId: number; nombre: string; promedio: number; n: number }[] }>(
-      `/calificaciones/admin/stats`
-    ),
+    getJSON<{
+      promedioGlobal: number;
+      totalCalificaciones: number;
+      distribucion: { estrellas: number; total: number }[];
+      promedioPorMecanico: { mecanicoId: number; nombre: string; promedio: number; n: number }[];
+    }>(`/calificaciones/admin/stats`),
 };
 
 export const apiCalificaciones = {
-  
   crear: (payload: { citaId: number; estrellas: number; comentario?: string }, token?: string) =>
     postJSON<{ ok: true; id: number }>('/calificaciones', payload, token),
 
   porCita: (citaId: number, token?: string) =>
-    getJSON<Calificacion>(`/calificaciones/${citaId}`, token),
+    getJSON<Calificacion>(`/calificaciones/cita/${citaId}`, token),
 
-  // (opcionales para listados)
   mias: (params: { page?: number; pageSize?: number }, token?: string) =>
-      getJSON<{ items: any[]; total: number; page: number; pageSize: number }>(
-        `/calificaciones/mias?page=${params.page ?? 1}&pageSize=${params.pageSize ?? 10}`,
-        token
-      ),
+    getJSON<{ items: any[]; total: number; page: number; pageSize: number }>(
+      `/calificaciones/mias?page=${params.page ?? 1}&pageSize=${params.pageSize ?? 10}`,
+      token
+    ),
 
   recibidas: (params: { page?: number; pageSize?: number }, token?: string) =>
-    getJSON<{ items: Calificacion[]; total: number }>(`/calificaciones/recibidas?page=${params.page ?? 1}&pageSize=${params.pageSize ?? 20}`, token),
+    getJSON<{ items: Calificacion[]; total: number }>(
+      `/calificaciones/recibidas?page=${params.page ?? 1}&pageSize=${params.pageSize ?? 20}`,
+      token
+    ),
 
   adminList: (q: {
     page?: number; pageSize?: number;

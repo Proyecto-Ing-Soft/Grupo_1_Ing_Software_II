@@ -4,7 +4,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 // PÁGINAS PÚBLICAS
 import InicioPublico from '../paginas/inicio-publico/InicioPublico';
 
-// PÁGINAS PÚBLICAS ESTÁTICAS (nuevas)
+// PÁGINAS PÚBLICAS ESTÁTICAS
 import CentroAyudaPagina from '../paginas/estaticas/CentroAyudaPagina';
 import ContactoPagina from '../paginas/estaticas/ContactoPagina';
 import LibroReclamacionesPagina from '../paginas/estaticas/LibroReclamacionesPagina';
@@ -12,7 +12,7 @@ import TerminosPagina from '../paginas/estaticas/TerminosPagina';
 import PrivacidadPagina from '../paginas/estaticas/PrivacidadPagina';
 import CookiesPagina from '../paginas/estaticas/CookiesPagina';
 
-// PÁGINAS AUTENTICACIÓN
+// AUTENTICACIÓN
 import LoginPagina from '../features/autenticacion/LoginPagina';
 import RegistroPagina from '../features/autenticacion/RegistroPagina';
 
@@ -25,11 +25,13 @@ import MisCitasPagina from '../features/mantenimientos/MisCitasPagina';
 import CitasMecanicoPagina from '../features/mantenimientos/CitasMecanicoPagina';
 import AdminCitasPendientes from '../features/asignaciones/AsociarMecanicoPagina';
 import CatalogoServiciosPagina from '../features/catalogo-servicios/CatalogoServiciosPagina';
+import AsociarMecanicoServicioPagina from '../features/asignaciones/AsociarMecanicoHector';
 import GestionUsuariosPagina from '../features/gestion/GestionUsuariosPagina';
 import RegistrarMantenimientoPagina from '../features/mantenimientos/RegistrarMantenimientoPagina';
-// --- NUEVAS PÁGINAS ---
 import MisVehiculosPagina from '../features/vehiculos/MisVehiculosPagina';
 import HistorialDeServiciosPagina from '../features/historial/HistorialDeServiciosPagina';
+
+// CALIFICACIONES
 import MisCalificacionesPagina from '../features/calificaciones/pages/MisCalificacionesPagina';
 import CalificarServicioPagina from '../features/calificaciones/pages/CalificarServicioPagina';
 import CalificacionesRecibidasPagina from '../features/calificaciones/pages/CalificacionesRecibidasPagina';
@@ -43,7 +45,7 @@ import LayoutProtegido from '../common/componentes/LayoutProtegido';
 
 const router = createBrowserRouter(
   [
-    // === Públicas ===
+    // Públicas
     { path: '/', element: <InicioPublico /> },
     { path: '/centro-ayuda', element: <CentroAyudaPagina /> },
     { path: '/contacto', element: <ContactoPagina /> },
@@ -86,7 +88,7 @@ const router = createBrowserRouter(
       ),
     },
 
-    // === Protegidas ===
+    // Protegidas
     {
       path: '/',
       element: (
@@ -97,7 +99,7 @@ const router = createBrowserRouter(
       children: [
         { path: 'inicio', element: <InicioProtegido /> },
 
-        // Admin: Asignaciones (dos rutas apuntan a la misma página)
+        // Admin: Asignaciones (alias)
         {
           path: 'admin/citas-pendientes',
           element: (
@@ -115,7 +117,7 @@ const router = createBrowserRouter(
           ),
         },
 
-        // Admin: Servicios (catálogo)
+        // Admin: Servicios
         {
           path: 'admin/servicios',
           element: (
@@ -124,8 +126,16 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
+        {
+          path: 'admin/servicios/asociar',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+              <AsociarMecanicoServicioPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
 
-        // Admin: Gestión de Usuarios (lista, crear, editar — mismo componente)
+        // Admin: Gestión de Usuarios (lista/crear/editar — mismo componente)
         {
           path: 'admin/usuarios',
           element: (
@@ -220,7 +230,8 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-        // Calificaciones (CLIENTE)
+
+        // Calificaciones
         {
           path: 'calificaciones/mias',
           element: (
@@ -245,9 +256,7 @@ const router = createBrowserRouter(
             </RutaProtegidaPorRol>
           ),
         },
-
-        // Admin: Calificaciones (placeholder, cámbialo por tu página real si la tienes)
-            {
+        {
           path: 'admin/calificaciones',
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>

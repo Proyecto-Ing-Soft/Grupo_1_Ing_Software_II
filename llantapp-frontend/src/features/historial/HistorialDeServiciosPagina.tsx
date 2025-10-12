@@ -1,7 +1,7 @@
-// src/paginas/vehiculos/HistorialDeServiciosPagina.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../core/auth/AuthContext';
+import { descargarEvidenciaCita, obtenerDetalleCita } from '../mantenimientos/api';
 import { apiHistorial, HistorialData, ProximoServicio, TrabajoRealizado } from './api';
 import './historialDeServicios.css';
 
@@ -18,6 +18,62 @@ const formatDate = (dateString?: string | null) => {
 // Para mostrar "humano" (PREVENTIVO -> Preventivo, EN_PROGRESO -> En progreso)
 const labelize = (s: string) =>
   s.replace(/_/g, ' ').toLowerCase().replace(/^\w/, c => c.toUpperCase());
+
+function TrabajoItemConEvidencia({ item }: { item: any }) {
+  const [media, setMedia] = useState<{ url: string; mime: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const isVideo = media?.mime?.startsWith('video/');
+
+  const verEvidencia = async () => {
+    if (media || loading) return;
+    try {
+      setLoading(true); setErr(null);
+      const ev = await descargarEvidenciaCita(item.id);
+      setMedia({ url: ev.url, mime: ev.mime });
+    } catch (e: any) {
+      setErr(e?.message ?? 'No se pudo cargar la evidencia');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => () => { if (media?.url) URL.revokeObjectURL(media.url); }, [media?.url]);
+
+  const formatDate = (s?: string | null) =>
+    s ? new Date(s).toLocaleDateString('es-PE', { dateStyle: 'medium' }) : 'Sin fecha';
+
+  return (
+    <div className="timeline-item">
+      <div className="timeline-item__date">{formatDate(item.fechaMantenimiento)}</div>
+      <div className="timeline-item__content">
+        <h3 className="timeline-item__title">{item.tipo}</h3>
+        <p className="timeline-item__description">
+          {item.trabajosRealizados || 'No se especificaron detalles del trabajo.'}
+        </p>
+        <p className="timeline-item__meta">Atendido por: {item.mecanico?.nombreCompleto ?? '—'}</p>
+
+        {item.evidenciaDisponible && !media && (
+          <button className="btnGhost" onClick={verEvidencia} disabled={loading} type="button">
+            {loading ? 'Cargando evidencia…' : 'Ver evidencia'}
+          </button>
+        )}
+        {err && <div className="historial-error" role="alert" style={{ padding: 8 }}>{err}</div>}
+
+        {media && (
+          <div style={{ marginTop: 8 }}>
+            {isVideo ? (
+              <video src={media.url} controls className="evidencia-media" />
+            ) : (
+              <img src={media.url} alt="Evidencia" className="evidencia-media" />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function HistorialDeServiciosPagina() {
   const { id } = useParams<{ id: string }>();
@@ -149,17 +205,8 @@ export default function HistorialDeServiciosPagina() {
           </>
         ) : (
           <div className="timeline">
-            {data.trabajosRealizados.map((t: TrabajoRealizado) => (
-              <div key={t.id} className="timeline-item">
-                <div className="timeline-item__date">{formatDate(t.fechaMantenimiento)}</div>
-                <div className="timeline-item__content">
-                  <h3 className="timeline-item__title">{labelize(t.tipo)}</h3>
-                  <p className="timeline-item__description">
-                    {t.trabajosRealizados || 'No se especificaron detalles del trabajo.'}
-                  </p>
-                  <p className="timeline-item__meta">Atendido por: {t.mecanico?.nombreCompleto ?? '—'}</p>
-                </div>
-              </div>
+            {data.trabajosRealizados.map((t: any) => (
+              <TrabajoItemConEvidencia key={t.id} item={t} />
             ))}
           </div>
         )}

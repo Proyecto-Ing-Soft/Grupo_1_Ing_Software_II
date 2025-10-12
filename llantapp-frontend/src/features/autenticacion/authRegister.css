@@ -105,6 +105,8 @@ body{
 .form{ margin-top:10px; display:grid; gap:16px; }
 .form-group{ display:grid; gap:8px; }
 .label{ font-size:.9rem; font-weight:700; letter-spacing:.2px; color:var(--on); }
+.auth-register .label{ color:#ffffff; }
+.auth-clone .label{ color:#ffffff; }
 
 .input-wrap{ position:relative; }
 .iconbox{
@@ -294,6 +296,7 @@ select.input option:focus {
 .solicitud-grid{
   position:relative;
   grid-template-rows: auto auto;
+  width: min(1340px, 100%);
 }
 
 .solicitud-grid .auth-left{
@@ -306,6 +309,7 @@ select.input option:focus {
   grid-row: 1 / -1;
   align-self: stretch;
   min-height: 100%;
+  width: 100%;
 }
 
 @media (max-width: 920px){
@@ -493,4 +497,11 @@ select.input option:focus {
     color-mix(in oklab, #132136 88%, white 1%),
     color-mix(in oklab, #132136 76%, transparent)
   );
+}
+
+#letrapequena{
+  font-family: 'Sans-ation', sans-serif;
+  font-size: 0.4rem;
+  color: #565656;
+  text-shadow: 0 2px 6px rgba(2,6,23,.20);
 }

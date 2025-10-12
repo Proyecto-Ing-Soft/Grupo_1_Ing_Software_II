@@ -4,7 +4,11 @@
 // - KISS: métodos autoexplicativos y de un solo propósito.
 
 import { getJSON, postJSON } from '../../core/http/_http';
+import { tokenMemoria } from '../../core/utils/storageMemoria';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+
+export type EvidenciaDescarga = { url: string; mime: string; blob: Blob };
 type Tipo = 'PREVENTIVO' | 'CORRECTIVO' | 'LEGAL_ITV' | 'EXTRAS';
 
 export type TerminarCitaPayload = {
@@ -67,3 +71,36 @@ export const apiCitas = {
 
   detalle: (id: number) => getJSON<CitaDetalle>(`/citas-mantenimiento/${id}`),
 };
+
+function getAuthToken(explicit?: string) {
+  return explicit ?? tokenMemoria.get() ?? localStorage.getItem('access_token') ?? undefined;
+}
+
+export async function descargarEvidenciaCita(citaId: number, token?: string): Promise<EvidenciaDescarga> {
+  const auth = getAuthToken(token);
+  const r = await fetch(`${API_BASE}/citas-mantenimiento/${citaId}/evidencia`, {
+    method: 'GET',
+    headers: {
+      ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
+    },
+    credentials: 'include',
+  });
+  if (!r.ok) throw new Error(await r.text().catch(() => r.statusText));
+  const blob = await r.blob();
+  const mime = r.headers.get('Content-Type') || 'application/octet-stream';
+  const url = URL.createObjectURL(blob);
+  return { url, mime, blob };
+}
+
+export async function obtenerDetalleCita(citaId: number, token?: string): Promise<{
+  id: number;
+  programadaPara: string | null;
+  placaPreliminar: string | null;
+  marcaPreliminar: string | null;
+  modeloPreliminar: string | null;
+  vehiculo: { placa: string | null } | null;
+  trabajosRealizados?: string | null;
+  evidenciaDisponible?: boolean;
+}> {
+  return getJSON(`/citas-mantenimiento/${citaId}`, token);
+}

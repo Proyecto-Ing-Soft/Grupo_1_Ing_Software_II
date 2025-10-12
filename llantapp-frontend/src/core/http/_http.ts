@@ -21,7 +21,23 @@ async function reqJSON<T>(ruta: string, method: string, opts: FetchOpts = {}): P
     credentials: 'include', // deja pasar cookie httpOnly para /auth/refresh si la usas
     ...(opts.body !== undefined ? { body: JSON.stringify(opts.body) } : {}),
   });
-  if (!r.ok) throw new Error(await r.text().catch(() => r.statusText));
+  if (!r.ok) {
+    let message = r.statusText;
+    try {
+      const raw = await r.text();
+      try {
+        const parsed = JSON.parse(raw);
+        message = parsed?.message ?? raw ?? r.statusText;
+      } catch {
+        message = raw || r.statusText;
+      }
+    } catch {
+      /* ignore */
+    }
+    const err: any = new Error(message);
+    err.status = r.status;
+    throw err;
+  }
   return r.json() as Promise<T>;
 }
 

@@ -1,0 +1,45 @@
+Para el uso: 
+
+-------------------------------------------
+import CalificarServicioModal from "../componentes/calificarServicio/CalificarServicioModal";
+
+const [modalAbierto, setModalAbierto] = useState(false);
+const [citaSeleccionada, setCitaSeleccionada] = useState<number | null>(null);
+
+// botón en la tarjeta/lista
+<button onClick={() => { setCitaSeleccionada(c.id); setModalAbierto(true); }}>
+  Calificar servicio
+</button>
+
+// al final del JSX
+{citaSeleccionada && (
+  <CalificarServicioModal
+    abierto={modalAbierto}
+    citaId={citaSeleccionada}
+    onCerrar={() => setModalAbierto(false)}
+    onCalificacionEnviada={() => {/* refresca tu lista */}}
+    maxCaracteresResena={800}
+  />
+)}
+
+-------------------------------------------
+
+
+migration Prisma
+-------------------------------------------
+model Calificacion {
+  id         Int      @id @default(autoincrement())
+  citaId     Int      @unique
+  clienteId  Int
+  estrellas  Int      // 1..5
+  resena     String?  // TEXT
+  creadoEn   DateTime @default(now())
+
+  // Relaciones (ajusta a tu esquema)
+  cita       Cita     @relation(fields: [citaId], references: [id])
+  cliente    Usuario  @relation(fields: [clienteId], references: [id])
+}
+
+-------------------------------------------
+
+

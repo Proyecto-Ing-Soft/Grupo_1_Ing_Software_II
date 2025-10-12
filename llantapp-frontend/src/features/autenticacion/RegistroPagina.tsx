@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, Link, useParams, useSearchParams } from "react-router-dom";
-import { esquemaRegistro } from "./usuarioSchemas";
+import { esquemaRegistro } from "../../features/usuarios/usuarioSchemas";
 import { apiAuth } from "../../features/autenticacion/api";
 import { postJSON } from "../../core/http/_http";
 import { Rol as RolApi } from "./api";
@@ -405,20 +405,24 @@ function SolicitudTaller({ fondo }: { fondo: string }) {
 
             <div className="pricing-rows" style={{ marginTop: 12 }}>
               <div className="pricing-row">
-                <div className="price-now">Instalación (pago único): S/ {PRECIO_INSTALACION_HOY_S}</div>
+                <div className="price-now">Instalación (pago único): S/ {PRECIO_INSTALACION_HOY_S}*</div>
                 <div className="price-old">S/ {PRECIO_INSTALACION_LISTA_S}</div>
-                <span aria-hidden="true">•</span>
-                <div className="price-note">Oferta válida solo por hoy</div>
+                <span aria-hidden="true"></span>
+                <div className="price-note">🤑 Oferta válida solo por HOY!!!!</div>
               </div>
 
               <div className="pricing-row">
+                <span aria-hidden="true">•</span>
                 <div className="price-now">Soporte mensual: S/ {PRECIO_SOPORTE_MENSUAL_HOY_S}/mes</div>
-                <div className="price-old">S/ {PRECIO_SOPORTE_MENSUAL_LISTA_S}/mes</div>
+                <div className="price-old">S/ {PRECIO_SOPORTE_MENSUAL_LISTA_S}/mes</div></div>
+              <div className="pricing-row">
                 <span aria-hidden="true">•</span>
                 <div className="price-now">Soporte anual: S/ {PRECIO_SOPORTE_ANUAL_HOY_S}/año</div>
                 <div className="price-old">S/ {PRECIO_SOPORTE_ANUAL_LISTA_S}/año</div>
-                <span aria-hidden="true">•</span>
                 <div className="price-note">Incluye actualizaciones y ayuda prioritaria</div>
+              </div>
+              <div className="pricing-row">
+                <div className="price-note" id="letrapequena" >* Monto mínimo sujeto a cotización. Suele aumentar bastante.</div>
               </div>
             </div>
           </div>

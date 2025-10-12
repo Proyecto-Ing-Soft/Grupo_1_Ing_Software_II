@@ -79,7 +79,7 @@ export default function PrivacidadPagina(){
             <h3>Contacto</h3>
             <p>Si tienes dudas o solicitudes sobre privacidad:</p>
             <ul className="contact">
-              <li><a href="mailto:contacto.llantapp@gmail.com">contacto.llantapp@gmail.com</a></li>
+              <li><a href="mailto:soporte.llantapp@gmail.com">soporte.llantapp@gmail.com</a></li>
               <li><a href="tel:+51915060423">+51 915 060 423</a></li>
             </ul>
           </article>

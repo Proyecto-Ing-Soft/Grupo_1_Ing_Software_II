@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../core/auth/AuthContext";
 import { apiCitas, TerminarCitaPayload } from "./api";
-import "../vehiculos/registrarVehiculo.css";
+import "./registrarMantenimiento.css";
 
 export default function RegistrarMantenimientoPagina() {
   const navigate = useNavigate();

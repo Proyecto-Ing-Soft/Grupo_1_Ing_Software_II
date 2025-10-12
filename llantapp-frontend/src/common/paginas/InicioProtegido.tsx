@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "../../core/auth/AuthContext";
 import heroImg from "../../assets/img/inicio.png";
-import "../../estilos/inicioProtegido.css";
+import "./estilos/inicioProtegido.css";
 
 export default function InicioProtegido() {
   const { sesion, tieneRol } = useAuth();

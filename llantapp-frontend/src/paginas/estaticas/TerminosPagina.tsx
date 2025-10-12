@@ -121,7 +121,7 @@ export default function TerminosPagina(){
           <article className="terms-card" id="contacto">
             <h3>Contacto</h3>
             <ul>
-              <li>Correo: contacto.llantapp@gmail.com</li>
+              <li>Correo: soporte.llantapp@gmail.com</li>
               <li>Teléfono: +51 915 060 423</li>
             </ul>
           </article>

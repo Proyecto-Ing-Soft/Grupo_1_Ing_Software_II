@@ -1,4 +1,3 @@
-/* Overlay */
 .calificar-servicio-overlay {
   position: fixed;
   inset: 0;
@@ -9,44 +8,39 @@
   z-index: 999;
 }
 
-/* Panel principal */
 .calificar-servicio-modal {
   background: #fff;
   border-radius: 12px;
   padding: 24px;
   width: min(90%, 520px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  animation: aparecer 0.25s ease;
+  animation: calificar-aparecer 0.25s ease;
 }
 
-@keyframes aparecer {
+@keyframes calificar-aparecer {
   from { transform: translateY(6px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
-.texto-aux { margin: 6px 0 12px; color: #444; }
+.texto-aux { margin: 6px 0 12px; color: #374151; }
 
-/* Estrellas */
 .bloque-estrellas { text-align: center; margin-bottom: 8px; }
-.estrellas-calificacion {
-  display: inline-flex;
-  gap: 10px;
-  margin: 8px 0 6px;
-}
+.estrellas-calificacion { display: inline-flex; gap: 10px; margin: 8px 0 6px; }
 .estrella {
-  fill: none;
-  stroke: #f5b301;
-  stroke-width: 2;
+  border: 0;
+  background: transparent;
   cursor: pointer;
-  transition: transform 0.15s ease, fill 0.15s ease;
+  transition: transform 0.15s ease, color 0.15s ease;
+  color: #9ca3af;
+  line-height: 1;
+  padding: 0;
 }
 .estrella:hover { transform: scale(1.15); }
-.estrella.rellena { fill: #f5b301; }
+.estrella.rellena { color: #f5b301; }
 .leyenda-estrellas { font-size: .9rem; color: #555; min-height: 1.2em; }
 
-/* Campos */
 .label { display: block; font-weight: 600; margin-top: 10px; margin-bottom: 6px; }
-textarea {
+.calificar-servicio-modal textarea {
   width: 100%;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -56,7 +50,6 @@ textarea {
 }
 .contador-resena { text-align: right; font-size: .82rem; color: #666; margin-top: 4px; }
 
-/* Acciones */
 .acciones-calificar {
   display: flex;
   gap: 10px;
@@ -64,7 +57,10 @@ textarea {
   margin-top: 16px;
 }
 .btn-cancelar, .btn-enviar {
-  border: 0; padding: 9px 16px; border-radius: 8px; cursor: pointer;
+  border: 0;
+  padding: 9px 16px;
+  border-radius: 8px;
+  cursor: pointer;
 }
 .btn-cancelar { background: #e5e7eb; color: #111827; }
 .btn-cancelar:hover { background: #d1d5db; }
@@ -72,3 +68,21 @@ textarea {
 .btn-enviar:hover { background: #d97706; }
 
 .mensaje-calificacion { margin-top: 10px; color: #374151; font-size: 0.92rem; }
+.evidencia { margin-bottom: 10px; }
+.evidencia-media {
+  display: block;
+  width: 100%;
+  max-height: 260px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #f1f5f9;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 8px;
+}
+.evidencia-descripcion { border: 1px solid #e5e7eb; background:#f8fafc; border-radius:10px; padding:10px; }
+.evidencia-titulo { font-weight: 700; margin-bottom: 4px; color:#0f172a; }
+.evidencia-texto { margin:0; color:#334155; white-space:pre-line; }
+
+.calificar-servicio-overlay {
+  backdrop-filter: blur(2px);
+}

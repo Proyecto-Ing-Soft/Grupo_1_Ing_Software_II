@@ -141,7 +141,7 @@ export default function CookiesPagina(){
             </div>
             <div>
               <h5>Contacto</h5>
-              <p>Si tienes consultas sobre cookies, escríbenos a contacto.llantapp@gmail.com o al +51 915 060 423.</p>
+              <p>Si tienes consultas sobre cookies, escríbenos a soporte.llantapp@gmail.com o al +51 915 060 423.</p>
             </div>
           </div>
         </section>

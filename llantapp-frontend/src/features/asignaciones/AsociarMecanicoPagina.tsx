@@ -86,7 +86,7 @@ export default function AdminCitasPendientes() {
   };
 
   return (
-    <main className="ams">
+    <main className="ams ams-scope">
       <section className="agendar__left reveal" data-reveal="1">
         <header className="ams__head">
           <h1 className="agendar__title">Citas pendientes</h1>

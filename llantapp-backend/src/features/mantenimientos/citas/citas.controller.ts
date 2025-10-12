@@ -69,7 +69,6 @@ export class CitasController {
     const c = await this.svc.buscarPorIdConVehiculo(id);
     if (!c) throw new NotFoundException('Cita no encontrada');
 
-    // Normalizamr la forma en que el front lo necesita:
     return {
       id: c.id,
       clienteId: c.clienteId ?? null,
@@ -92,8 +91,13 @@ export class CitasController {
       anioPreliminar: c.anioPreliminar ?? null,
       colorPreliminar: c.colorPreliminar ?? null,
       vinPreliminar: c.vinPreliminar ?? null,
+
+      trabajosRealizados: (c as any).trabajosRealizados ?? null,
+
+      evidenciaDisponible: Boolean((c as any).evidenciaMime || (c as any).evidenciaNombre),
     };
   }
+
 
   @Get(':id/evidencia')
   async evidencia(@Param('id', ParseIntPipe) id: number): Promise<StreamableFile> {

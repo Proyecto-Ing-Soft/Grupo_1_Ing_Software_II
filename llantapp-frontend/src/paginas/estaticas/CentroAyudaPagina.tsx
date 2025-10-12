@@ -595,7 +595,7 @@ export default function CentroAyudaPagina() {
                 <div className="contact-block">
                 <a
                     className="btn btn-solid"
-                    href="mailto:contacto.llantapp@gmail.com?subject=Soporte%20LlantApp%20-%20Centro%20de%20Ayuda&body=Hola%20equipo%20LlantApp,%20necesito%20ayuda%20con..."
+                    href="mailto:soporte.llantapp@gmail.com?subject=Soporte%20LlantApp%20-%20Centro%20de%20Ayuda&body=Hola%20equipo%20LlantApp,%20necesito%20ayuda%20con..."
                 >
                     Escribir a soporte
                 </a>
