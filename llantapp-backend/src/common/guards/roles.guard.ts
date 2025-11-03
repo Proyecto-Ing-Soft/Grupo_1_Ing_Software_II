@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { ROL_REQUERIDO_KEY } from '../decorators/rol-requerido.decorator';
 import { Rol } from '../enums/rol.enum';
-import { JwtPayloadAcceso } from '../../features/autenticacion/autenticacion/tipos';
+import { JwtPayloadAcceso } from '../../features/autenticacion/tipos';
 
 // SRP: verifica autorización por rol.
 // DRY: usa metadata común.
