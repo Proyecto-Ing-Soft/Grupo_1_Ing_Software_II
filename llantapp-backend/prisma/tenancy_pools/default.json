@@ -1,0 +1,4 @@
+{
+  "writer": "postgresql://postgres:1234@localhost:55432/llantapp",
+  "reader": "postgresql://postgres:1234@localhost:55435/llantapp"
+}
