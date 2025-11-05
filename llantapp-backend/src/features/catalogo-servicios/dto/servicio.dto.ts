@@ -1,11 +1,28 @@
 // PRINCIPIOS
 // - SRP: DTOs definen contrato/validación de entrada.
-// - KISS: sin dependencias extra; todo opcional en el update.
+// - KISS: nombres alineados 1:1 con migración.
 
-import { IsBoolean, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Min,
+  MinLength,
+  IsNumber,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
+const toNum = ({ value }: { value: any }) =>
+  value === undefined || value === null || value === '' ? undefined : Number(value);
+
 export class CrearServicioDto {
+  @IsString()
+  @Matches(/^[A-Z0-9_-]{2,32}$/) // único, estable para integraciones
+  @Transform(({ value }) => String(value ?? '').trim().toUpperCase())
+  codigo!: string;
+
   @IsString()
   @MinLength(2)
   nombre!: string;
@@ -18,18 +35,25 @@ export class CrearServicioDto {
   @IsBoolean()
   activo?: boolean;
 
-  @IsOptional()
-  @Transform(({ value }) => (value === undefined || value === null || value === '' ? undefined : Number(value)))
+  @Transform(toNum)
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  precioSugerido?: number;
+  precioBase!: number; // NOT NULL en DB
 
-  @IsOptional()
   @IsInt()
-  @Min(0)
-  duracionMinutos?: number;
+  @Min(1)
+  duracionEstimadaMin!: number; // NOT NULL en DB
 }
 
 export class ActualizarServicioDto {
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Z0-9_-]{2,32}$/)
+  @Transform(({ value }) =>
+    value === undefined ? undefined : String(value).trim().toUpperCase(),
+  )
+  codigo?: string;
+
   @IsOptional()
   @IsString()
   @MinLength(2)
@@ -45,14 +69,15 @@ export class ActualizarServicioDto {
   activo?: boolean;
 
   @IsOptional()
-  @Transform(({ value }) => (value === undefined || value === null || value === '' ? undefined : Number(value)))
+  @Transform(toNum)
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  precioSugerido?: number;
+  precioBase?: number;
 
   @IsOptional()
   @IsInt()
-  @Min(0)
-  duracionMinutos?: number;
+  @Min(1)
+  duracionEstimadaMin?: number;
 }
 
 export class CambiarEstadoDto {
@@ -67,5 +92,5 @@ export class HabilitarMecanicoDto {
 
   @IsOptional()
   @IsBoolean()
-  habilitado?: boolean; // default true en el service
+  habilitado?: boolean; // true => inserta (habilita), false => elimina (deshabilita)
 }

@@ -1,7 +1,6 @@
 // PRINCIPIOS
-// - SRP: orquesta HTTP ⇄ Service (sin reglas de dominio).
+// - SRP: orquesta HTTP ⇄ Service.
 // - Seguridad: JwtAuthGuard + RolesGuard + @RolRequerido.
-// - OCP: fácil de extender con más endpoints.
 
 import {
   Body,
@@ -53,7 +52,7 @@ export class CatalogoServiciosController {
     return this.svc.cambiarEstado(id, dto.activo);
   }
 
-  // === Listar: autenticados (si quieres, puedes exigir ADMIN) ===
+  // === Listar: autenticados ===
   @Get()
   listar(@Query('q') q?: string, @Query('activo') activo?: string) {
     const onlyActive = typeof activo === 'string' ? activo.toLowerCase() === 'true' : undefined;
@@ -66,7 +65,7 @@ export class CatalogoServiciosController {
     return this.svc.detalle(id);
   }
 
-  // === ADMIN: Habilitar/Deshabilitar mecánico para un servicio ===
+  // === ADMIN: Habilitar/Deshabilitar mecánico (insert/delete en pivote) ===
   @RolRequerido(Rol.ADMIN)
   @Post(':id/habilitar-mecanico')
   habilitarMecanico(
@@ -76,7 +75,7 @@ export class CatalogoServiciosController {
     return this.svc.setHabilitacion(servicioId, dto.mecanicoId, dto.habilitado ?? true);
   }
 
-  // === ADMIN: Ver mecánicos habilitados del servicio ===
+  // === ADMIN: Ver mecánicos asociados al servicio ===
   @RolRequerido(Rol.ADMIN)
   @Get(':id/mecanicos')
   mecanicos(@Param('id', ParseIntPipe) servicioId: number) {
