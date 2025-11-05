@@ -8,7 +8,7 @@ type CrearNotificacion = {
   vehiculoId?: number | null;
   citaId?: number | null;
 };
-
+//
 @Injectable()
 export class NotificacionPrismaRepo {
   constructor(private prisma: PrismaService) {}
