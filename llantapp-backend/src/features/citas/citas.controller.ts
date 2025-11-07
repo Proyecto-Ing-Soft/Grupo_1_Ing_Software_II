@@ -4,112 +4,110 @@
 // - Demeter: el controller solo “conoce” a su Service (no navega por capas internas).
 // - Seguridad por capas: aquí puedes aplicar Jwt/RolesGuard sin tocar el Service (OCP).
 
-import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, ParseIntPipe, Post, Req, StreamableFile, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CitasService } from './citas.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { AsignarMecanicoDto } from '../asignaciones/dto/asignar-mecanico.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
-@Controller('citas-mantenimiento')
+@Controller('citas')
 export class CitasController {
   constructor(private readonly svc: CitasService) {}
 
+  // === CLIENTE: crear cita ===
   @Post()
-  crear(@Body() dto: CrearCitaDto, @Req() req: any) {
-    const userId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(userId)) throw new UnauthorizedException('Usuario no válido');
-    return this.svc.crear(dto, userId);
+  async crear(@Body() dto: CrearCitaDto, @Req() req: any) {
+    const clienteId = Number(req.user?.id ?? req.user?.sub);
+    if (!Number.isFinite(clienteId)) throw new UnauthorizedException('Usuario no válido');
+    return await this.svc.crear(dto, clienteId);
   }
 
+  // === ADMIN: asignar mecánico ===
   @Post(':id/asignar')
-  asignar(
-    @Param('id', ParseIntPipe) id: number,
+  async asignar(
+    @Param('id', ParseIntPipe) citaId: number,
     @Body() dto: AsignarMecanicoDto,
     @Req() req: any,
   ) {
     const adminId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(adminId)) throw new UnauthorizedException('Usuario no válido');
-    return this.svc.asignarMecanico(id, dto.mecanicoId, adminId);
+    const rol = req.user?.rol ?? req.user?.roles?.[0];
+    if (rol !== 'ADMIN_TALLER' && rol !== 'ADMIN')
+      throw new ForbiddenException('Solo administradores pueden asignar mecánicos');
+    return await this.svc.asignarMecanico(citaId, dto.mecanicoId, adminId);
   }
 
+  // === MECÁNICO: marcar cita como terminada ===
   @Post(':id/terminar')
-  terminar(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: { trabajosRealizados?: string; repuestos?: string[]; evidenciaBase64?: string | null },
-    @Req() req: any,
-  ) {
+  async terminar(@Param('id', ParseIntPipe) citaId: number, @Req() req: any) {
     const mecanicoId = Number(req.user?.id ?? req.user?.sub);
     if (!Number.isFinite(mecanicoId)) throw new UnauthorizedException('Usuario no válido');
-    return this.svc.terminar(id, mecanicoId, dto);
+    return await this.svc.terminar(citaId, mecanicoId);
   }
 
+  // === CLIENTE: listar sus citas ===
   @Get('mias')
-  mias(@Req() req: any) {
+  async mias(@Req() req: any) {
     const clienteId = Number(req.user?.id ?? req.user?.sub);
     if (!Number.isFinite(clienteId)) throw new UnauthorizedException('Usuario no válido');
-    return this.svc.listarDelCliente(clienteId);
+    return await this.svc.listarDelCliente(clienteId);
   }
 
+  // === MECÁNICO: listar citas asignadas ===
   @Get('asignadas')
-  asignadas(@Req() req: any) {
+  async asignadas(@Req() req: any) {
     const mecanicoId = Number(req.user?.id ?? req.user?.sub);
     if (!Number.isFinite(mecanicoId)) throw new UnauthorizedException('Usuario no válido');
-    return this.svc.listarDelMecanico(mecanicoId);
+    return await this.svc.listarDelMecanico(mecanicoId);
   }
 
+  // === ADMIN: listar pendientes ===
   @Get('admin/pendientes')
-  pendientes(@Req() req: any) {
-    if (req.user?.rol !== 'ADMIN') throw new ForbiddenException('Solo admin');
-    return this.svc.listarPendientes();
+  async pendientes(@Req() req: any) {
+    const rol = req.user?.rol ?? req.user?.roles?.[0];
+    if (rol !== 'ADMIN_TALLER' && rol !== 'ADMIN')
+      throw new ForbiddenException('Solo administradores pueden ver pendientes');
+    return await this.svc.listarPendientes();
   }
 
+  // === DETALLE DE CITA ===
   @Get(':id')
-  async detalle(@Param('id', ParseIntPipe) id: number) {
-    const c = await this.svc.buscarPorIdConVehiculo(id);
+  async detalle(@Param('id', ParseIntPipe) citaId: number) {
+    const c = await this.svc.buscarPorIdConVehiculo(citaId);
     if (!c) throw new NotFoundException('Cita no encontrada');
 
     return {
       id: c.id,
-      clienteId: c.clienteId ?? null,
-      programadaPara: c.programadaPara ?? null,
-
+      fechaProgramada: c.fechaProgramada,
+      prioridad: c.prioridad,
+      comentariosCliente: c.comentariosCliente,
+      estado: c.estadoCita?.nombre,
+      servicio: c.servicio?.nombre,
       vehiculo: c.vehiculo
         ? {
-            placa: c.vehiculo.placa ?? null,
-            marca: c.vehiculo.marca ?? null,
-            modelo: c.vehiculo.modelo ?? null,
-            anio: c.vehiculo.anio ?? null,
-            color: c.vehiculo.color ?? null,
-            vin: c.vehiculo.vin ?? null,
+            placa: c.vehiculo.placa,
+            alias: c.vehiculo.alias,
           }
         : null,
-
-      placaPreliminar: c.placaPreliminar ?? null,
-      marcaPreliminar: c.marcaPreliminar ?? null,
-      modeloPreliminar: c.modeloPreliminar ?? null,
-      anioPreliminar: c.anioPreliminar ?? null,
-      colorPreliminar: c.colorPreliminar ?? null,
-      vinPreliminar: c.vinPreliminar ?? null,
-
-      trabajosRealizados: (c as any).trabajosRealizados ?? null,
-
-      evidenciaDisponible: Boolean((c as any).evidenciaMime || (c as any).evidenciaNombre),
+      cliente: c.clienteUsuario
+        ? {
+            id: c.clienteUsuario.id,
+            nombres: c.clienteUsuario.nombres,
+            apellidos: c.clienteUsuario.apellidos,
+          }
+        : null,
     };
-  }
-
-
-  @Get(':id/evidencia')
-  async evidencia(@Param('id', ParseIntPipe) id: number): Promise<StreamableFile> {
-    const c = await this.svc.buscarPorIdConVehiculo(id);
-    if (!c || !c.evidenciaBytes) throw new NotFoundException('Sin evidencia');
-
-    const mime = (c as any).evidenciaMime ?? 'application/octet-stream';
-    const name = (c as any).evidenciaNombre ?? `evidencia-${id}`;
-
-    return new StreamableFile(Buffer.from(c.evidenciaBytes as any), {
-      type: mime,
-      disposition: `inline; filename="${name}"`,
-    });
   }
 }

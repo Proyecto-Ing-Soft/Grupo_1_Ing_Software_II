@@ -7,302 +7,279 @@
 // - Observer-like: cambios relevantes disparan notificaciones vía la fachada Notificador.
 // - Facade: Notificador oculta cómo se persisten/emiten las notificaciones.
 
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma/prisma.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
-import { EstadoCita } from '@prisma/client';
 import { Notificador } from '../notificaciones/envio/notificador';
 
 @Injectable()
 export class CitasService {
-  constructor(
-    private prisma: PrismaService,
-    private noti: Notificador, // DIP: fachada de notificaciones
-  ) {}
+  constructor(private prisma: PrismaService, private noti: Notificador) {}
 
-  // DRY: YYYY-MM-DD en HORA LOCAL (sin UTC)
-  private toYMD(d: Date) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+  // === Helper: obtener id de estado por código ===
+  private async estadoId(codigo: string) {
+    const e = await this.prisma.estadoCita.findUnique({ where: { codigo } });
+    if (!e) throw new BadRequestException(`Estado '${codigo}' no existe`);
+    return e.id;
   }
 
-  // Helper: parsear "YYYY-MM-DD" como Date LOCAL (medianoche local)
-  private parseYMDLocal(ymd: string) {
-    const [y, m, d] = ymd.split('-').map(Number);
-    return new Date(y, m - 1, d);
-  }
+  // === CREAR CITA ===
+  async crear(dto: CrearCitaDto, clienteUsuarioId: number) {
+    if (!dto.servicioId) throw new BadRequestException('Debe indicar un servicio');
+    if (!dto.fechaProgramada) throw new BadRequestException('Debe indicar la fecha programada');
 
-  // === CREAR CITA (estado inicial: SOLICITADA) ===
-  async crear(dto: CrearCitaDto, clienteId: number) {
-    // Validación de fecha (AAAA-MM-DD) y que no sea pasada
-    if (!dto.programadaPara || !/^\d{4}-\d{2}-\d{2}$/.test(dto.programadaPara)) {
-      throw new BadRequestException('Fecha inválida (usa AAAA-MM-DD)');
-    }
-    const hoyYMD = this.toYMD(new Date());        // ← hoy local
-    const ymd = dto.programadaPara.slice(0, 10);  // normalizamos a YYYY-MM-DD
-    if (ymd < hoyYMD) {
-      throw new BadRequestException('La fecha programada debe ser hoy o una fecha futura');
+    const fecha = new Date(dto.fechaProgramada);
+    const hoy = new Date();
+    if (fecha < new Date(hoy.toDateString())) {
+      throw new BadRequestException('La fecha programada debe ser hoy o futura');
     }
 
-    // Si viene vehiculoId: validar pertenencia y tomar snapshot del vehículo.
-    // Si NO viene vehiculoId: exigir placa/marca/modelo preliminares.
-    let vehiculoId: number | undefined = undefined;
+    // validar vehículo del cliente
+    const vehiculo = await this.prisma.vehiculo.findFirst({
+      where: { id: dto.vehiculoId, propietarioUsuarioId: clienteUsuarioId },
+      select: { id: true },
+    });
+    if (!vehiculo) throw new BadRequestException('Vehículo no válido para este cliente');
 
-    type Snapshot = {
-      placaPreliminar?: string;
-      marcaPreliminar?: string;
-      modeloPreliminar?: string;
-      anioPreliminar?: number;
-      colorPreliminar?: string;
-      vinPreliminar?: string;
-    };
-    let snapshot: Snapshot = {};
+    const estadoSolicitadaId = await this.estadoId('solicitada');
 
-    if (dto.vehiculoId) {
-      const vehiculo = await this.prisma.vehiculo.findFirst({
-        where: { id: dto.vehiculoId, propietarioUsuarioId: clienteId },
-        select: { id: true, placa: true, marca: true, modelo: true, anio: true, color: true, vin: true },
-      });
-      if (!vehiculo) throw new BadRequestException('Vehículo no válido para este usuario');
+    const cita = await this.prisma.cita.create({
+      data: {
+        clienteUsuarioId,
+        vehiculoId: dto.vehiculoId,
+        servicioId: dto.servicioId,
+        fechaProgramada: fecha,
+        estadoCitaId: estadoSolicitadaId,
+        prioridad: dto.prioridad ?? null,
+        comentariosCliente: dto.comentariosCliente ?? '',
+      },
+    });
 
-      vehiculoId = vehiculo.id;
-      snapshot = {
-        ...(vehiculo.placa  ? { placaPreliminar: vehiculo.placa.toUpperCase() } : {}),
-        ...(vehiculo.marca  ? { marcaPreliminar: vehiculo.marca } : {}),
-        ...(vehiculo.modelo ? { modeloPreliminar: vehiculo.modelo } : {}),
-        ...(vehiculo.anio != null ? { anioPreliminar: vehiculo.anio } : {}),
-        ...(vehiculo.color ? { colorPreliminar: vehiculo.color } : {}),
-        ...(vehiculo.vin   ? { vinPreliminar: vehiculo.vin } : {}),
-      };
-    } else {
-      if (!dto.placaPreliminar || !dto.marcaPreliminar || !dto.modeloPreliminar) {
-        throw new BadRequestException('Selecciona un vehículo o completa placa, marca y modelo');
-      }
-      snapshot = {
-        ...(dto.placaPreliminar  ? { placaPreliminar: dto.placaPreliminar.trim().toUpperCase() } : {}),
-        ...(dto.marcaPreliminar  ? { marcaPreliminar: dto.marcaPreliminar.trim() } : {}),
-        ...(dto.modeloPreliminar ? { modeloPreliminar: dto.modeloPreliminar.trim() } : {}),
-        ...(dto.anioPreliminar != null ? { anioPreliminar: dto.anioPreliminar } : {}),
-        ...(dto.colorPreliminar ? { colorPreliminar: dto.colorPreliminar.trim() } : {}),
-        ...(dto.vinPreliminar   ? { vinPreliminar: dto.vinPreliminar.trim() } : {}),
-      };
-    }
+    // Insertar historial
+    await this.prisma.citaHistorialEstado.create({
+      data: {
+        citaId: cita.id,
+        estadoCitaId: estadoSolicitadaId,
+        cambiadoPorUsuarioId: clienteUsuarioId,
+        observacion: 'Cita solicitada por el cliente',
+      },
+    });
 
-    const data: any = {
-      tipo: dto.tipo,
-      comentario: dto.comentario ?? '',
-      // Guardar como Date LOCAL (no UTC-Z)
-      programadaPara: this.parseYMDLocal(ymd),
-      estado: EstadoCita.SOLICITADA,
-      clienteId,
-      ...(vehiculoId ? { vehiculoId } : {}),
-      ...snapshot,
-    };
-
-    const cita = await this.prisma.citaMantenimiento.create({ data });
-
-    // Notificación a administradores
-    const admins = await this.prisma.usuario.findMany({ where: { rol: 'ADMIN' } });
+    // Notificar administradores
+    const admins = await this.prisma.usuarioRol.findMany({
+      where: { rol: { codigo: 'ADMIN_TALLER' } },
+      select: { usuarioId: true },
+    });
     await Promise.all(
-      admins.map((a) =>
+      admins.map(({ usuarioId }: { usuarioId: number }) =>
         this.noti.enviar({
-          usuarioId: a.id,
+          usuarioId,
           citaId: cita.id,
-          vehiculoId: cita.vehiculoId ?? null,
-          titulo: 'Nueva cita pendiente',
-          mensaje: `Cita #${cita.id} solicitada por cliente #${clienteId}`,
+          vehiculoId: cita.vehiculoId,
+          titulo: 'Nueva cita solicitada',
+          mensaje: `El cliente #${clienteUsuarioId} solicitó una nueva cita #${cita.id}`,
         }),
       ),
     );
 
-    // Notificación al cliente
+    // Notificar cliente
     await this.noti.enviar({
-      usuarioId: clienteId,
+      usuarioId: clienteUsuarioId,
       citaId: cita.id,
-      vehiculoId: cita.vehiculoId ?? null,
+      vehiculoId: cita.vehiculoId,
       titulo: 'Solicitud registrada',
-      mensaje: 'Recibimos tu solicitud de mantenimiento. Un administrador la revisará y asignará un mecánico pronto.',
+      mensaje:
+        'Tu cita fue registrada correctamente. Un administrador la revisará y asignará un mecánico pronto.',
     });
 
     return cita;
   }
 
-  // === ASIGNAR MECÁNICO (pasa a EN_PROGRESO) ===
-  async asignarMecanico(citaId: number, mecanicoId: number, _adminId: number) {
-    const cita = await this.prisma.citaMantenimiento.findUnique({ where: { id: citaId } });
-    if (!cita) throw new BadRequestException('Cita no existe');
-    if (cita.estado === EstadoCita.TERMINADA) throw new BadRequestException('Cita ya terminada');
+  // === ASIGNAR MECÁNICO ===
+  async asignarMecanico(citaId: number, mecanicoUsuarioId: number, adminId: number) {
+    const cita = await this.prisma.cita.findUnique({ where: { id: citaId } });
+    if (!cita) throw new NotFoundException('Cita no encontrada');
 
-    const actualizada = await this.prisma.citaMantenimiento.update({
+    const estadoAsignadaId = await this.estadoId('asignada');
+    const estadoEnProgresoId = await this.estadoId('en_progreso');
+
+    // Registrar asignación activa
+    await this.prisma.asignacion.create({
+      data: {
+        citaId,
+        mecanicoUsuarioId,
+        asignadoPorUsuarioId: adminId,
+      },
+    });
+
+    // Actualizar estado a "asignada"
+    const actualizada = await this.prisma.cita.update({
       where: { id: citaId },
-      data: { mecanicoId, estado: EstadoCita.EN_PROGRESO },
+      data: {
+        estadoCitaId: estadoAsignadaId,
+        ultimaActualizacion: new Date(),
+      },
     });
 
-    // Notificación al cliente
-    const fecha = actualizada.programadaPara
-      ? new Date(actualizada.programadaPara).toLocaleDateString('es-PE')
-      : 'fecha programada';
-    await this.noti.enviar({
-      usuarioId: actualizada.clienteId,
-      citaId: actualizada.id,
-      vehiculoId: actualizada.vehiculoId ?? null,
-      titulo: 'Mantenimiento en proceso',
-      mensaje: `Se asignó un mecánico a tu cita #${actualizada.id} para el ${fecha}. Tu mantenimiento está en curso según lo programado.`,
+    await this.prisma.citaHistorialEstado.create({
+      data: {
+        citaId,
+        estadoCitaId: estadoAsignadaId,
+        cambiadoPorUsuarioId: adminId,
+        observacion: 'Cita asignada a mecánico',
+      },
     });
 
-    // Notificación al mecánico
+    // Notificar mecánico y cliente
     await this.noti.enviar({
-      usuarioId: mecanicoId,
-      citaId: actualizada.id,
-      vehiculoId: actualizada.vehiculoId ?? null,
-      titulo: 'Mantenimiento asignado',
-      mensaje: `Se te asignó la cita #${actualizada.id}`,
+      usuarioId: mecanicoUsuarioId,
+      citaId,
+      vehiculoId: cita.vehiculoId,
+      titulo: 'Nueva cita asignada',
+      mensaje: `Se te asignó la cita #${citaId}`,
+    });
+
+    await this.noti.enviar({
+      usuarioId: cita.clienteUsuarioId,
+      citaId,
+      vehiculoId: cita.vehiculoId,
+      titulo: 'Tu cita fue asignada',
+      mensaje: `Se asignó un mecánico a tu cita #${citaId}.`,
+    });
+
+    // Actualizar a "en_progreso" si aplica
+    await this.prisma.cita.update({
+      where: { id: citaId },
+      data: { estadoCitaId: estadoEnProgresoId },
+    });
+
+    await this.prisma.citaHistorialEstado.create({
+      data: {
+        citaId,
+        estadoCitaId: estadoEnProgresoId,
+        cambiadoPorUsuarioId: mecanicoUsuarioId,
+        observacion: 'Mecánico inició el mantenimiento',
+      },
     });
 
     return actualizada;
   }
 
-  // === TERMINAR (solo el día programado) ===
-  async terminar(
-    citaId: number,
-    mecanicoId: number,
-    dto?: { trabajosRealizados?: string; repuestos?: string[]; evidenciaBase64?: string | null }
-  ) {
-    const cita = await this.prisma.citaMantenimiento.findUnique({ where: { id: citaId } });
-    if (!cita) throw new BadRequestException('Cita no existe');
-    if (cita.mecanicoId !== mecanicoId) throw new ForbiddenException('No eres el mecánico asignado');
-    if (cita.estado !== EstadoCita.EN_PROGRESO) throw new BadRequestException('La cita no está en proceso');
-    if (!cita.programadaPara) throw new BadRequestException('La cita no tiene fecha programada');
-
-    // permite terminar el mismo día o después (comparación por YMD local)
-    const hoy = this.toYMD(new Date());
-    const programada = this.toYMD(new Date(cita.programadaPara));
-    if (hoy < programada) throw new BadRequestException('Aún no es el día programado');
-
-    // 1) Intentar enlazar vehículo existente por placa si no hay vehiculoId
-    let vehiculoId = cita.vehiculoId ?? null;
-    let vehiculo = null as null | { id: number; placa: string | null };
-
-    if (!vehiculoId) {
-      const placaNorm = (cita.placaPreliminar ?? '').trim().toUpperCase();
-      if (placaNorm) {
-        const existente = await this.prisma.vehiculo.findUnique({
-          where: { placa: placaNorm },
-          select: { id: true, placa: true },
-        });
-        if (existente) {
-          vehiculoId = existente.id;
-          vehiculo = existente;
-          await this.prisma.citaMantenimiento.update({
-            where: { id: citaId },
-            data: { vehiculoId },
-          });
-        }
-      }
-    } else {
-      vehiculo = await this.prisma.vehiculo.findUnique({
-        where: { id: vehiculoId },
-        select: { id: true, placa: true },
-      });
-    }
-
-    // 2) Update con campos existentes en tu schema
-    const dataUpdate: any = {
-      estado: EstadoCita.TERMINADA,
-      fechaMantenimiento: new Date(), // ← si existe en tu schema
-    };
-    if (dto?.trabajosRealizados != null) dataUpdate.trabajosRealizados = dto.trabajosRealizados;
-    if (dto?.repuestos != null)         dataUpdate.repuestos          = dto.repuestos;
-
-    // Evidencia (opcional, guardada como bytes + metadata)
-    if (dto?.evidenciaBase64) {
-      const m = /^data:(.+);base64,(.+)$/.exec(dto.evidenciaBase64);
-      if (!m) throw new BadRequestException('Imagen inválida');
-      const mime = m[1]; const b64 = m[2]; const buf = Buffer.from(b64, 'base64');
-      if (buf.byteLength > 5 * 1024 * 1024) throw new BadRequestException('La imagen no debe superar 5MB');
-      dataUpdate.evidenciaBytes  = buf;
-      dataUpdate.evidenciaMime   = mime;
-      dataUpdate.evidenciaNombre = `cita-${citaId}-${Date.now()}`;
-    }
-
-    const terminada = await this.prisma.citaMantenimiento.update({
+  // === TERMINAR CITA ===
+  async terminar(citaId: number, mecanicoUsuarioId: number) {
+    const cita = await this.prisma.cita.findUnique({
       where: { id: citaId },
-      data: dataUpdate,
+      select: { id: true, clienteUsuarioId: true, vehiculoId: true, estadoCitaId: true },
+    });
+    if (!cita) throw new NotFoundException('Cita no encontrada');
+
+    const estadoEnProgreso = await this.prisma.estadoCita.findUnique({
+      where: { codigo: 'en_progreso' },
+    });
+    const estadoTerminada = await this.prisma.estadoCita.findUnique({
+      where: { codigo: 'terminada' },
     });
 
-    // 3) Notificación final
-    const placaMostrar =
-      vehiculo?.placa
-        ?? (cita.placaPreliminar && cita.placaPreliminar.trim()
-              ? cita.placaPreliminar.trim().toUpperCase()
-              : 'PLACA AÚN NO REGISTRADA');
+    if (cita.estadoCitaId !== estadoEnProgreso?.id)
+      throw new BadRequestException('La cita no está en progreso');
+
+    const actualizada = await this.prisma.cita.update({
+      where: { id: citaId },
+      data: {
+        estadoCitaId: estadoTerminada?.id,
+        ultimaActualizacion: new Date(),
+      },
+    });
+
+    await this.prisma.citaHistorialEstado.create({
+      data: {
+        citaId,
+        estadoCitaId: estadoTerminada?.id!,
+        cambiadoPorUsuarioId: mecanicoUsuarioId,
+        observacion: 'Mantenimiento finalizado',
+      },
+    });
 
     await this.noti.enviar({
-      usuarioId: terminada.clienteId,
-      citaId: terminada.id,
-      vehiculoId: vehiculoId ?? null,
+      usuarioId: cita.clienteUsuarioId,
+      citaId,
+      vehiculoId: cita.vehiculoId,
       titulo: 'Mantenimiento completado',
-      mensaje: `El mantenimiento del vehículo con placa ${placaMostrar} ha finalizado. ¡Gracias por confiar en nosotros!`,
+      mensaje: `Tu cita #${citaId} fue marcada como terminada. Gracias por confiar en nosotros.`,
     });
 
-    return terminada;
+    return actualizada;
   }
 
-  // === LISTADOS PARA UI ===
+  // === LISTADOS ===
 
-  // CLIENTE/EMPRESA: sus citas
-  async listarDelCliente(clienteId: number) {
-    return this.prisma.citaMantenimiento.findMany({
-      where: { clienteId },
-      select: {
-        id: true, tipo: true, estado: true, comentario: true, programadaPara: true,
-        vehiculo: { select: { placa: true } },
-        placaPreliminar: true, marcaPreliminar: true, modeloPreliminar: true,
-      },
-      orderBy: { creadoEn: 'desc' },
-    });
-  }
-
-  // MECÁNICO: sus citas asignadas
-  async listarDelMecanico(mecanicoId: number) {
-    return this.prisma.citaMantenimiento.findMany({
-      where: { mecanicoId },
-      select: {
-        id: true, tipo: true, estado: true, comentario: true, programadaPara: true,
-        vehiculo: { select: { placa: true } },
-        cliente: { select: { nombreCompleto: true } },
-        placaPreliminar: true, marcaPreliminar: true, modeloPreliminar: true,
-      },
-      orderBy: [{ programadaPara: 'asc' }, { creadoEn: 'desc' }],
-    });
-  }
-
-  // ADMIN: citas pendientes por asignar
-  async listarPendientes() {
-    return this.prisma.citaMantenimiento.findMany({
-      where: { estado: EstadoCita.SOLICITADA },
+  async listarDelCliente(clienteUsuarioId: number) {
+    return this.prisma.cita.findMany({
+      where: { clienteUsuarioId },
       select: {
         id: true,
-        tipo: true,
-        estado: true,
-        comentario: true,
-        programadaPara: true,
-        vehiculo: { select: { placa: true } }, 
-        placaPreliminar: true,
-        marcaPreliminar: true,
-        modeloPreliminar: true,
-        cliente: { select: { id: true, nombreCompleto: true } },
+        fechaProgramada: true,
+        comentariosCliente: true,
+        prioridad: true,
+        estadoCita: { select: { codigo: true, nombre: true } },
+        vehiculo: { select: { placa: true } },
+        servicio: { select: { nombre: true } },
       },
-      orderBy: [{ creadoEn: 'desc' }],
+      orderBy: { fechaCreacion: 'desc' },
+    });
+  }
+
+  async listarDelMecanico(mecanicoUsuarioId: number) {
+    return this.prisma.asignacion.findMany({
+      where: { mecanicoUsuarioId, activo: true },
+      select: {
+        cita: {
+          select: {
+            id: true,
+            fechaProgramada: true,
+            comentariosCliente: true,
+            prioridad: true,
+            estadoCita: { select: { codigo: true, nombre: true } },
+            vehiculo: { select: { placa: true } },
+            servicio: { select: { nombre: true } },
+          },
+        },
+      },
+      orderBy: { fechaAsignacion: 'asc' },
+    });
+  }
+
+  async listarPendientes() {
+    const estadoSolicitadaId = await this.estadoId('solicitada');
+    return this.prisma.cita.findMany({
+      where: { estadoCitaId: estadoSolicitadaId },
+      select: {
+        id: true,
+        fechaProgramada: true,
+        comentariosCliente: true,
+        prioridad: true,
+        clienteUsuario: { select: { id: true, nombres: true, apellidos: true } },
+        vehiculo: { select: { placa: true } },
+        servicio: { select: { nombre: true } },
+      },
+      orderBy: { fechaCreacion: 'desc' },
     });
   }
 
   async buscarPorIdConVehiculo(id: number) {
-    return this.prisma.citaMantenimiento.findUnique({
+    return this.prisma.cita.findUnique({
       where: { id },
-      include: { vehiculo: true },
+      include: {
+        vehiculo: { select: { id: true, placa: true, alias: true } },
+        servicio: { select: { id: true, nombre: true } },
+        estadoCita: { select: { codigo: true, nombre: true } },
+        clienteUsuario: { select: { id: true, nombres: true, apellidos: true } },
+      },
     });
   }
 }
