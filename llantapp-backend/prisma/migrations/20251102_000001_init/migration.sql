@@ -1,6 +1,7 @@
 create schema if not exists app;
 set search_path to app, public;
 create extension if not exists pgcrypto;
+create extension if not exists pg_stat_statements;
 
 create table if not exists taller_estado(
   taller_estado_id bigint generated always as identity primary key,
@@ -377,7 +378,7 @@ begin
     descripcion text,
     realizado_por_usuario_id bigint not null references %I.usuario(usuario_id),
     fecha_reasignacion timestamptz not null default now()
-  )', v_esquema, v_esquema, v_esquema, v_esquema);
+  )', v_esquema, v_esquema, v_esquema, v_esquema, v_esquema);
 
   execute format('create table if not exists %I.estado_mantenimiento(
     estado_mantenimiento_id bigint generated always as identity primary key,

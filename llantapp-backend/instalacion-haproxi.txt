@@ -1,0 +1,73 @@
+$ErrorActionPreference = "Stop"
+
+$installDir  = "C:\Program Files\HAProxy"
+$tempDir     = Join-Path $env:TEMP "haproxy-win-src"
+$extractDir  = Join-Path $env:TEMP "haproxy-win-extract"
+$zipName     = "haproxy-3.2-dev0-lua5.4.7z"
+
+function Get-SevenZipPath {
+    $candidates = @(
+        "$env:ProgramFiles\7-Zip\7z.exe",
+        "$env:ProgramFiles(x86)\7-Zip\7z.exe",
+        "7z.exe"
+    )
+    foreach ($c in $candidates) {
+        if ($c -and (Get-Command $c -ErrorAction SilentlyContinue)) {
+            if ($c -eq "7z.exe") { return (Get-Command $c).Source } else { return $c }
+        }
+    }
+    $wingetCmd = Get-Command "winget.exe" -ErrorAction SilentlyContinue
+    if ($wingetCmd) {
+        & $wingetCmd install --id 7zip.7zip -e --accept-source-agreements --accept-package-agreements
+    } else {
+        $setupPath = Join-Path $env:TEMP "7zip-setup.exe"
+        Invoke-WebRequest -Uri "https://www.7-zip.org/a/7z2408-x64.exe" -OutFile $setupPath
+        Start-Process $setupPath -ArgumentList "/S" -Wait
+    }
+    foreach ($c in $candidates) {
+        if ($c -and (Get-Command $c -ErrorAction SilentlyContinue)) {
+            if ($c -eq "7z.exe") { return (Get-Command $c).Source } else { return $c }
+        }
+    }
+    throw "No se pudo instalar ni encontrar 7-Zip."
+}
+
+$sevenZip = Get-SevenZipPath
+
+Remove-Item $installDir  -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item $tempDir     -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item $extractDir  -Recurse -Force -ErrorAction SilentlyContinue
+
+$gitCmd = Get-Command "git.exe" -ErrorAction SilentlyContinue
+if (-not $gitCmd) {
+    $wingetCmd = Get-Command "winget.exe" -ErrorAction SilentlyContinue
+    if ($wingetCmd) {
+        & $wingetCmd install --id Git.Git -e --accept-source-agreements --accept-package-agreements
+    } else {
+        throw "Git no está instalado y winget no está disponible; instálalo manualmente e inténtalo de nuevo."
+    }
+}
+
+git clone https://github.com/naldodj/naldodj-haproxy-windows.git $tempDir
+
+$archive = Join-Path $tempDir "haproxy-3.2\win\x64\$zipName"
+if (-not (Test-Path $archive)) {
+    throw "No se encontró el archivo: $archive"
+}
+
+& $sevenZip x $archive "-o$extractDir" -y | Out-Null
+
+$exe = Get-ChildItem $extractDir -Recurse -Filter "haproxy.exe" | Select-Object -First 1
+if (-not $exe) {
+    throw "No se encontró haproxy.exe dentro de $zipName"
+}
+
+New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+Copy-Item "$($exe.Directory.FullName)\*" $installDir -Recurse -Force
+
+Remove-Item $tempDir    -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
+
+[Environment]::SetEnvironmentVariable("LLANTAPP_HAPROXY_BIN","C:/Program Files/HAProxy/haproxy.exe","Machine")
+
+Write-Output "Listo: HAProxy instalado en C:\Program Files\HAProxy\haproxy.exe y LLANTAPP_HAPROXY_BIN configurada."

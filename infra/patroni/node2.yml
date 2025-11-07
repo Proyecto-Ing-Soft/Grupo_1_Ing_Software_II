@@ -1,10 +1,16 @@
 scope: llantapp
 name: node2
+
 restapi:
-  listen: 0.0.0.0:8009
-  connect_address: node2:8009
-etcd:
-  hosts: etcd1:2379,etcd2:2379,etcd3:2379
+  listen: 127.0.0.1:8009
+  connect_address: 127.0.0.1:8009
+
+raft:
+  self_addr: 127.0.0.1:7002
+  partner_addrs:
+    - 127.0.0.1:7001
+    - 127.0.0.1:7003
+
 bootstrap:
   dcs:
     ttl: 30
@@ -22,26 +28,18 @@ bootstrap:
         max_connections: 200
         synchronous_commit: on
         synchronous_standby_names: '*'
+        shared_preload_libraries: 'pg_stat_statements'
+        password_encryption: scram-sha-256
   initdb:
     - encoding: UTF8
     - data-checksums
-  users:
-    replicator:
-      password: replicator
-      options:
-        - replication
-    postgres:
-      password: 1234
+
 postgresql:
-  listen: 0.0.0.0:5432
-  connect_address: node2:5432
-  data_dir: /var/lib/postgresql/data
-  authentication:
-    replication:
-      username: replicator
-      password: replicator
-    superuser:
-      username: postgres
-      password: 1234
+  listen: 127.0.0.1:5434
+  connect_address: 127.0.0.1:5434
+  data_dir: C:/llantapp/patroni/node2/data
   parameters:
     shared_preload_libraries: 'pg_stat_statements'
+  pg_hba:
+    - host all all 127.0.0.1/32 scram-sha-256
+    - host replication replicator 127.0.0.1/32 scram-sha-256
