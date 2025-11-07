@@ -4,6 +4,7 @@
   "scripts": {
     "start:dev": "nest start --watch",
     "prisma:dev": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:gen": "prisma generate"
   },
   "dependencies": {

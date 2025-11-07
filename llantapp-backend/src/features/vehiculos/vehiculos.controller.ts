@@ -1,18 +1,42 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Post,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { VehiculosService } from './vehiculos.service';
 import { CrearVehiculoDto } from './dto/crear-vehiculo.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
+// SRP: orquesta HTTP ⇄ VehiculosService.
 @Controller('vehiculos')
 export class VehiculosController {
   constructor(private readonly service: VehiculosService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   async crear(@Body() dto: CrearVehiculoDto, @Req() req: any) {
-    // Asume que en el request traes slug y userId del JWT/tenant-resolver.
-    const slugTaller: string = req.user.tallerSlug;  // p.ej. "sandar_a"
-    const creadorUsuarioId: number = req.user.usuarioId;
+    const headerSlug = req.headers['x-taller-slug'] as
+      | string
+      | undefined;
+    const slugTaller =
+      headerSlug?.trim() ||
+      (req.user?.tallerSlug as string | undefined)?.trim();
 
-    const vehiculo = await this.service.crear(slugTaller, dto, creadorUsuarioId);
-    return vehiculo;
+    if (!slugTaller) {
+      throw new BadRequestException(
+        'Debe especificarse el taller mediante header x-taller-slug',
+      );
+    }
+
+    const creadorUsuarioId = Number(req.user?.id ?? req.user?.sub);
+    if (!Number.isFinite(creadorUsuarioId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
+
+    return this.service.crear(slugTaller, dto, creadorUsuarioId);
   }
 }

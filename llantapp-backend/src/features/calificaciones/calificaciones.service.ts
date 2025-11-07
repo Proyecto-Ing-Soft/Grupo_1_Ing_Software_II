@@ -4,147 +4,405 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../../core/prisma/prisma/prisma.service';
+import { PrismaService } from '../../core/prisma/prisma.service';
 import { CalificacionDto } from './dto/calificacion.dto';
+import { withTenant } from '../../common/prisma-tenant';
+import { Prisma } from '@prisma/client';
+import { Notificador } from '../notificaciones/envio/notificador';
 
-// Ajusta según tu enum. Si usas Prisma enum:
-import { EstadoCita } from '@prisma/client';
-
-import { NotificacionesService } from '../notificaciones/notificaciones.service';
+// SRP/DIP: toda la lógica de calificaciones de citas vive aquí,
+// usando SQL contra el esquema del taller y delegando notificaciones a una fachada.
 
 @Injectable()
 export class CalificacionesService {
   constructor(
     private readonly prisma: PrismaService,
-    // comenta esta línea si aún no lo quieres enganchar
-    private readonly noti: NotificacionesService,
+    private readonly notificador: Notificador,
   ) {}
 
-  /**
-   * Crea una calificación para una cita TERMINADA.
-   * Reglas:
-   *  - Solo el cliente dueño de la cita puede calificar.
-   *  - Solo si la cita está TERMINADA.
-   *  - Una calificación por cita.
-   */
-  async crear(citaId: number, clienteId: number, dto: CalificacionDto) {
-    const cita = await this.prisma.citaMantenimiento.findUnique({
-      where: { id: citaId },
-      select: { id: true, clienteId: true, estado: true, mecanicoId: true, vehiculoId: true },
-    });
+  esRolAdmin(rol?: string): boolean {
+    if (!rol) return false;
+    return rol === 'OWNER' || rol === 'ADMIN_TALLER';
+  }
 
-    if (!cita) throw new NotFoundException('Cita no encontrada');
-    if (cita.clienteId !== clienteId) {
-      throw new ForbiddenException('No puedes calificar esta cita');
-    }
-    if (cita.estado !== EstadoCita.TERMINADA) {
-      throw new BadRequestException('Solo se puede calificar una cita terminada');
-    }
+  async crear(
+    slugTaller: string,
+    citaId: number,
+    clienteId: number,
+    dto: CalificacionDto,
+  ) {
+    return withTenant(this.prisma, slugTaller, async (tx) => {
+      const rows = await tx.$queryRaw<
+        Array<{
+          cita_id: bigint;
+          cliente_usuario_id: bigint;
+          estado_codigo: string;
+          mantenimiento_id: bigint | null;
+          mecanico_principal_usuario_id: bigint | null;
+          vehiculo_id: bigint;
+        }>
+      >(Prisma.sql`
+        SELECT
+          c.cita_id,
+          c.cliente_usuario_id,
+          ec.codigo AS estado_codigo,
+          m.mantenimiento_id,
+          m.mecanico_principal_usuario_id,
+          c.vehiculo_id
+        FROM cita c
+        JOIN estado_cita ec
+          ON ec.estado_cita_id = c.estado_cita_id
+        LEFT JOIN mantenimiento m
+          ON m.cita_id = c.cita_id
+        WHERE c.cita_id = ${citaId}
+        LIMIT 1
+      `);
 
-    const yaHay = await this.prisma.calificacionCita.findUnique({ where: { citaId } });
-    if (yaHay) throw new BadRequestException('Esta cita ya fue calificada');
-
-    const creada = await this.prisma.calificacionCita.create({
-      data: {
-        citaId,
-        clienteId,
-        estrellas: dto.estrellas,
-        comentario: dto.comentario ?? null,
-      },
-    });
-
-    // (Opcional) Notificar al mecánico que recibió calificación
-    if (cita.mecanicoId) {
-      try {
-        await this.noti.enviar({
-          usuarioId: cita.mecanicoId,
-          citaId,
-           vehiculoId: cita.vehiculoId ?? undefined,
-          titulo: 'Nueva calificación recibida',
-          mensaje: `El cliente calificó la cita #${citaId} con ${dto.estrellas}★.`,
-        });
-      } catch {
-        // no romper el flujo si fallan notificaciones
+      if (!rows.length) {
+        throw new NotFoundException('Cita no encontrada');
       }
-    }
 
-    return { ok: true, id: creada.id };
+      const c = rows[0];
+
+      if (Number(c.cliente_usuario_id) !== clienteId) {
+        throw new ForbiddenException('No puedes calificar esta cita');
+      }
+
+      if (c.estado_codigo !== 'terminada') {
+        throw new BadRequestException(
+          'Solo se puede calificar una cita terminada',
+        );
+      }
+
+      if (!c.mantenimiento_id) {
+        throw new BadRequestException(
+          'La cita aún no está lista para calificación',
+        );
+      }
+
+      const mantenimientoId = Number(c.mantenimiento_id);
+
+      const existente = await tx.$queryRaw<
+        Array<{ calificacion_id: bigint }>
+      >(Prisma.sql`
+        SELECT calificacion_id
+        FROM calificacion
+        WHERE mantenimiento_id = ${mantenimientoId}
+          AND cliente_usuario_id = ${clienteId}
+        LIMIT 1
+      `);
+
+      if (existente.length) {
+        throw new BadRequestException('Esta cita ya fue calificada');
+      }
+
+      const inserted = await tx.$queryRaw<
+        Array<{ calificacion_id: bigint }>
+      >(Prisma.sql`
+        INSERT INTO calificacion (
+          mantenimiento_id,
+          cliente_usuario_id,
+          puntuacion,
+          comentario,
+          visible
+        )
+        VALUES (
+          ${mantenimientoId},
+          ${clienteId},
+          ${dto.estrellas},
+          ${dto.comentario ?? null},
+          TRUE
+        )
+        RETURNING calificacion_id
+      `);
+
+      const calificacionId = Number(inserted[0].calificacion_id);
+
+      // Notificación al mecánico principal (best-effort).
+      if (c.mecanico_principal_usuario_id) {
+        try {
+          await this.notificador.enviar({
+            tallerSlug: slugTaller,
+            usuarioId: Number(c.mecanico_principal_usuario_id),
+            titulo: 'Nueva calificación recibida',
+            mensaje: `El cliente calificó la cita #${citaId} con ${dto.estrellas}★.`,
+            tipoMensajeCodigo: 'resumen_tecnico',
+            canalCodigo: 'push',
+          });
+        } catch {
+          // No afecta el flujo principal.
+        }
+      }
+
+      return { ok: true, calificacionId };
+    });
   }
 
   /**
-   * Lee la calificación de una cita.
+   * Lee la calificación asociada a una cita (si existe).
    * Visible para:
    *  - Cliente dueño de la cita
-   *  - Mecánico asignado
-   *  - (Opcional) Roles admin si manejas roles en req.user.rol
+   *  - Mecánico principal asignado
+   *  - Roles admin (OWNER / ADMIN_TALLER) según JWT.
    */
-  async leerPorCita(citaId: number, solicitanteId: number, rol?: string) {
-    const cita = await this.prisma.citaMantenimiento.findUnique({
-      where: { id: citaId },
-      select: { id: true, clienteId: true, mecanicoId: true },
+  async leerPorCita(
+    slugTaller: string,
+    citaId: number,
+    solicitanteId: number,
+    rol?: string,
+  ) {
+    return withTenant(this.prisma, slugTaller, async (tx) => {
+      const rows = await tx.$queryRaw<
+        Array<{
+          cita_id: bigint;
+          cliente_usuario_id: bigint;
+          mantenimiento_id: bigint | null;
+          mecanico_principal_usuario_id: bigint | null;
+        }>
+      >(Prisma.sql`
+        SELECT
+          c.cita_id,
+          c.cliente_usuario_id,
+          m.mantenimiento_id,
+          m.mecanico_principal_usuario_id
+        FROM cita c
+        LEFT JOIN mantenimiento m
+          ON m.cita_id = c.cita_id
+        WHERE c.cita_id = ${citaId}
+        LIMIT 1
+      `);
+
+      if (!rows.length) {
+        throw new NotFoundException('Cita no encontrada');
+      }
+
+      const c = rows[0];
+
+      const esDueno =
+        Number(c.cliente_usuario_id) === Number(solicitanteId);
+      const esMecanico =
+        c.mecanico_principal_usuario_id != null &&
+        Number(c.mecanico_principal_usuario_id) ===
+          Number(solicitanteId);
+      const esAdmin = this.esRolAdmin(rol);
+
+      if (!esDueno && !esMecanico && !esAdmin) {
+        throw new ForbiddenException(
+          'No puedes ver la calificación de esta cita',
+        );
+      }
+
+      if (!c.mantenimiento_id) {
+        throw new NotFoundException(
+          'La cita aún no tiene calificación registrada',
+        );
+      }
+
+      const mantenimientoId = Number(c.mantenimiento_id);
+
+      const califRows = await tx.$queryRaw<
+        Array<{
+          calificacion_id: bigint;
+          mantenimiento_id: bigint;
+          cliente_usuario_id: bigint;
+          puntuacion: number;
+          comentario: string | null;
+          visible: boolean;
+          fecha_creacion: Date;
+        }>
+      >(Prisma.sql`
+        SELECT
+          calificacion_id,
+          mantenimiento_id,
+          cliente_usuario_id,
+          puntuacion,
+          comentario,
+          visible,
+          fecha_creacion
+        FROM calificacion
+        WHERE mantenimiento_id = ${mantenimientoId}
+        LIMIT 1
+      `);
+
+      if (!califRows.length) {
+        throw new NotFoundException(
+          'La cita aún no tiene calificación registrada',
+        );
+      }
+
+      const calif = califRows[0];
+
+      return {
+        calificacionId: Number(calif.calificacion_id),
+        citaId,
+        clienteUsuarioId: Number(calif.cliente_usuario_id),
+        puntuacion: calif.puntuacion,
+        comentario: calif.comentario,
+        visible: calif.visible,
+        fechaCreacion: calif.fecha_creacion,
+      };
     });
-    if (!cita) throw new NotFoundException('Cita no encontrada');
-
-    const esDueno = cita.clienteId === solicitanteId;
-    const esMecanico = cita.mecanicoId === solicitanteId;
-    const esAdmin = rol === 'ADMIN';
-
-    if (!esDueno && !esMecanico && !esAdmin) {
-      throw new ForbiddenException('No puedes ver esta calificación');
-    }
-
-    const calif = await this.prisma.calificacionCita.findUnique({ where: { citaId } });
-    if (!calif) throw new NotFoundException('La cita aún no tiene calificación');
-
-    return calif;
   }
 
-   async miasCliente(clienteId: number, page: number, pageSize: number) {
-    const skip = (page - 1) * pageSize;
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.calificacionCita.findMany({
-        where: { clienteId },
-        orderBy: { creadaEn: 'desc' },
-        skip,
-        take: pageSize,
-        include: {
-          cita: {
-            select: {
-              id: true, estado: true, vehiculoId: true, fechaMantenimiento: true,
-              placaPreliminar: true, marcaPreliminar: true, modeloPreliminar: true,
-            },
+  /**
+   * Calificaciones hechas por el cliente autenticado (por cita).
+   */
+  async miasCliente(
+    slugTaller: string,
+    clienteId: number,
+    page: number,
+    pageSize: number,
+  ) {
+    return withTenant(this.prisma, slugTaller, async (tx) => {
+      const skip = (page - 1) * pageSize;
+
+      const items = await tx.$queryRaw<
+        Array<{
+          calificacion_id: bigint;
+          puntuacion: number;
+          comentario: string | null;
+          fecha_creacion: Date;
+          cita_id: bigint;
+          fecha_programada: Date;
+          placa: string | null;
+        }>
+      >(Prisma.sql`
+        SELECT
+          ca.calificacion_id,
+          ca.puntuacion,
+          ca.comentario,
+          ca.fecha_creacion,
+          c.cita_id,
+          c.fecha_programada,
+          v.placa
+        FROM calificacion ca
+        JOIN mantenimiento m
+          ON m.mantenimiento_id = ca.mantenimiento_id
+        JOIN cita c
+          ON c.cita_id = m.cita_id
+        LEFT JOIN vehiculo v
+          ON v.vehiculo_id = c.vehiculo_id
+        WHERE ca.cliente_usuario_id = ${clienteId}
+        ORDER BY ca.fecha_creacion DESC
+        LIMIT ${pageSize} OFFSET ${skip}
+      `);
+
+      const totalRows = await tx.$queryRaw<
+        Array<{ total: bigint }>
+      >(Prisma.sql`
+        SELECT COUNT(*)::bigint AS total
+        FROM calificacion ca
+        WHERE ca.cliente_usuario_id = ${clienteId}
+      `);
+
+      const total = Number(totalRows[0]?.total ?? 0);
+
+      return {
+        items: items.map((r) => ({
+          calificacionId: Number(r.calificacion_id),
+          puntuacion: r.puntuacion,
+          comentario: r.comentario,
+          fechaCreacion: r.fecha_creacion,
+          citaId: Number(r.cita_id),
+          fechaCita: r.fecha_programada,
+          placa: r.placa,
+        })),
+      total,
+      page,
+      pageSize,
+      };
+    });
+  }
+
+  /**
+   * Calificaciones recibidas por el mecánico (según mecánico_principal_usuario_id).
+   */
+  async recibidasMecanico(
+    slugTaller: string,
+    mecanicoId: number,
+    page: number,
+    pageSize: number,
+  ) {
+    return withTenant(this.prisma, slugTaller, async (tx) => {
+      const skip = (page - 1) * pageSize;
+
+      const items = await tx.$queryRaw<
+        Array<{
+          calificacion_id: bigint;
+          puntuacion: number;
+          comentario: string | null;
+          fecha_creacion: Date;
+          cita_id: bigint;
+          fecha_programada: Date;
+          placa: string | null;
+          cliente_id: bigint;
+          cliente_nombres: string;
+          cliente_apellidos: string;
+        }>
+      >(Prisma.sql`
+        SELECT
+          ca.calificacion_id,
+          ca.puntuacion,
+          ca.comentario,
+          ca.fecha_creacion,
+          c.cita_id,
+          c.fecha_programada,
+          v.placa,
+          cli.usuario_id      AS cliente_id,
+          cli.nombres         AS cliente_nombres,
+          cli.apellidos       AS cliente_apellidos
+        FROM calificacion ca
+        JOIN mantenimiento m
+          ON m.mantenimiento_id = ca.mantenimiento_id
+        JOIN cita c
+          ON c.cita_id = m.cita_id
+        LEFT JOIN vehiculo v
+          ON v.vehiculo_id = c.vehiculo_id
+        JOIN usuario cli
+          ON cli.usuario_id = ca.cliente_usuario_id
+        WHERE m.mecanico_principal_usuario_id = ${mecanicoId}
+        ORDER BY ca.fecha_creacion DESC
+        LIMIT ${pageSize} OFFSET ${skip}
+      `);
+
+      const totalRows = await tx.$queryRaw<
+        Array<{ total: bigint }>
+      >(Prisma.sql`
+        SELECT COUNT(*)::bigint AS total
+        FROM calificacion ca
+        JOIN mantenimiento m
+          ON m.mantenimiento_id = ca.mantenimiento_id
+        WHERE m.mecanico_principal_usuario_id = ${mecanicoId}
+      `);
+
+      const total = Number(totalRows[0]?.total ?? 0);
+
+      return {
+        items: items.map((r) => ({
+          calificacionId: Number(r.calificacion_id),
+          puntuacion: r.puntuacion,
+          comentario: r.comentario,
+          fechaCreacion: r.fecha_creacion,
+          citaId: Number(r.cita_id),
+          fechaCita: r.fecha_programada,
+          placa: r.placa,
+          cliente: {
+            usuarioId: Number(r.cliente_id),
+            nombreCompleto: `${r.cliente_nombres} ${r.cliente_apellidos}`.trim(),
           },
-        },
-      }),
-      this.prisma.calificacionCita.count({ where: { clienteId } }),
-    ]);
-    return { items, total, page, pageSize };
+        })),
+        total,
+        page,
+        pageSize,
+      };
+    });
   }
 
-  async recibidasMecanico(mecanicoId: number, page: number, pageSize: number) {
-    const skip = (page - 1) * pageSize;
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.calificacionCita.findMany({
-        where: { cita: { mecanicoId } },                // ← join por relación
-        orderBy: { creadaEn: 'desc' },
-        skip,
-        take: pageSize,
-        include: {
-          cita: {
-            select: {
-              id: true, estado: true, vehiculoId: true, fechaMantenimiento: true,
-              placaPreliminar: true, marcaPreliminar: true, modeloPreliminar: true,
-            },
-          },
-          cliente: { select: { id: true, nombreCompleto: true } },
-        },
-      }),
-      this.prisma.calificacionCita.count({ where: { cita: { mecanicoId } } }),
-    ]);
-    return { items, total, page, pageSize };
-  }
-
+  /**
+   * Listado admin filtrado por mecánico, puntuación, rango de fechas, placa.
+   */
   async adminList(
+    slugTaller: string,
     page: number,
     pageSize: number,
     filtros: {
@@ -155,100 +413,216 @@ export class CalificacionesService {
       placa?: string;
     },
   ) {
-    const skip = (page - 1) * pageSize;
+    return withTenant(this.prisma, slugTaller, async (tx) => {
+      const skip = (page - 1) * pageSize;
 
-    const where: any = {
-      ...(filtros.estrellas ? { estrellas: filtros.estrellas } : {}),
-      ...(filtros.desde || filtros.hasta
-        ? {
-            creadaEn: {
-              ...(filtros.desde ? { gte: filtros.desde } : {}),
-              ...(filtros.hasta ? { lte: filtros.hasta } : {}),
-            },
-          }
-        : {}),
-      ...(filtros.mecanicoId || filtros.placa
-        ? {
-            cita: {
-              ...(filtros.mecanicoId ? { mecanicoId: filtros.mecanicoId } : {}),
-              ...(filtros.placa
-                ? { placaPreliminar: { contains: filtros.placa, mode: 'insensitive' } }
-                : {}),
-            },
-          }
-        : {}),
-    };
+      const conditions: Prisma.Sql[] = [];
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.calificacionCita.findMany({
-        where,
-        orderBy: { creadaEn: 'desc' },
-        skip,
-        take: pageSize,
-        include: {
-          cliente: { select: { id: true, nombreCompleto: true } },
-          cita: {
-            select: {
-              id: true, mecanicoId: true, estado: true, fechaMantenimiento: true,
-              placaPreliminar: true, marcaPreliminar: true, modeloPreliminar: true,
-              mecanico: { select: { id: true, nombreCompleto: true } },
-            },
+      if (filtros.estrellas) {
+        conditions.push(
+          Prisma.sql`ca.puntuacion = ${filtros.estrellas}`,
+        );
+      }
+      if (filtros.desde) {
+        conditions.push(
+          Prisma.sql`ca.fecha_creacion >= ${filtros.desde}`,
+        );
+      }
+      if (filtros.hasta) {
+        conditions.push(
+          Prisma.sql`ca.fecha_creacion <= ${filtros.hasta}`,
+        );
+      }
+      if (filtros.mecanicoId) {
+        conditions.push(
+          Prisma.sql`
+            m.mecanico_principal_usuario_id = ${filtros.mecanicoId}
+          `,
+        );
+      }
+      if (filtros.placa) {
+        conditions.push(
+          Prisma.sql`
+            v.placa ILIKE ${'%' + filtros.placa + '%'}
+          `,
+        );
+      }
+
+      const whereSql =
+        conditions.length > 0
+          ? Prisma.sql`WHERE ${Prisma.join(
+              conditions,
+              ' AND ',
+            )}`
+          : Prisma.sql``;
+
+      const items = await tx.$queryRaw<
+        Array<{
+          calificacion_id: bigint;
+          puntuacion: number;
+          comentario: string | null;
+          fecha_creacion: Date;
+          cita_id: bigint;
+          fecha_programada: Date;
+          placa: string | null;
+          mecanico_id: bigint | null;
+          mecanico_nombres: string | null;
+          mecanico_apellidos: string | null;
+          cliente_id: bigint;
+          cliente_nombres: string;
+          cliente_apellidos: string;
+        }>
+      >(Prisma.sql`
+        SELECT
+          ca.calificacion_id,
+          ca.puntuacion,
+          ca.comentario,
+          ca.fecha_creacion,
+          c.cita_id,
+          c.fecha_programada,
+          v.placa,
+          mec.usuario_id      AS mecanico_id,
+          mec.nombres         AS mecanico_nombres,
+          mec.apellidos       AS mecanico_apellidos,
+          cli.usuario_id      AS cliente_id,
+          cli.nombres         AS cliente_nombres,
+          cli.apellidos       AS cliente_apellidos
+        FROM calificacion ca
+        JOIN mantenimiento m
+          ON m.mantenimiento_id = ca.mantenimiento_id
+        JOIN cita c
+          ON c.cita_id = m.cita_id
+        LEFT JOIN vehiculo v
+          ON v.vehiculo_id = c.vehiculo_id
+        LEFT JOIN usuario mec
+          ON mec.usuario_id = m.mecanico_principal_usuario_id
+        JOIN usuario cli
+          ON cli.usuario_id = ca.cliente_usuario_id
+        ${whereSql}
+        ORDER BY ca.fecha_creacion DESC
+        LIMIT ${pageSize} OFFSET ${skip}
+      `);
+
+      const totalRows = await tx.$queryRaw<
+        Array<{ total: bigint }>
+      >(Prisma.sql`
+        SELECT COUNT(*)::bigint AS total
+        FROM calificacion ca
+        JOIN mantenimiento m
+          ON m.mantenimiento_id = ca.mantenimiento_id
+        JOIN cita c
+          ON c.cita_id = m.cita_id
+        LEFT JOIN vehiculo v
+          ON v.vehiculo_id = c.vehiculo_id
+        ${whereSql}
+      `);
+
+      const total = Number(totalRows[0]?.total ?? 0);
+
+      return {
+        items: items.map((r) => ({
+          calificacionId: Number(r.calificacion_id),
+          puntuacion: r.puntuacion,
+          comentario: r.comentario,
+          fechaCreacion: r.fecha_creacion,
+          citaId: Number(r.cita_id),
+          fechaCita: r.fecha_programada,
+          placa: r.placa,
+          mecanico:
+            r.mecanico_id != null
+              ? {
+                  usuarioId: Number(r.mecanico_id),
+                  nombreCompleto: `${r.mecanico_nombres ?? ''} ${
+                    r.mecanico_apellidos ?? ''
+                  }`.trim(),
+                }
+              : null,
+          cliente: {
+            usuarioId: Number(r.cliente_id),
+            nombreCompleto: `${r.cliente_nombres} ${r.cliente_apellidos}`.trim(),
           },
-        },
-      }),
-      this.prisma.calificacionCita.count({ where }),
-    ]);
-
-    return { items, total, page, pageSize };
+        })),
+        total,
+        page,
+        pageSize,
+      };
+    });
   }
 
-  async adminStats() {
-    // distribución por estrellas
-    const distribRaw = await this.prisma.calificacionCita.groupBy({
-      by: ['estrellas'],
-      _count: { estrellas: true },
-      orderBy: { estrellas: 'asc' },
+  /**
+   * Métricas agregadas de calificaciones por cita en el taller.
+   */
+  async adminStats(slugTaller: string) {
+    return withTenant(this.prisma, slugTaller, async (tx) => {
+      const distrib = await tx.$queryRaw<
+        Array<{ puntuacion: number; total: bigint }>
+      >(Prisma.sql`
+        SELECT
+          puntuacion,
+          COUNT(*)::bigint AS total
+        FROM calificacion
+        GROUP BY puntuacion
+        ORDER BY puntuacion
+      `);
+
+      const porMecanico = await tx.$queryRaw<
+        Array<{
+          mecanico_id: bigint;
+          nombres: string | null;
+          apellidos: string | null;
+          promedio: number;
+          total: bigint;
+        }>
+      >(Prisma.sql`
+        SELECT
+          m.mecanico_principal_usuario_id AS mecanico_id,
+          u.nombres,
+          u.apellidos,
+          AVG(ca.puntuacion)::numeric(10,2) AS promedio,
+          COUNT(*)::bigint AS total
+        FROM calificacion ca
+        JOIN mantenimiento m
+          ON m.mantenimiento_id = ca.mantenimiento_id
+        LEFT JOIN usuario u
+          ON u.usuario_id = m.mecanico_principal_usuario_id
+        WHERE m.mecanico_principal_usuario_id IS NOT NULL
+        GROUP BY
+          m.mecanico_principal_usuario_id,
+          u.nombres,
+          u.apellidos
+        ORDER BY promedio DESC
+      `);
+
+      const global = await tx.$queryRaw<
+        Array<{ promedio: number | null; total: bigint }>
+      >(Prisma.sql`
+        SELECT
+          AVG(puntuacion)::numeric(10,2) AS promedio,
+          COUNT(*)::bigint AS total
+        FROM calificacion
+      `);
+
+      const g = global[0] ?? {
+        promedio: 0,
+        total: BigInt(0),
+      };
+
+      return {
+        promedioGlobal: Number(g.promedio ?? 0),
+        totalCalificaciones: Number(g.total ?? 0),
+        distribucion: distrib.map((r) => ({
+          puntuacion: r.puntuacion,
+          total: Number(r.total),
+        })),
+        promedioPorMecanico: porMecanico.map((r) => ({
+          mecanicoId: Number(r.mecanico_id),
+          nombreCompleto: `${r.nombres ?? ''} ${
+            r.apellidos ?? ''
+          }`.trim(),
+          promedio: Number(r.promedio),
+          totalCalificaciones: Number(r.total),
+        })),
+      };
     });
-    const distribucion = distribRaw.map((r) => ({ estrellas: r.estrellas, total: r._count.estrellas }));
-
-    // promedio por mecánico
-    const porMecanico = await this.prisma.calificacionCita.groupBy({
-      by: ['citaId'],
-      _avg: { estrellas: true },
-    });
-
-    // Sacamos el mecánico real por cita en un solo query
-    const citasIds = porMecanico.map((x) => x.citaId);
-    const citas = await this.prisma.citaMantenimiento.findMany({
-      where: { id: { in: citasIds } },
-      select: { id: true, mecanicoId: true, mecanico: { select: { id: true, nombreCompleto: true } } },
-    });
-    const mapMec: Record<number, { id: number; nombreCompleto: string }> = {};
-    for (const c of citas) {
-      if (c.mecanicoId && c.mecanico) mapMec[c.id] = c.mecanico;
-    }
-
-    // Agregamos por mecánico
-    const agg: Record<number, { mecanicoId: number; nombre: string; suma: number; n: number }> = {};
-    for (const row of porMecanico) {
-      const mec = mapMec[row.citaId];
-      if (!mec) continue;
-      if (!agg[mec.id]) agg[mec.id] = { mecanicoId: mec.id, nombre: mec.nombreCompleto, suma: 0, n: 0 };
-      agg[mec.id].suma += row._avg.estrellas ?? 0;
-      agg[mec.id].n += 1;
-    }
-    const promedioPorMecanico = Object.values(agg)
-      .map((x) => ({ mecanicoId: x.mecanicoId, nombre: x.nombre, promedio: +(x.suma / x.n).toFixed(2), n: x.n }))
-      .sort((a, b) => b.promedio - a.promedio);
-
-    // promedio global
-    const global = await this.prisma.calificacionCita.aggregate({ _avg: { estrellas: true }, _count: true });
-
-    return {
-      promedioGlobal: +(global._avg.estrellas ?? 0).toFixed(2),
-      totalCalificaciones: global._count,
-      distribucion,           // [{estrellas:1..5, total}]
-      promedioPorMecanico,    // [{mecanicoId, nombre, promedio, n}]
-    };
   }
 }

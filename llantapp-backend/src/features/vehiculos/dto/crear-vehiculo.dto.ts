@@ -1,31 +1,48 @@
-// DTO mínimo y estricto por IDs (marca/modelo).
-
-import { IsInt, IsNotEmpty, IsOptional, IsString, Length, Max, Min } from 'class-validator';
+// SRP/KISS: DTO estricto para creación de vehículo con IDs referenciando catálogos de BD.
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class CrearVehiculoDto {
-  @IsString() @IsNotEmpty() @Length(5, 10)
-  placa!: string; // Formato libre validado por longitud (ajústalo si tienes regex de tu país)
+  @IsString()
+  @IsNotEmpty()
+  @Length(5, 10)
+  placa!: string;
 
-  @IsOptional() @IsString() @Length(8, 30)
+  @IsOptional()
+  @IsString()
+  @Length(8, 30)
   vin?: string;
 
-  @IsInt() @Min(1950) @Max(new Date().getFullYear() + 1)
+  @IsInt()
+  @Min(1950)
+  @Max(new Date().getFullYear() + 1)
   anio!: number;
 
-  @IsOptional() @IsString() @Length(0, 30)
+  @IsOptional()
+  @IsString()
+  @Length(0, 30)
   color?: string;
 
-  @IsOptional() @IsString() @Length(0, 30)
+  @IsOptional()
+  @IsString()
+  @Length(0, 30)
   alias?: string;
 
-  // IDs estrictos:
+  // Relación con catálogos globales (app.marca_vehiculo / app.modelo_vehiculo).
   @IsInt()
   marcaVehiculoId!: number;
 
   @IsInt()
   modeloVehiculoId!: number;
 
-  // Titular del vehículo (propietario inicial)
+  // Usuario propietario dentro del esquema del taller.
   @IsInt()
   propietarioUsuarioId!: number;
 }

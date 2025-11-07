@@ -1,56 +1,24 @@
 // PRINCIPIOS:
-// - SRP: el DTO solo define contrato/validación de entrada. Nada de lógica.
-// - KISS: tipos simples; validaciones declarativas con class-validator.
-// - OCP: si agregas campos, no tienes que cambiar a los consumidores (controller/service siguen igual).
-import {
-  IsDateString,
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator';
-import { TipoMantenimiento } from '@prisma/client';
+// - SRP: este DTO define solo el contrato y la validación de entrada para crear citas.
+// - KISS: campos planos y validaciones declarativas.
+// - OCP: si se agregan datos de la cita, se extiende aquí sin romper controlador/servicio.
+
+import { IsDateString, IsInt, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class CrearCitaDto {
-  @IsEnum(TipoMantenimiento)
-  tipo!: TipoMantenimiento;
+  // El cliente autenticado se toma del JWT, no del body.
 
-  // si el cliente ya tiene vehículo registrado
-  @IsOptional()
   @IsInt()
-  vehiculoId?: number;
+  vehiculoId!: number; // Vehículo existente del cliente.
 
-  // Datos preliminares (solo si no manda vehiculoId)
-  @IsOptional()
-  @IsString()
-  placaPreliminar?: string;
-
-  @IsOptional()
-  @IsString()
-  marcaPreliminar?: string;
-
-  @IsOptional()
-  @IsString()
-  modeloPreliminar?: string;
-
-  @IsOptional()
   @IsInt()
-  anioPreliminar?: number;
-
-  @IsOptional()
-  @IsString()
-  colorPreliminar?: string;
-
-  @IsOptional()
-  @IsString()
-  vinPreliminar?: string;
+  servicioId!: number; // Servicio solicitado.
 
   @IsOptional()
   @IsString()
   @MinLength(0)
-  comentario?: string;
+  comentario?: string; // Comentarios del cliente sobre la cita.
 
   @IsDateString()
-  programadaPara!: string;
+  fechaProgramada!: string; // Fecha/hora programada en ISO 8601.
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useCalificacion } from '../hooks/useCalificacion';
 import { EstrellasCalificacion } from './EstrellasCalificacion';
 import { FormularioCalificacion } from './FormularioCalificacion';
-import { descargarEvidenciaCita, obtenerDetalleCita } from '../../mantenimientos/api';
+import { descargarEvidenciaCita, obtenerDetalleCita } from '../../citas/api';
 import '../calificarServicio.css';
 
 type Media = { url: string; mime: string };

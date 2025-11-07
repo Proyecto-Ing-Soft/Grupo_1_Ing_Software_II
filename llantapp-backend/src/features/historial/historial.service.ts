@@ -1,94 +1,180 @@
-// src/historial/historial.service.ts
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../core/prisma/prisma/prisma.service';
-import { Rol } from '../../common/enums/rol.enum';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../core/prisma/prisma.service';
+import { withTenant } from '../../common/prisma-tenant';
 
-type Solicitante = { id: number; rol: Rol };
+// PRINCIPIOS:
+// - SRP: encapsula la lógica de historial de citas por vehículo.
+// - KISS: consultas claras y respuesta centrada en "cita".
+// - Sin enums TS ni catálogos duplicados: estados/roles vienen de la BD.
+
+type Solicitante = {
+  id: number;
+  rol: string;
+};
+
+type VehiculoRow = {
+  vehiculo_id: bigint;
+  placa: string;
+  marca: string;
+  modelo: string;
+  anio: number;
+  color: string | null;
+  propietario_usuario_id: bigint;
+};
+
+type CitaRow = {
+  cita_id: bigint;
+  fecha_programada: Date;
+  comentarios_cliente: string | null;
+  estado_codigo: string;
+  estado_nombre: string;
+  servicio_id: bigint;
+  servicio_nombre: string;
+  mantenimiento_id: bigint | null;
+  fecha_inicio_mant: Date | null;
+  fecha_fin_mant: Date | null;
+  resumen_tecnico_html: string | null;
+};
 
 @Injectable()
 export class HistorialService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async historialPorVehiculo(vehiculoId: number, solicitante: Solicitante) {
-    // 1) Traer vehículo y verificar permisos
-    const v = await this.prisma.vehiculo.findUnique({
-      where: { id: vehiculoId },
-      select: {
-        id: true, placa: true, marca: true, modelo: true, anio: true, color: true,
-        propietarioUsuarioId: true,
-      },
+  async historialPorVehiculo(
+    slugTaller: string,
+    vehiculoId: number,
+    solicitante: Solicitante,
+  ) {
+    return withTenant(this.prisma, slugTaller, async (tx) => {
+      // 1) Vehículo desde la BD del taller
+      const vehiculos = await tx.$queryRaw<VehiculoRow[]>(
+        Prisma.sql`
+          select
+            v.vehiculo_id,
+            v.placa,
+            mv.nombre as marca,
+            mo.nombre as modelo,
+            v.anio,
+            v.color,
+            v.propietario_usuario_id
+          from vehiculo v
+          join app.marca_vehiculo mv
+            on mv.marca_vehiculo_id = v.marca_vehiculo_id
+          join app.modelo_vehiculo mo
+            on mo.modelo_vehiculo_id = v.modelo_vehiculo_id
+          where v.vehiculo_id = ${vehiculoId}
+          limit 1
+        `,
+      );
+
+      const vehiculo = vehiculos[0];
+
+      if (!vehiculo) {
+        throw new NotFoundException('Vehículo no encontrado');
+      }
+
+      const propietarioId = Number(vehiculo.propietario_usuario_id);
+
+      // 2) Roles del solicitante desde la BD (no usamos enums locales)
+      const rolesSolicitante = await tx.$queryRaw<{ codigo: string }[]>(
+        Prisma.sql`
+          select r.codigo
+          from usuario_rol ur
+          join app.rol r on r.rol_id = ur.rol_id
+          where ur.usuario_id = ${solicitante.id}
+        `,
+      );
+
+      const codigosRol = rolesSolicitante.map((r) => r.codigo);
+
+      const esPropietario = propietarioId === solicitante.id;
+      // Consideramos "personal del taller" a quien tenga algún rol distinto de "CLIENTE".
+      const esTaller = codigosRol.some((codigo) => codigo !== 'CLIENTE');
+
+      if (!esPropietario && !esTaller) {
+        throw new ForbiddenException(
+          'No tienes permisos para ver el historial de este vehículo',
+        );
+      }
+
+      // 3) Citas asociadas al vehículo (toda info viene por joins)
+      const citas = await tx.$queryRaw<CitaRow[]>(
+        Prisma.sql`
+          select
+            c.cita_id,
+            c.fecha_programada,
+            c.comentarios_cliente,
+            ec.codigo as estado_codigo,
+            ec.nombre as estado_nombre,
+            s.servicio_id,
+            s.nombre as servicio_nombre,
+            m.mantenimiento_id,
+            m.fecha_inicio as fecha_inicio_mant,
+            m.fecha_fin as fecha_fin_mant,
+            m.resumen_tecnico_html
+          from cita c
+          join estado_cita ec
+            on ec.estado_cita_id = c.estado_cita_id
+          join servicio s
+            on s.servicio_id = c.servicio_id
+          left join mantenimiento m
+            on m.cita_id = c.cita_id
+          where c.vehiculo_id = ${vehiculoId}
+          order by c.fecha_programada desc
+        `,
+      );
+
+      const ahora = new Date();
+
+      const citasRealizadas = citas.filter(
+        (c) => c.fecha_programada <= ahora,
+      );
+      const proximasCitas = citas.filter(
+        (c) => c.fecha_programada > ahora,
+      );
+
+      // 4) Respuesta: se habla en términos de CITA, no de "mantenimiento" como entidad principal.
+      return {
+        vehiculo: {
+          id: Number(vehiculo.vehiculo_id),
+          placa: vehiculo.placa,
+          marca: vehiculo.marca,
+          modelo: vehiculo.modelo,
+          anio: vehiculo.anio,
+          color: vehiculo.color,
+        },
+        citasRealizadas: citasRealizadas.map((c) => ({
+          id: Number(c.cita_id),
+          fechaCita: c.fecha_programada,
+          estadoCodigo: c.estado_codigo,
+          estadoNombre: c.estado_nombre,
+          servicio: {
+            id: Number(c.servicio_id),
+            nombre: c.servicio_nombre,
+          },
+          // Detalle opcional proveniente del mantenimiento,
+          // expuesto como información de la cita.
+          detalleTrabajoHtml: c.resumen_tecnico_html,
+          fechaInicioTrabajo: c.fecha_inicio_mant,
+          fechaFinTrabajo: c.fecha_fin_mant,
+        })),
+        proximasCitas: proximasCitas.map((c) => ({
+          id: Number(c.cita_id),
+          fechaCita: c.fecha_programada,
+          estadoCodigo: c.estado_codigo,
+          estadoNombre: c.estado_nombre,
+          servicio: {
+            id: Number(c.servicio_id),
+            nombre: c.servicio_nombre,
+          },
+          comentariosCliente: c.comentarios_cliente,
+        })),
+      };
     });
-    if (!v) throw new NotFoundException({ message: 'Vehículo no encontrado' });
-
-    const esPropietario = v.propietarioUsuarioId === solicitante.id;
-    const esTaller = solicitante.rol === Rol.ADMIN || solicitante.rol === Rol.MECANICO;
-    if (!esPropietario && !esTaller) {
-      throw new ForbiddenException({ message: 'No puedes ver el historial de este vehículo' });
-    }
-
-    // 2) Fallback por placa: trae citas con vehiculoId = v.id
-    //    O citas preliminares con vehiculoId = null y placaPreliminar = v.placa
-    const baseWhereVehiculo = { vehiculoId: v.id };
-    const baseWherePlaca = { vehiculoId: null as any, placaPreliminar: v.placa };
-
-    const [trabajosRealizados, proximosServicios] = await Promise.all([
-      this.prisma.citaMantenimiento.findMany({
-        where: {
-          OR: [
-            { ...baseWhereVehiculo, estado: 'TERMINADA' },
-            { ...baseWherePlaca, estado: 'TERMINADA' },
-          ],
-        },
-        orderBy: [{ fechaMantenimiento: 'desc' }, { programadaPara: 'desc' }, { creadoEn: 'desc' }],
-        select: {
-          id: true,
-          tipo: true,
-          fechaMantenimiento: true,
-          programadaPara: true,
-          trabajosRealizados: true,
-          evidenciaMime: true,
-          evidenciaNombre: true,
-          mecanico: { select: { nombreCompleto: true } },
-        },
-      }),
-      this.prisma.citaMantenimiento.findMany({
-        where: {
-          OR: [
-            { ...baseWhereVehiculo, estado: { in: ['SOLICITADA', 'EN_PROGRESO'] } },
-            { ...baseWherePlaca, estado: { in: ['SOLICITADA', 'EN_PROGRESO'] } },
-          ],
-        },
-        orderBy: [{ programadaPara: 'asc' }, { creadoEn: 'asc' }],
-        select: {
-          id: true,
-          tipo: true,
-          estado: true,
-          programadaPara: true,
-          comentario: true,
-          mecanico: { select: { nombreCompleto: true } },
-        },
-      }),
-    ]);
-
-    // 3) Respuesta en el shape que espera tu UI
-    return {
-      vehiculo: { id: v.id, placa: v.placa, marca: v.marca, modelo: v.modelo, anio: v.anio, color: v.color },
-      trabajosRealizados: trabajosRealizados.map(t => ({
-        id: t.id,
-        tipo: t.tipo,
-        fechaMantenimiento: t.fechaMantenimiento ?? t.programadaPara ?? null,
-        trabajosRealizados: t.trabajosRealizados ?? null,
-        mecanico: t.mecanico ?? { nombreCompleto: '—' },
-        evidenciaDisponible: Boolean((t as any).evidenciaMime || (t as any).evidenciaNombre),
-      })),
-      proximosServicios: proximosServicios.map(s => ({
-        id: s.id,
-        tipo: s.tipo,
-        estado: s.estado,
-        programadaPara: s.programadaPara ?? null,
-        comentario: s.comentario ?? '',
-        mecanico: s.mecanico ?? null,
-      })),
-    };
   }
 }

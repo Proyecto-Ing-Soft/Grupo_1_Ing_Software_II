@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../core/auth/AuthContext";
-import { apiCitas } from "../mantenimientos/api";
+import { apiCitas } from "../citas/api";
 import { apiVehiculos, VehiculoMin } from "./api";
 import "./registrarVehiculo.css";
 

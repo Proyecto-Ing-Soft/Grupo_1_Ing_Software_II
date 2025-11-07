@@ -1,25 +1,50 @@
 // PRINCIPIOS:
-// - SRP: solo orquesta HTTP ⇄ Service. Nada de reglas de negocio aquí.
-// - DRY: delega todo en CitasService, evitando duplicar validaciones.
-// - Demeter: el controller solo “conoce” a su Service (no navega por capas internas).
-// - Seguridad por capas: aquí puedes aplicar Jwt/RolesGuard sin tocar el Service (OCP).
+// - SRP: el controlador solo orquesta HTTP ⇄ CitasService.
+// - Demeter: conoce solo a CitasService y a los guards, no a detalles de infraestructura.
+// - Seguridad por capas: JwtAuthGuard se aplica aquí, la lógica de dominio vive en el servicio.
 
-import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, ParseIntPipe, Post, Req, StreamableFile, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  StreamableFile,
+  UnauthorizedException,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { CitasService } from './citas.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { AsignarMecanicoDto } from '../asignaciones/dto/asignar-mecanico.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
-@Controller('citas-mantenimiento')
+@Controller('citas')
 export class CitasController {
   constructor(private readonly svc: CitasService) {}
 
+  private getSlugTaller(req: any): string {
+    const headerSlug = req.headers['x-taller-slug'] as string | undefined;
+    const slug = headerSlug?.trim() || (req.user?.tallerSlug as string | undefined)?.trim();
+    if (!slug) {
+      throw new BadRequestException('Debe especificarse el taller mediante header x-taller-slug');
+    }
+    return slug;
+  }
+
   @Post()
   crear(@Body() dto: CrearCitaDto, @Req() req: any) {
-    const userId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(userId)) throw new UnauthorizedException('Usuario no válido');
-    return this.svc.crear(dto, userId);
+    const clienteId = Number(req.user?.id ?? req.user?.sub);
+    if (!Number.isFinite(clienteId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
+    const slugTaller = this.getSlugTaller(req);
+    return this.svc.crear(dto, clienteId, slugTaller);
   }
 
   @Post(':id/asignar')
@@ -29,87 +54,80 @@ export class CitasController {
     @Req() req: any,
   ) {
     const adminId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(adminId)) throw new UnauthorizedException('Usuario no válido');
-    return this.svc.asignarMecanico(id, dto.mecanicoId, adminId);
+    if (!Number.isFinite(adminId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
+    if (req.user?.rol !== 'ADMIN_TALLER' && req.user?.rol !== 'OWNER') {
+      throw new ForbiddenException('Solo administración de taller puede asignar mecánicos');
+    }
+    const slugTaller = this.getSlugTaller(req);
+    return this.svc.asignarMecanico(id, dto.mecanicoId, adminId, slugTaller);
   }
 
-  @Post(':id/terminar')
-  terminar(
+  @Post(':id/finalizar')
+  finalizar(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: { trabajosRealizados?: string; repuestos?: string[]; evidenciaBase64?: string | null },
+    @Body()
+    dto: {
+      trabajosRealizados?: string;
+      repuestos?: string[];
+      evidenciaBase64?: string | null;
+    },
     @Req() req: any,
   ) {
     const mecanicoId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(mecanicoId)) throw new UnauthorizedException('Usuario no válido');
-    return this.svc.terminar(id, mecanicoId, dto);
+    if (!Number.isFinite(mecanicoId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
+    const slugTaller = this.getSlugTaller(req);
+    return this.svc.finalizar(id, mecanicoId, dto, slugTaller);
   }
 
   @Get('mias')
   mias(@Req() req: any) {
     const clienteId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(clienteId)) throw new UnauthorizedException('Usuario no válido');
+    if (!Number.isFinite(clienteId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
     return this.svc.listarDelCliente(clienteId);
   }
 
   @Get('asignadas')
   asignadas(@Req() req: any) {
     const mecanicoId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(mecanicoId)) throw new UnauthorizedException('Usuario no válido');
+    if (!Number.isFinite(mecanicoId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
     return this.svc.listarDelMecanico(mecanicoId);
   }
 
   @Get('admin/pendientes')
   pendientes(@Req() req: any) {
-    if (req.user?.rol !== 'ADMIN') throw new ForbiddenException('Solo admin');
+    if (req.user?.rol !== 'ADMIN_TALLER' && req.user?.rol !== 'OWNER') {
+      throw new ForbiddenException('Solo administración de taller puede ver pendientes');
+    }
     return this.svc.listarPendientes();
   }
 
   @Get(':id')
   async detalle(@Param('id', ParseIntPipe) id: number) {
-    const c = await this.svc.buscarPorIdConVehiculo(id);
-    if (!c) throw new NotFoundException('Cita no encontrada');
-
-    return {
-      id: c.id,
-      clienteId: c.clienteId ?? null,
-      programadaPara: c.programadaPara ?? null,
-
-      vehiculo: c.vehiculo
-        ? {
-            placa: c.vehiculo.placa ?? null,
-            marca: c.vehiculo.marca ?? null,
-            modelo: c.vehiculo.modelo ?? null,
-            anio: c.vehiculo.anio ?? null,
-            color: c.vehiculo.color ?? null,
-            vin: c.vehiculo.vin ?? null,
-          }
-        : null,
-
-      placaPreliminar: c.placaPreliminar ?? null,
-      marcaPreliminar: c.marcaPreliminar ?? null,
-      modeloPreliminar: c.modeloPreliminar ?? null,
-      anioPreliminar: c.anioPreliminar ?? null,
-      colorPreliminar: c.colorPreliminar ?? null,
-      vinPreliminar: c.vinPreliminar ?? null,
-
-      trabajosRealizados: (c as any).trabajosRealizados ?? null,
-
-      evidenciaDisponible: Boolean((c as any).evidenciaMime || (c as any).evidenciaNombre),
-    };
+    const cita = await this.svc.buscarPorIdConVehiculo(id);
+    if (!cita) {
+      throw new NotFoundException('Cita no encontrada');
+    }
+    return cita;
   }
-
 
   @Get(':id/evidencia')
   async evidencia(@Param('id', ParseIntPipe) id: number): Promise<StreamableFile> {
-    const c = await this.svc.buscarPorIdConVehiculo(id);
-    if (!c || !c.evidenciaBytes) throw new NotFoundException('Sin evidencia');
+    const blob = await this.svc.obtenerEvidencia(id);
+    if (!blob) {
+      throw new NotFoundException('Sin evidencia para esta cita');
+    }
 
-    const mime = (c as any).evidenciaMime ?? 'application/octet-stream';
-    const name = (c as any).evidenciaNombre ?? `evidencia-${id}`;
-
-    return new StreamableFile(Buffer.from(c.evidenciaBytes as any), {
-      type: mime,
-      disposition: `inline; filename="${name}"`,
+    return new StreamableFile(blob.buffer, {
+      type: blob.mime,
+      disposition: `inline; filename="${blob.nombre}"`,
     });
   }
 }

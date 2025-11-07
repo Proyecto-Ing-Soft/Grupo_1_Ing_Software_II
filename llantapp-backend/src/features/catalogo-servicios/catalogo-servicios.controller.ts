@@ -1,8 +1,6 @@
-// PRINCIPIOS
-// - SRP: orquesta HTTP ⇄ Service.
-// - Seguridad: JwtAuthGuard + RolesGuard + @RolRequerido.
-
+// SRP: controlador HTTP del catálogo de servicios; delega en el servicio de dominio.
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -12,12 +10,12 @@ import {
   Param,
   ParseIntPipe,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { RolRequerido } from '../../common/decorators/rol-requerido.decorator';
-import { Rol } from '../../common/enums/rol.enum';
 import { CatalogoServiciosService } from './catalogo-servicios.service';
 import {
   ActualizarServicioDto,
@@ -31,54 +29,110 @@ import {
 export class CatalogoServiciosController {
   constructor(private readonly svc: CatalogoServiciosService) {}
 
-  // === ADMIN: Crear servicio ===
-  @RolRequerido(Rol.ADMIN)
+  // DIP: obtenemos el taller desde el request sin acoplar endpoints a un tenant fijo.
+  private getSlugTaller(req: any): string {
+    const headerSlug = req.headers['x-taller-slug'] as
+      | string
+      | undefined;
+    const slug =
+      headerSlug?.trim() ||
+      (req.user?.tallerSlug as string | undefined)?.trim();
+    if (!slug) {
+      throw new BadRequestException(
+        'Debe especificarse el taller mediante header x-taller-slug',
+      );
+    }
+    return slug;
+  }
+
+  // === ADMIN/OWNER: Crear servicio ===
+  @RolRequerido('OWNER', 'ADMIN_TALLER')
   @Post()
-  crear(@Body() dto: CrearServicioDto) {
-    return this.svc.crear(dto);
+  crear(@Req() req: any, @Body() dto: CrearServicioDto) {
+    const slugTaller = this.getSlugTaller(req);
+    return this.svc.crear(slugTaller, dto);
   }
 
-  // === ADMIN: Actualizar servicio ===
-  @RolRequerido(Rol.ADMIN)
+  // === ADMIN/OWNER: Actualizar servicio ===
+  @RolRequerido('OWNER', 'ADMIN_TALLER')
   @Put(':id')
-  actualizar(@Param('id', ParseIntPipe) id: number, @Body() dto: ActualizarServicioDto) {
-    return this.svc.actualizar(id, dto);
+  actualizar(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ActualizarServicioDto,
+  ) {
+    const slugTaller = this.getSlugTaller(req);
+    return this.svc.actualizar(slugTaller, id, dto);
   }
 
-  // === ADMIN: Cambiar estado (activar/inactivar) ===
-  @RolRequerido(Rol.ADMIN)
+  // === ADMIN/OWNER: Cambiar estado (activar/inactivar) ===
+  @RolRequerido('OWNER', 'ADMIN_TALLER')
   @Patch(':id/estado')
-  cambiarEstado(@Param('id', ParseIntPipe) id: number, @Body() dto: CambiarEstadoDto) {
-    return this.svc.cambiarEstado(id, dto.activo);
+  cambiarEstado(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CambiarEstadoDto,
+  ) {
+    const slugTaller = this.getSlugTaller(req);
+    return this.svc.cambiarEstado(slugTaller, id, dto.activo);
   }
 
-  // === Listar: autenticados ===
+  // === Listar servicios del taller (autenticados) ===
   @Get()
-  listar(@Query('q') q?: string, @Query('activo') activo?: string) {
-    const onlyActive = typeof activo === 'string' ? activo.toLowerCase() === 'true' : undefined;
-    return this.svc.listar({ q, activo: onlyActive });
+  listar(
+    @Req() req: any,
+    @Query('q') q?: string,
+    @Query('activo') activo?: string,
+  ) {
+    const slugTaller = this.getSlugTaller(req);
+    const onlyActive =
+      typeof activo === 'string'
+        ? activo.toLowerCase() === 'true'
+        : undefined;
+    return this.svc.listar(slugTaller, {
+      q,
+      activo: onlyActive,
+    });
   }
 
-  // === Detalle: autenticados ===
+  // === Detalle de servicio (autenticados) ===
   @Get(':id')
-  detalle(@Param('id', ParseIntPipe) id: number) {
-    return this.svc.detalle(id);
+  detalle(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const slugTaller = this.getSlugTaller(req);
+    return this.svc.detalle(slugTaller, id);
   }
 
-  // === ADMIN: Habilitar/Deshabilitar mecánico (insert/delete en pivote) ===
-  @RolRequerido(Rol.ADMIN)
+  // === ADMIN/OWNER: Habilitar/Deshabilitar mecánico para un servicio ===
+  @RolRequerido('OWNER', 'ADMIN_TALLER')
   @Post(':id/habilitar-mecanico')
   habilitarMecanico(
+    @Req() req: any,
     @Param('id', ParseIntPipe) servicioId: number,
     @Body() dto: HabilitarMecanicoDto,
   ) {
-    return this.svc.setHabilitacion(servicioId, dto.mecanicoId, dto.habilitado ?? true);
+    const slugTaller = this.getSlugTaller(req);
+    return this.svc.setHabilitacion(
+      slugTaller,
+      servicioId,
+      dto.mecanicoId,
+      dto.habilitado ?? true,
+    );
   }
 
-  // === ADMIN: Ver mecánicos asociados al servicio ===
-  @RolRequerido(Rol.ADMIN)
+  // === ADMIN/OWNER: Ver mecánicos asociados al servicio ===
+  @RolRequerido('OWNER', 'ADMIN_TALLER')
   @Get(':id/mecanicos')
-  mecanicos(@Param('id', ParseIntPipe) servicioId: number) {
-    return this.svc.listarMecanicosHabilitados(servicioId);
+  mecanicos(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) servicioId: number,
+  ) {
+    const slugTaller = this.getSlugTaller(req);
+    return this.svc.listarMecanicosHabilitados(
+      slugTaller,
+      servicioId,
+    );
   }
 }

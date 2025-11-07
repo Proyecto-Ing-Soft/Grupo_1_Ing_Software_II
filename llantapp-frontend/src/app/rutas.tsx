@@ -20,14 +20,14 @@ import RegistroPagina from '../features/autenticacion/RegistroPagina';
 import InicioProtegido from '../common/paginas/InicioProtegido';
 import RegistrarVehiculoPagina from '../features/vehiculos/RegistrarVehiculoPagina';
 import NotificacionesLeerPagina from '../features/notificaciones/NotificacionesLeerPagina';
-import AgendarCitaPagina from '../features/mantenimientos/AgendarCitaPagina';
-import MisCitasPagina from '../features/mantenimientos/MisCitasPagina';
-import CitasMecanicoPagina from '../features/mantenimientos/CitasMecanicoPagina';
+import AgendarCitaPagina from '../features/citas/AgendarCitaPagina';
+import MisCitasPagina from '../features/citas/MisCitasPagina';
+import CitasMecanicoPagina from '../features/citas/CitasMecanicoPagina';
 import AdminCitasPendientes from '../features/asignaciones/AsociarMecanicoPagina';
 import CatalogoServiciosPagina from '../features/catalogo-servicios/CatalogoServiciosPagina';
 import AsociarMecanicoServicioPagina from '../features/asignaciones/AsociarMecanicoHector';
 import GestionUsuariosPagina from '../features/gestion/GestionUsuariosPagina';
-import RegistrarMantenimientoPagina from '../features/mantenimientos/RegistrarMantenimientoPagina';
+import RegistrarMantenimientoPagina from '../features/citas/RegistrarMantenimientoPagina';
 import MisVehiculosPagina from '../features/vehiculos/MisVehiculosPagina';
 import HistorialDeServiciosPagina from '../features/historial/HistorialDeServiciosPagina';
 

@@ -1,27 +1,36 @@
-export type Prioridad = 'BAJA' | 'MEDIA' | 'ALTA';
-export type Estado = 'PENDIENTE' | 'LEIDA';
+// Tipos alineados a la BD: los códigos de estado/canal/tipo_mensaje vienen de tablas app.*
+// No se definen enums ni listas estáticas en código.
 
 export interface CrearNotificacion {
+  tallerSlug: string;
   usuarioId: number;
-  mensaje: string;
-  prioridad?: Prioridad;
-  vehiculoId?: number | null;
-  citaId?: number | null;
+  titulo: string;
+  mensajeHtml: string;
+  tipoMensajeCodigo?: string;
+  canalCodigo?: string;
 }
 
 export interface NotificacionEntidad {
   id: number;
   usuarioId: number;
-  mensaje: string;
-  prioridad: Prioridad;
-  estado: Estado;
+  titulo: string;
+  mensajeHtml: string;
+  estadoCodigo: string;
+  estadoNombre: string;
   creadoEn: Date;
-  vehiculoId?: number | null;
-  citaId?: number | null;
 }
 
 export interface INotificacionRepo {
   crear(data: CrearNotificacion): Promise<void>;
-  listarPorUsuario(usuarioId: number): Promise<NotificacionEntidad[]>;
-  marcarLeida(id: number, usuarioId: number): Promise<void>;
+
+  listarPorUsuario(
+    tallerSlug: string,
+    usuarioId: number,
+  ): Promise<NotificacionEntidad[]>;
+
+  marcarLeida(
+    tallerSlug: string,
+    id: number,
+    usuarioId: number,
+  ): Promise<void>;
 }

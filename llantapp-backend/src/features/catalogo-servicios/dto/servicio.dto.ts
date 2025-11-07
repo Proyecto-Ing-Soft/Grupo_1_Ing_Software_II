@@ -1,7 +1,4 @@
-// PRINCIPIOS
-// - SRP: DTOs definen contrato/validación de entrada.
-// - KISS: nombres alineados 1:1 con migración.
-
+// SRP: DTOs definen contrato/validación de entrada, sin acoplarse a detalles de persistencia.
 import {
   IsBoolean,
   IsInt,
@@ -15,11 +12,13 @@ import {
 import { Transform } from 'class-transformer';
 
 const toNum = ({ value }: { value: any }) =>
-  value === undefined || value === null || value === '' ? undefined : Number(value);
+  value === undefined || value === null || value === ''
+    ? undefined
+    : Number(value);
 
 export class CrearServicioDto {
   @IsString()
-  @Matches(/^[A-Z0-9_-]{2,32}$/) // único, estable para integraciones
+  @Matches(/^[A-Z0-9_-]{2,32}$/)
   @Transform(({ value }) => String(value ?? '').trim().toUpperCase())
   codigo!: string;
 
@@ -38,11 +37,11 @@ export class CrearServicioDto {
   @Transform(toNum)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  precioBase!: number; // NOT NULL en DB
+  precioBase!: number;
 
   @IsInt()
   @Min(1)
-  duracionEstimadaMin!: number; // NOT NULL en DB
+  duracionEstimadaMin!: number;
 }
 
 export class ActualizarServicioDto {
@@ -50,7 +49,9 @@ export class ActualizarServicioDto {
   @IsString()
   @Matches(/^[A-Z0-9_-]{2,32}$/)
   @Transform(({ value }) =>
-    value === undefined ? undefined : String(value).trim().toUpperCase(),
+    value === undefined
+      ? undefined
+      : String(value).trim().toUpperCase(),
   )
   codigo?: string;
 
@@ -92,5 +93,6 @@ export class HabilitarMecanicoDto {
 
   @IsOptional()
   @IsBoolean()
-  habilitado?: boolean; // true => inserta (habilita), false => elimina (deshabilita)
+  // true => inserta relación, false => elimina relación.
+  habilitado?: boolean;
 }

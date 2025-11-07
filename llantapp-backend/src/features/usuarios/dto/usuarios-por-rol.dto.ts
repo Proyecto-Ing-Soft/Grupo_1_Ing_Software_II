@@ -1,8 +1,8 @@
-import { IsEnum, IsOptional } from 'class-validator';
-import { Rol } from '../../../common/enums/rol.enum';
+// SRP: DTO para filtrar usuarios por el código de rol definido en la base de datos.
+import { IsOptional, IsString } from 'class-validator';
 
 export class UsuariosPorRolQueryDto {
   @IsOptional()
-  @IsEnum(Rol, { message: 'rol inválido. Usa: ADMIN|MECANICO|CLIENTE' })
-  rol?: Rol;
+  @IsString()
+  rol?: string; // Debe coincidir con rol.codigo en BD.
 }

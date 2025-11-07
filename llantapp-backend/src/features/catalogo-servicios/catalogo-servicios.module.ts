@@ -1,15 +1,13 @@
-// PRINCIPIOS
-// - SRP: declara controller y service del catálogo.
-// - DI: PrismaService como provider compartido.
-
+// DIP/SRP: módulo del catálogo, ensambla controlador y servicio usando PrismaModule compartido.
 import { Module } from '@nestjs/common';
-import { PrismaService } from '../../core/prisma/prisma/prisma.service';
 import { CatalogoServiciosService } from './catalogo-servicios.service';
 import { CatalogoServiciosController } from './catalogo-servicios.controller';
+import { PrismaModule } from '../../core/prisma/prisma.module';
 
 @Module({
+  imports: [PrismaModule],
   controllers: [CatalogoServiciosController],
-  providers: [PrismaService, CatalogoServiciosService],
+  providers: [CatalogoServiciosService],
   exports: [CatalogoServiciosService],
 })
 export class CatalogoServiciosModule {}

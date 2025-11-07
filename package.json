@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "setup": "npm install",
-    "db:prepare": "npm run prisma:dev -w llantapp-backend && npm run prisma:gen -w llantapp-backend",
+  "db:prepare": "npm run prisma:deploy -w llantapp-backend && npm run prisma:gen -w llantapp-backend",
     "dev:back": "npm run start:dev -w llantapp-backend",
     "dev:front": "npm run dev -w llantapp-frontend",
     "open:front": "powershell -NoProfile -Command \"Start-Sleep -Seconds 2; Start-Process http://localhost:5173\"",

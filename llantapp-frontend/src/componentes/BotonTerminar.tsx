@@ -3,7 +3,7 @@
 // - KISS: lógica de habilitar por fecha clara y local.
 // - Defense in depth: validación UI + validación servidor (backend) → robustez.
 // - Demeter: delega “terminar” al apiCitas (fachada), no conoce fetch/token.
-import { apiCitas } from '../features/mantenimientos/api';
+import { apiCitas } from '../features/citas/api';
 
 export function BotonTerminar({ cita }: { cita: any }) {
   const hoy = new Date().toISOString().slice(0, 10);

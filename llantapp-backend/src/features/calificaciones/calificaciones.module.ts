@@ -1,16 +1,17 @@
-// calificaciones.module.ts
 import { Module, forwardRef } from '@nestjs/common';
 import { CalificacionesController } from './calificaciones.controller';
 import { CalificacionesService } from './calificaciones.service';
-import { PrismaService } from '../../core/prisma/prisma/prisma.service';
-
-// 👇 importa el módulo de notificaciones con forwardRef si te preocupa un futuro ciclo
+import { PrismaModule } from '../../core/prisma/prisma.module';
 import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 
+// DIP: ensambla dependencias sin acoplar la lógica a detalles de infraestructura.
 @Module({
-  imports: [forwardRef(() => NotificacionesModule)], // 👈 FALTA
+  imports: [
+    PrismaModule,
+    forwardRef(() => NotificacionesModule),
+  ],
   controllers: [CalificacionesController],
-  providers: [CalificacionesService, PrismaService],
+  providers: [CalificacionesService],
   exports: [CalificacionesService],
 })
 export class CalificacionesModule {}

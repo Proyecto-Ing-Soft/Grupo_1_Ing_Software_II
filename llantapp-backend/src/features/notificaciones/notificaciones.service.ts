@@ -1,44 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { NotificacionPrismaRepo } from './repos/notificacion.prisma.repo';
 
-// SRP + Facade: interfaz simple para publicar notificaciones desde el dominio
-export interface EnvioNotificacion {
-  usuarioId: number;
-  titulo: string;
-  mensaje: string;
-  vehiculoId?: number;
-  citaId?: number;
-}
+// PRINCIPIO (SRP): casos de uso HTTP para listar y marcar notificaciones.
 
 @Injectable()
 export class NotificacionesService {
   constructor(private readonly repo: NotificacionPrismaRepo) {}
 
-  async enviar(data: EnvioNotificacion): Promise<void> {
+  async listarPorUsuario(tallerSlug: string, usuarioId: number) {
+    const filas = await this.repo.listarPorUsuario(tallerSlug, usuarioId);
 
-    const cuerpo = `${data.titulo}: ${data.mensaje}`;
-    await this.repo.crear({
-      usuarioId: data.usuarioId,
-      mensaje: cuerpo,
-      vehiculoId: data.vehiculoId,
-      citaId: data.citaId,
-    });
-  }
-
-  async listarPorUsuario(usuarioId: number) {
-    const filas = await this.repo.listarPorUsuario(usuarioId);
-    return filas.map(n => ({
+    return filas.map((n) => ({
       id: n.id,
-      mensaje: n.mensaje,
-      estado: n.estado,
+      mensaje: n.mensajeHtml,
+      estado: n.estadoCodigo,
       creadoEn: n.creadoEn.toISOString(),
-      vehiculoId: n.vehiculoId ?? null,
-      citaId: n.citaId ?? null,
+      // Sin columnas dedicadas en la BD nueva; se exponen como null.
+      vehiculoId: null,
+      citaId: null,
     }));
   }
 
-  async marcarLeida(id: number, usuarioId: number) {
-    await this.repo.marcarLeida(id, usuarioId);
+  async marcarLeida(
+    tallerSlug: string,
+    id: number,
+    usuarioId: number,
+  ): Promise<{ ok: boolean }> {
+    await this.repo.marcarLeida(tallerSlug, id, usuarioId);
     return { ok: true };
   }
 }

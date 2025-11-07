@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../core/auth/AuthContext';
-import { descargarEvidenciaCita, obtenerDetalleCita } from '../mantenimientos/api';
+import { descargarEvidenciaCita, obtenerDetalleCita } from '../citas/api';
 import { apiHistorial, HistorialData, ProximoServicio, TrabajoRealizado } from './api';
 import './historialDeServicios.css';
 

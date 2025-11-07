@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { UsuarioService } from './usuario.service';
 import { UsuarioController } from './usuario.controller';
-import { PrismaModule } from '../../core/prisma/prisma/prisma.module';
+import { PrismaModule } from '../../core/prisma/prisma.module';
 
+// DIP: expone UsuarioService desacoplado de detalles de Prisma.
 @Module({
   imports: [PrismaModule],
   providers: [UsuarioService],

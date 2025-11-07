@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { UsuarioModule } from '../usuarios/usuario.module';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 
+// DIP: ensambla dependencias de autenticación.
 @Module({
   imports: [UsuarioModule],
   controllers: [AuthController],

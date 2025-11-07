@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { apiCitas } from "../mantenimientos/api";
+import { apiCitas } from "../citas/api";
 import { apiUsuarios } from "./api";
 import "./asociarMecanico.css";
 import noResultadosImg from "../../assets/priv/cliente/no-resultados.png";

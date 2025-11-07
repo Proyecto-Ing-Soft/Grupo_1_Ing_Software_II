@@ -1,6 +1,6 @@
-// SRP: DTO dedicado a una acción de negocio puntual (asignar).
-// KISS: un solo campo, intención clarita.
+// SRP: DTO dedicado a la acción de asignar mecánico.
 import { IsInt } from 'class-validator';
+
 export class AsignarMecanicoDto {
   @IsInt()
   mecanicoId!: number;
