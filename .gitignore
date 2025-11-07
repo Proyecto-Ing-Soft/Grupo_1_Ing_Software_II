@@ -1,3 +1,7 @@
 *.rar
 node_modules
 .venv
+
+127.0.0.1_700*.dump.tmp
+127.0.0.1_700*.journal
+127.0.0.1_700*.journal.meta
