@@ -2,18 +2,20 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useCalificacion } from '../hooks/useCalificacion';
 import { EstrellasCalificacion } from './EstrellasCalificacion';
 import { FormularioCalificacion } from './FormularioCalificacion';
-import { descargarEvidenciaCita, obtenerDetalleCita } from '../../citas/api';
+import { apiMantenimientos } from '../../mantenimientos/api';
+import { mediaApi } from '../mediaApi';
 import '../calificarServicio.css';
 
 type Media = { url: string; mime: string };
 
 export const CalificarServicioModal: React.FC<{
-  citaId: number;
+  mantenimientoId: number;
   token?: string;
   onClose?: () => void;
-}> = ({ citaId, token, onClose }) => {
-  const { loading, calif, crear, error } = useCalificacion(citaId, token);
+}> = ({ mantenimientoId, token, onClose }) => {
+  const { loading, calif, crear, error } = useCalificacion(mantenimientoId, token);
 
+const [expirado72h, setExpirado72h] = useState(false);
   const [detLoading, setDetLoading] = useState(true);
   const [trabajos, setTrabajos] = useState<string | null>(null);
   const [media, setMedia] = useState<Media | null>(null);
@@ -21,38 +23,56 @@ export const CalificarServicioModal: React.FC<{
 
   // Cargar detalle y evidencia para mostrar aunque NO haya calificación aún.
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      setDetLoading(true); setDetErr(null);
-      try {
-        // 1) detalle (contiene trabajosRealizados)
-        const det = await obtenerDetalleCita(citaId, token);
-        if (!alive) return;
-        setTrabajos(det?.trabajosRealizados ?? null);
+  let alive = true;
 
-        // 2) evidencia (si hay)
-        try {
-          const ev = await descargarEvidenciaCita(citaId, token);
-          if (!alive) return;
-          setMedia({ url: ev.url, mime: ev.mime });
-        } catch {
-          // sin evidencia, no es error fatal
+  (async () => {
+    setDetLoading(true); setDetErr(null);
+    try {
+      // 1) detalle (trabajos + fecha fin)
+      const det = await apiMantenimientos.obtenerDetalle(mantenimientoId, token);
+      if (!alive) return;
+      setTrabajos(det?.trabajosRealizados ?? null);
+
+      // 2) evidencia (primera imagen/video si hay)
+      try {
+        const em = await mediaApi.porMantenimiento(mantenimientoId, token);
+        if (!alive) return;
+        const first = em?.media?.[0];
+        if (first?.url) {
+          // best-effort para mime
+          const mime = first?.url?.toLowerCase().match(/\.(mp4|webm|ogg)$/)
+            ? 'video/*'
+            : 'image/*';
+          setMedia({ url: first.url, mime });
+        } else {
           setMedia(null);
         }
-      } catch (e: any) {
-        if (!alive) return;
-        setDetErr(e?.message ?? 'No se pudo cargar la información del servicio');
-      } finally {
-        if (alive) setDetLoading(false);
+      } catch {
+        setMedia(null);
       }
-    })();
-    return () => {
-      alive = false;
-      // limpia el objectURL si lo creamos
-      if (media?.url) URL.revokeObjectURL(media.url);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [citaId, token]);
+
+      // 3) regla 72h: si no hay calificación y ya pasaron 72h desde fechaFin, bloquear
+      if (det?.fechaFin) {
+        const finMs = new Date(det.fechaFin).getTime();
+        const diffHrs = (Date.now() - finMs) / 36e5;
+        setExpirado72h(diffHrs >= 72);
+      } else {
+        setExpirado72h(false);
+      }
+    } catch (e: any) {
+      if (!alive) return;
+      setDetErr(e?.message ?? 'No se pudo cargar la información del mantenimiento');
+    } finally {
+      if (alive) setDetLoading(false);
+    }
+  })();
+
+  return () => {
+    alive = false;
+    if (media?.url) URL.revokeObjectURL(media.url);
+  };
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [mantenimientoId, token]);
 
   const isVideo = useMemo(() => !!media?.mime?.startsWith('video/'), [media?.mime]);
 

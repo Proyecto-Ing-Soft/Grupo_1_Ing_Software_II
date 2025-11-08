@@ -1,10 +1,11 @@
 export interface Calificacion {
   id: number;
-  citaId: number;
-  clienteId: number;
-  estrellas: number;
+  mantenimientoId: number;          // ← nuevo en base a Prisma
+  clienteUsuarioId: number;         // ← nuevo en base a Prisma
+  estrellas: number;                // ← mapeo de puntuacion (1–5)
   comentario?: string | null;
-  creadaEn: string;
+  creadaEn: string;                 // ← mapeo de fecha_creacion (ISO)
+  visible?: boolean;                // ← opcional
 }
 
 export interface Notificacion {
