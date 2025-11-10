@@ -1,147 +1,108 @@
 // PATRONES/PRINCIPIOS:
-// - Facade: este mini-módulo “fachadea” las rutas HTTP para la UI.
-// - DRY: centraliza rutas y parseo de tipos (vehiculoId a Number).
-// - KISS: métodos autoexplicativos y de un solo propósito.
+// - Facade: agrupa todas las rutas HTTP relacionadas a citas.
+// - DRY: centraliza endpoints y manejo de autenticación.
+// - KISS: interfaz simple y directa.
 
-import { getJSON, postJSON } from '../../core/http/_http';
-import { tokenMemoria } from '../../core/utils/storageMemoria';
+import { tokenMemoria } from "../../core/utils/storageMemoria";
+import { apiCatalogoServicios } from "../catalogo-servicios/api";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
+// === Tipos ===
 export type EvidenciaDescarga = { url: string; mime: string; blob: Blob };
-type Tipo = 'PREVENTIVO' | 'CORRECTIVO' | 'LEGAL_ITV' | 'EXTRAS';
 
-export type TerminarCitaPayload = {
-  trabajosRealizados: string;
-  repuestos?: string[];
-  evidenciaBase64?: string | null;
-};
+export interface CrearCitaPayload {
+  vehiculoId?: number;
+  servicioId: number;
+  comentario?: string;
+  fechaProgramada: string;
+  // Si el cliente no tiene vehículo aún
+  placaPreliminar?: string;
+  marcaPreliminar?: string;
+  modeloPreliminar?: string;
+  anioPreliminar?: number;
+  colorPreliminar?: string;
+  vinPreliminar?: string;
+}
 
 export interface CitaDetalle {
   id: number;
-  clienteId?: number | null;
-
-  // si ya existe vehiculo asociado
-  vehiculo?: {
-    placa?: string | null;
-    marca?: string | null;
-    modelo?: string | null;
-    anio?: number | null;
-    color?: string | null;
-    vin?: string | null;
-  } | null;
-
-  // campos preliminares (como los usas en crear)
-  placaPreliminar?: string | null;
-  marcaPreliminar?: string | null;
-  modeloPreliminar?: string | null;
-  anioPreliminar?: number | null;
-  colorPreliminar?: string | null;
-  vinPreliminar?: string | null;
-
-  programadaPara?: string | null;
+  fechaProgramada: string;
+  vehiculo?: { placa: string | null } | null;
+  servicio?: { nombre: string | null } | null;
+  estado?: { codigo: string } | null;
+  comentariosCliente?: string | null;
 }
 
 function readAuthToken(explicit?: string) {
-  return explicit ?? tokenMemoria.get() ?? localStorage.getItem('access_token') ?? undefined;
+  return (
+    explicit ??
+    tokenMemoria.get() ??
+    localStorage.getItem("access_token") ??
+    undefined
+  );
 }
 
 async function getAuthed<T>(url: string, token?: string): Promise<T> {
   const auth = readAuthToken(token);
   const r = await fetch(`${API_BASE}${url}`, {
-    method: 'GET',
+    method: "GET",
     headers: {
-      Accept: 'application/json',
+      Accept: "application/json",
       ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
     },
-    credentials: 'include',
+    credentials: "include",
   });
-  if (!r.ok) {
-    const text = await r.text().catch(() => r.statusText);
-    throw new Error(text || r.statusText);
-  }
+  if (!r.ok) throw new Error(await r.text().catch(() => r.statusText));
   return r.json() as Promise<T>;
 }
 
-async function postAuthed<T>(url: string, body?: any, token?: string): Promise<T> {
+async function postAuthed<T>(
+  url: string,
+  body?: any,
+  token?: string
+): Promise<T> {
   const auth = readAuthToken(token);
   const r = await fetch(`${API_BASE}${url}`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+      "Content-Type": "application/json",
+      Accept: "application/json",
       ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
-    credentials: 'include',
+    credentials: "include",
   });
-  if (!r.ok) {
-    const text = await r.text().catch(() => r.statusText);
-    throw new Error(text || r.statusText);
-  }
+  if (!r.ok) throw new Error(await r.text().catch(() => r.statusText));
   return r.json() as Promise<T>;
 }
 
-// PRINCIPIOS: Facade (rutas), DRY (tipos/payload unificados), KISS
+// === API ===
 export const apiCitas = {
-  crear: (payload: {
-    tipo: Tipo;
-    vehiculoId?: number;
-    placaPreliminar?: string;
-    marcaPreliminar?: string;
-    modeloPreliminar?: string;
-    anioPreliminar?: number;
-    colorPreliminar?: string;
-    vinPreliminar?: string;
-    comentario?: string;
-    programadaPara: string;
-  }) => postAuthed('/citas-mantenimiento', payload),
-
-  pendientesAdmin: () => getAuthed<any[]>('/citas-mantenimiento/admin/pendientes'),
-
-  asignar: (id: number, mecanicoId: number) =>
-    postAuthed(`/citas-mantenimiento/${id}/asignar`, { mecanicoId }),
-
-  registrarMantenimiento: (id: number, payload: TerminarCitaPayload) =>
-    postAuthed(`/citas-mantenimiento/${id}/terminar`, payload),
-
-  terminar: (id: number) => postAuthed(`/citas-mantenimiento/${id}/terminar`, {}),
-
-  mias: () => getAuthed<any[]>('/citas-mantenimiento/mias'),
-  asignadas: () => getAuthed<any[]>('/citas-mantenimiento/asignadas'),
-
-  detalle: (id: number) => getAuthed<CitaDetalle>(`/citas-mantenimiento/${id}`),
+  crear: (payload: CrearCitaPayload) => postAuthed("/citas", payload),
+  mias: () => getAuthed<any[]>("/citas/mias"),
+  asignadas: () => getAuthed<any[]>("/citas/asignadas"),
+  pendientesAdmin: () => getAuthed<any[]>("/citas/admin/pendientes"),
+  detalle: (id: number) => getAuthed<CitaDetalle>(`/citas/${id}`),
+  evidencia: (id: number) => getAuthed<Blob>(`/citas/${id}/evidencia`),
 };
 
-function getAuthToken(explicit?: string) {
-  return explicit ?? tokenMemoria.get() ?? localStorage.getItem('access_token') ?? undefined;
-}
-
-export async function descargarEvidenciaCita(citaId: number, token?: string): Promise<EvidenciaDescarga> {
-  const auth = getAuthToken(token);
-  const r = await fetch(`${API_BASE}/citas-mantenimiento/${citaId}/evidencia`, {
-    method: 'GET',
+// Utilidad para descarga de evidencia
+export async function descargarEvidenciaCita(
+  citaId: number,
+  token?: string
+): Promise<EvidenciaDescarga> {
+  const auth = readAuthToken(token);
+  const r = await fetch(`${API_BASE}/citas/${citaId}/evidencia`, {
+    method: "GET",
     headers: {
       ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
     },
-    credentials: 'include',
+    credentials: "include",
   });
   if (!r.ok) throw new Error(await r.text().catch(() => r.statusText));
   const blob = await r.blob();
-  const mime = r.headers.get('Content-Type') || 'application/octet-stream';
+  const mime = r.headers.get("Content-Type") || "application/octet-stream";
   const url = URL.createObjectURL(blob);
   return { url, mime, blob };
-}
-
-export async function obtenerDetalleCita(citaId: number, token?: string): Promise<{
-  id: number;
-  programadaPara: string | null;
-  placaPreliminar: string | null;
-  marcaPreliminar: string | null;
-  modeloPreliminar: string | null;
-  vehiculo: { placa: string | null } | null;
-  trabajosRealizados?: string | null;
-  evidenciaDisponible?: boolean;
-}> {
-  return getJSON(`/citas-mantenimiento/${citaId}`, token);
 }
