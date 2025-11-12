@@ -4,18 +4,28 @@ import { useAuth } from "../../core/auth/AuthContext";
 import heroImg from "../../assets/img/inicio.png";
 import "./estilos/inicioProtegido.css";
 
+// CAMBIO: Añadimos una función helper para construir el nombre
+// a partir de los nuevos campos de la base de datos.
+const getNombreCompleto = (perfil: { nombres?: string; apellidos?: string } | null | undefined) => {
+  if (!perfil) return "";
+  return `${perfil.nombres || ''} ${perfil.apellidos || ''}`.trim();
+};
+
 export default function InicioProtegido() {
   const { sesion, tieneRol } = useAuth();
 
   const rol = sesion?.perfil?.rol ?? "";
   const rolClase = rol ? `role-${rol.toLowerCase()}` : "";
+  
+  // CAMBIO: Usamos la función helper para obtener el nombre
+  const nombreCompleto = getNombreCompleto(sesion?.perfil);
 
   const esTaller = tieneRol(["ADMIN", "MECANICO"]);
   const tituloHero = esTaller
     ? "Gestiona tu taller desde un solo lugar"
     : "Gestiona tus vehículos desde un solo lugar";
 
-  // Animación reveal robusta: visible por defecto y se aplica también a nodos insertados tras login
+  // Animación reveal robusta (sin cambios)
   useEffect(() => {
     const scope = document.querySelector<HTMLElement>(".inicio-container") ?? document;
 
@@ -81,7 +91,8 @@ export default function InicioProtegido() {
               <div className="user-row">
                 <div className="user-pill" aria-label="usuario y rol">
                   <span className="user-emoji" aria-hidden>🚗</span>
-                  <span className="user-name">{sesion.perfil.nombreCompleto}</span>
+                  {/* CAMBIO: Usamos la variable 'nombreCompleto' */}
+                  <span className="user-name">{nombreCompleto}</span>
                   <span className="separator">•</span>
                   <span className={`role-chip ${rolClase}`} tabIndex={-1}>
                     {sesion.perfil.rol}
@@ -105,6 +116,8 @@ export default function InicioProtegido() {
         </header>
 
         <div className="acciones">
+          {/* El resto de los 'Link' y 'tieneRol' están correctos y no necesitan cambios */}
+          
           {tieneRol(["CLIENTE"]) && (
             <Link to="/vehiculos/mios" className="btn-card btn-primary reveal" data-delay="160">
               <div className="btn-icon">📋</div>
