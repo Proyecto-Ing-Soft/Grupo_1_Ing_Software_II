@@ -1,524 +1,210 @@
-// [Ruta del archivo: src/features/vehiculos/RegistrarVehiculoPagina.tsx]
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../../core/auth/AuthContext";
-// import { apiCitas } from "../mantenimientos/api"; // Lógica de precarga eliminada
-import { apiVehiculos, VehiculoMin } from "./api"; // Asumo que apiVehiculos también fue actualizada
-import "./registrarVehiculo.css";
+// [Ruta del archivo: src/features/historial/HistorialDeServiciosPagina.tsx]
+import React, { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { useAuth } from '../../core/auth/AuthContext';
+// ADVERTENCIA: Asumo que tu API de 'citas' se actualizó para reflejar la nueva
+// lógica de 'mantenimiento'. La evidencia ahora cuelga del 'mantenimiento_id'.
+import { descargarEvidenciaMantenimiento } from '../citas/api'; // <--- CAMBIO DE NOMBRE
+import { apiHistorial, HistorialData, ProximoServicio, TrabajoRealizado } from './api';
+import './historialDeServicios.css';
 
-type Rol = "ADMIN" | "MECANICO" | "CLIENTE";
-// ADAPTACIÓN: Tipos en snake_case y con nueva estructura de 'usuario'
-type UsuarioRolLite = { usuario_id: number; nombres: string; apellidos: string };
-type MarcaVehiculo = { marca_vehiculo_id: number; nombre: string };
-type ModeloVehiculo = { modelo_vehiculo_id: number; nombre: string };
-
-// ADAPTACIÓN: El formulario ahora debe manejar IDs para marca y modelo
-type FormVehiculo = {
-  placa: string;
-  marca_vehiculo_id?: number | ""; // CAMBIO: de string 'marca' a ID
-  modelo_vehiculo_id?: number | ""; // CAMBIO: de string 'modelo' a ID
-  anio?: number | "";
-  color?: string;
-  vin?: string;
-  propietario_usuario_id?: number | ""; // CAMBIO: a snake_case
+// Helper robusto para fechas (tolera null/invalid)
+const formatDate = (dateString?: string | null) => {
+ if (!dateString) return 'Sin fecha programada';
+ const d = new Date(dateString);
+ if (isNaN(d.getTime())) return 'Fecha inválida';
+ return d.toLocaleDateString('es-PE', {
+   year: 'numeric', month: 'long', day: 'numeric'
+ });
 };
 
-const ROLES_PERMITIDOS: Rol[] = ["MECANICO", "ADMIN"];
-const REDIRECT_DELAY = 1200;
-const BASE = import.meta.env.VITE_API_BASE_URL as string;
+// Para mostrar "humano" (PREVENTIVO -> Preventivo, EN_PROGRESO -> En progreso)
+const labelize = (s: string) =>
+ s.replace(/_/g, ' ').toLowerCase().replace(/^\w/, c => c.toUpperCase());
 
-// ------- helpers HTTP locales -------
-// ADVERTENCIA: Debes crear estos endpoints en tu backend.
-// Asumo que están protegidos y son específicos del tenant (manejado por el token/schema)
-async function getMarcas(token: string): Promise<MarcaVehiculo[]> {
-  // Este endpoint no existe, es un ejemplo. Debes crearlo.
-  // Debería consultar 'app.marca_vehiculo'
-  const res = await fetch(`${BASE}/vehiculos/marcas`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('No se cargaron marcas');
-  return res.json();
+/**
+* Principio: Componente de Presentación (Dumb Component)
+* Este componente solo recibe props (item) y las renderiza.
+* No sabe de dónde vino 'item', solo confía en su "contrato" (el tipo TrabajoRealizado).
+*/
+function TrabajoItemConEvidencia({ item }: { item: TrabajoRealizado }) {
+ const [media, setMedia] = useState<{ url: string; mime: string } | null>(null);
+ const [loading, setLoading] = useState(false);
+ const [err, setErr] = useState<string | null>(null);
+
+ const isVideo = media?.mime?.startsWith('video/');
+
+ const verEvidencia = async () => {
+   if (media || loading) return;
+   try {
+     setLoading(true); setErr(null);
+     // ADAPTACIÓN: La evidencia se pide por 'mantenimiento_id', que es 'item.id'
+     const ev = await descargarEvidenciaMantenimiento(item.id);
+     setMedia({ url: ev.url, mime: ev.mime });
+   } catch (e: any) {
+     setErr(e?.message ?? 'No se pudo cargar la evidencia');
+   } finally {
+     setLoading(false);
+   }
+ };
+
+ useEffect(() => () => { if (media?.url) URL.revokeObjectURL(media.url); }, [media?.url]);
+
+ const formatDate = (s?: string | null) =>
+   s ? new Date(s).toLocaleDateString('es-PE', { dateStyle: 'medium' }) : 'Sin fecha';
+
+ return (
+   <div className="timeline-item">
+     {/* ADAPTACIÓN: De 'fechaMantenimiento' a 'fecha_fin' */}
+     <div className="timeline-item__date">{formatDate(item.fecha_fin)}</div>
+     <div className="timeline-item__content">
+       <h3 className="timeline-item__title">{item.tipo}</h3>
+       <p className="timeline-item__description">
+         {/* ADAPTACIÓN: De 'trabajosRealizados' a 'descripcion_trabajos' */}
+         {item.descripcion_trabajos || 'No se especificaron detalles del trabajo.'}
+       </p>
+       {/* ADAPTACIÓN: 'mecanico' ahora es un string, no un objeto */}
+       <p className="timeline-item__meta">Atendido por: {item.mecanico ?? '—'}</p>
+
+       {/* ADAPTACIÓN: De 'evidenciaDisponible' a 'tiene_evidencia' */}
+       {item.tiene_evidencia && !media && (
+         <button className="btnGhost" onClick={verEvidencia} disabled={loading} type="button">
+           {loading ? 'Cargando evidencia…' : 'Ver evidencia'}
+         </button>
+       )}
+       {err && <div className="historial-error" role="alert" style={{ padding: 8 }}>{err}</div>}
+
+       {media && (
+         <div style={{ marginTop: 8 }}>
+           {isVideo ? (
+             <video src={media.url} controls className="evidencia-media" />
+           ) : (
+             <img src={media.url} alt="Evidencia" className="evidencia-media" />
+           )}
+         </div>
+       )}
+     </div>
+   </div>
+ );
 }
-async function getModelos(marca_id: number, token: string): Promise<ModeloVehiculo[]> {
-  // Este endpoint no existe, es un ejemplo. Debes crearlo.
-  // Debería consultar 'app.modelo_vehiculo'
-  const res = await fetch(`${BASE}/vehiculos/modelos?marca_id=${marca_id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('No se cargaron modelos');
-  return res.json();
-}
 
-async function getUsuariosPorRol(
-  rol: "CLIENTE",
-  token?: string
-): Promise<UsuarioRolLite[]> {
-  // Asumo que este endpoint ya es consciente del tenant
-  const res = await fetch(`${BASE}/usuarios?rol=${rol}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
+export default function HistorialDeServiciosPagina() {
+ const { id } = useParams<{ id: string }>();
+ const { usuario } = useAuth();
 
-export default function RegistrarVehiculoPagina() {
-  const navigate = useNavigate();
-  const { usuario, tieneRol } = useAuth();
-  const { state } = useLocation() as { state?: { citaId?: number } };
-  const timeoutRef = useRef<number | null>(null);
+ const [data, setData] = useState<HistorialData | null>(null);
+ const [cargando, setCargando] = useState(true);
+ const [error, setError] = useState<string | null>(null);
 
-  // ---------- Guard de rol ----------
-  useEffect(() => {
-    if (!tieneRol(ROLES_PERMITIDOS)) {
-      navigate("/inicio", { replace: true });
-    }
-  }, [tieneRol, navigate]);
+ (window as any).debugHistorial = { get data() { return data; } };
 
-  // ---------- Animaciones reveal (sin cambios) ----------
-  useEffect(() => {
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
-    const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
-    const obs = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        if (e.isIntersecting) (e.target as HTMLElement).classList.add("animate-in");
-        else (e.target as HTMLElement).classList.remove("animate-in");
-      }
-    }, { threshold: 0.12 });
-    nodes.forEach((n, i) => {
-      n.dataset.reveal = String(Math.min(i + 1, 5));
-      obs.observe(n);
-    });
-    return () => {
-      window.clearTimeout(t);
-      nodes.forEach(n => obs.unobserve(n));
-      obs.disconnect();
-    };
-  }, []);
+ // Principio: Hook de Efecto (Carga de datos)
+ // Este useEffect tiene la responsabilidad (SRP) de cargar los datos
+ // del historial, manejar el estado de carga y los errores.
+ // Es "agnóstico" a la forma de los datos, solo llama a 'apiHistorial'.
+ useEffect(() => {
+   let alive = true;
+   (async () => {
+     if (!id || !usuario?.token) {
+       return;
+     }
+     try {
+       setCargando(true);
+       setError(null);
 
-  // ---------- Estado del formulario ----------
-  const [form, setForm] = useState<FormVehiculo>({
-    placa: "",
-    marca_vehiculo_id: "", // CAMBIO
-    modelo_vehiculo_id: "", // CAMBIO
-    anio: "",
-    color: "",
-    vin: "",
-    propietario_usuario_id: "", // CAMBIO
-  });
+       // La 'api.ts' ya hace la traducción, aquí solo consumimos
+       const result = await apiHistorial.porVehiculo(Number(id), usuario.token);
 
-  // ---------- Datos auxiliares ----------
-  const [propietarios, setPropietarios] = useState<UsuarioRolLite[]>([]);
-  const [cargandoProp, setCargandoProp] = useState(false);
+       if (alive) setData(result);
+     } catch (err: any) {
+       let msg = 'No se pudo cargar el historial.';
+       try {
+         if (err instanceof Response) {
+           const txt = await err.clone().text();
+           try { msg = (JSON.parse(txt)?.message) || txt || msg; }
+           catch { msg = txt || msg; }
+         } else if (err?.message) {
+           msg = err.message;
+         }
+       } catch (parseErr) {
+         // Silencio
+       }
+       if (alive) setError(msg);
+     } finally {
+       if (alive) {
+         setCargando(false);
+       }
+     }
+   })();
+   return () => { alive = false; };
+ }, [usuario?.token, id]);
 
-  // NUEVO: Estado para marcas y modelos
-  const [marcas, setMarcas] = useState<MarcaVehiculo[]>([]);
-  const [modelos, setModelos] = useState<ModeloVehiculo[]>([]);
-  const [cargandoMarcas, setCargandoMarcas] = useState(false);
-  const [cargandoModelos, setCargandoModelos] = useState(false);
+is (cargando) {
+   return <div className="historial-loading">Cargando historial del vehículo...</div>;
+ }
 
-  const [banner, setBanner] = useState<string | null>(null);
-  const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
-  const [formErr, setFormErr] = useState<string | null>(null);
-  const [ok, setOk] = useState(false);
-  const [enviando, setEnviando] = useState(false);
+ if (error) {
+   return <div className="historial-error">Error: {error}</div>;
+ }
 
-  // ---------- Obtener citaId desde state o query ----------
-  const citaIdFromState = state?.citaId;
-  const citaIdFromQuery = (() => {
-    try {
-      const search = new URLSearchParams(window.location.search);
-      const n = Number(search.get("cita") ?? "");
-      return Number.isFinite(n) ? n : undefined;
-    } catch {
-      return undefined;
-    }
-  })();
-  const citaId = citaIdFromState ?? citaIdFromQuery;
+ if (!data) {
+   return <div className="historial-empty">No hay datos disponibles para este vehículo.</div>;
+'}
 
-  // ADVERTENCIA: Lógica de precarga eliminada.
-  // La nueva tabla 'cita' no tiene campos '...Preliminar'.
-  // El flujo 'crearYEnlazarCita' ahora solo usa el 'citaId'
-  // para obtener el 'cliente_usuario_id'. El resto de
-  // datos del vehículo DEBEN ser ingresados en este formulario.
-  useEffect(() => {
-    if (citaId) {
-      setBanner(`Registrando vehículo para la cita #${citaId}. Complete todos los campos.`);
-    }
-  }, [citaId]);
+ // Los console.log se han omitido por brevedad
+ return (
+   <main className="historial">
+     <header className="historial__header">
+       <p className="historial__breadcrumb">
+         <Link to="/vehiculos/mios">Mis Vehículos</Link> / Historial
+       </p>
+       <h1 className="historial__title">
+         Historial de <span className="historial__placa">{data.vehiculo.placa}</span>
+       </h1>
+       <p className="historial__sub">{data.vehiculo.marca} {data.vehiculo.modelo}</p>
+     </header>
 
-  // ---------- Cargar lista de propietarios (CLIENTE) ----------
-  useEffect(() => {
-    let cancel = false;
-    (async () => {
-      if (!usuario?.token) return;
-      try {
-        setCargandoProp(true);
-        const lista = await getUsuariosPorRol("CLIENTE", usuario.token);
-        const ordenada = [...lista].sort((a, b) =>
-          (a.nombres || '').localeCompare(b.nombres || '')
-        );
-        if (!cancel) setPropietarios(ordenada);
-      } catch (e: any) {
-        if (!cancel) setFormErr(e?.message || "Error cargando propietarios");
-      } finally {
-        if (!cancel) setCargandoProp(false);
-      }
-    })();
-    return () => { cancel = true; };
-  }, [usuario?.token]);
+     {/* Próximos Servicios */}
+     <section className="historial-section">
+       <h2 className="historial-section__title">🗓️ Próximos Mantenimientos</h2>
+       {(data.proximosServicios?.length ?? 0) === 0 ? (
+         <p className="historial-section__empty">No hay servicios programados.</p>
+       ) : (
+         <div className="timeline">
+           {data.proximosServicios.map((s: ProximoServicio) => (
+             <div key={s.id} className="timeline-item timeline-item--proximo">
+               {/* ADAPTACIÓN: De 'programadaPara' a 'fecha_programada' */}
+               <div className="timeline-item__date">{formatDate(s.fecha_programada)}</div>
+               <div className="timeline-item__content">
+                 <h3 className="timeline-item__title">
+                   {labelize(s.tipo)}{' '}
+                   <span className={`status-chip status--${s.estado.toLowerCase()}`}>{labelize(s.estado)}</span>
+                 </h3>
+                 {/* ADAPTACIÓN: De 'comentario' a 'comentarios_cliente' */}
+                 <p className="timeline-item__description">{s.comentarios_cliente || 'Sin comentarios.'}</p>
+                 {/* ADAPTACIÓN: 'mecanico' ahora es un string, no un objeto */}
+                {s.mecanico && <p className="timeline-item__meta">Mecánico: {s.mecanico}</p>}
+               </div>
+             </div>
+           ))}
+         </div>
+       )}
+     </section>
 
-  // ---------- NUEVO: Cargar Marcas ----------
-  useEffect(() => {
-    let cancel = false;
-    (async () => {
-      if (!usuario?.token) return;
-      try {
-        setCargandoMarcas(true);
-        const lista = await getMarcas(usuario.token);
-        if (!cancel) setMarcas(lista);
-      } catch (e: any) {
-        if (!cancel) setFormErr(e?.message || "Error cargando marcas");
-      } finally {
-        if (!cancel) setCargandoMarcas(false);
-      }
-    })();
-    return () => { cancel = true; };
-  }, [usuario?.token]);
-
-  // ---------- NUEVO: Cargar Modelos cuando cambia Marca ----------
-  useEffect(() => {
-    let cancel = false;
-    const marcaId = form.marca_vehiculo_id;
-    (async () => {
-      if (!usuario?.token || !marcaId) {
-        setModelos([]); // Limpia modelos si no hay marca
-        return;
-      }
-      try {
-        setCargandoModelos(true);
-        const lista = await getModelos(marcaId, usuario.token);
-        if (!cancel) setModelos(lista);
-      } catch (e: any) {
-        if (!cancel) setFormErr(e?.message || "Error cargando modelos");
-      } finally {
-        if (!cancel) setCargandoModelos(false);
-      }
-    })();
-    return () => { cancel = true; };
-  }, [form.marca_vehiculo_id, usuario?.token]);
-
-  // ---------- Validación ligera ----------
-  const faltantes = useMemo(() => {
-    const f: Record<string, string> = {};
-    if (!form.placa.trim()) f["placa"] = "La placa es obligatoria.";
-    if (!form.marca_vehiculo_id) f["marca_vehiculo_id"] = "La marca es obligatoria.";
-    if (!form.modelo_vehiculo_id) f["modelo_vehiculo_id"] = "El modelo es obligatorio.";
-    if (!form.anio) f["anio"] = "El año es obligatorio.";
-    // si vengo desde una cita, el backend infiere propietario
-    if (!citaId && !form.propietario_usuario_id) f["propietario_usuario_id"] = "Selecciona un propietario.";
-    return f;
-  }, [form, citaId]);
-
-  // ---------- Handlers ----------
-  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    let v: any = value;
-
-    // Convertir a número si es necesario
-    if (["anio", "propietario_usuario_id", "marca_vehiculo_id", "modelo_vehiculo_id"].includes(name)) {
-      v = value === "" ? "" : Number(value);
-    }
-
-    setForm((s) => ({ ...s, [name]: v }));
-
-    // Si cambian de marca, resetea el modelo
-    if (name === "marca_vehiculo_id") {
-      setForm((s) => ({ ...s, modelo_vehiculo_id: "" }));
-    }
-
-    if (fieldErr[name]) {
-      setFieldErr((prev) => {
-        const cp = { ...prev }; delete cp[name]; return cp;
-      });
-    }
-  };
-
-  const enviar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setOk(false); setFormErr(null);
-
-    if (Object.keys(faltantes).length) {
-      setFieldErr(faltantes);
-      setFormErr(Object.values(faltantes)[0]);
-      return;
-    }
-    if (!usuario?.token) { setFormErr("Sesión inválida."); return; }
-
-    // Principio: SRP (Single Responsibility Principle)
-    // Este DTO (Data Transfer Object) se arma con la única
-    // responsabilidad de empaquetar los datos del formulario
-    // para enviarlos a la API en el formato que esta espera (snake_case, IDs).
-    const dto = {
-      placa: form.placa.trim().toUpperCase(),
-      marca_vehiculo_id: Number(form.marca_vehiculo_id), // CAMBIO
-      modelo_vehiculo_id: Number(form.modelo_vehiculo_id), // CAMBIO
-      anio: Number(form.anio),
-      color: form.color?.toString().trim() || undefined,
-      vin: form.vin?.toString().trim() || undefined,
-      // CAMBIO: snake_case y lógica
-      propietario_usuario_id: form.propietario_usuario_id ? Number(form.propietario_usuario_id) : undefined,
-    };
-
-    try {
-      setEnviando(true);
-
-      const v: VehiculoMin = citaId
-        ? await apiVehiculos.crearDesdeCita(citaId, dto as any, usuario.token) // 'as any' porque el DTO espera 'marca'
-        : await apiVehiculos.crear(dto as any, usuario.token); // DEBES ACTUALIZAR 'apiVehiculos'
-
-      // ... (resto del 'try' sin cambios) ...
-      setOk(true);
-      timeoutRef.current = window.setTimeout(() => {
-        navigate(`/inicio`, {
-          replace: true,
-          state: {
-            flash: {
-              type: "success",
-              text: `Vehículo ${v.placa} registrado correctamente.`,
-              ttlMs: 4000,
-            },
-          },
-  _**       });
-      }, REDIRECT_DELAY);
-      setForm({
-        placa: "",
-        marca_vehiculo_id: "",
-        modelo_vehiculo_id: "",
-        anio: "",
-        color: "",
-        vin: "",
-        propietario_usuario_id: "",
-      });
-    } catch (err: unknown) {
-      setFormErr(err instanceof Error ? err.message : "No se pudo registrar el vehículo");
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
-
-  // ---------- Render ----------
-  return (
-    <main className="registrar">
-      <section className="registrar__split" role="region" aria-label="Formulario de registro de vehículo">
-        <div className="registrar__left reveal">
-          <h1 className="registrar__title">Registrar vehículo</h1>
-          <p className="registrar__sub">Ingresa los datos del vehículo y el propietario asociado.</p>
-
-          {banner && <div className="info-banner">{banner}</div>}
-          {/* cargandoPrelim ya no existe */}
-
-          <form className="form" onSubmit={enviar} noValidate aria-busy={cargandoMarcas || cargandoProp}>
-            {/* Placa */}
-            <div className="form-group reveal">
-              <label className="label" htmlFor="placa">Placa</label>
-              <div className={`input-wrap ${fieldErr["placa"] ? "has-error" : ""}`}>
-                <input
-                  id="placa"
-                  className="input"
-                  name="placa"
-                  type="text"
-                  placeholder="ABC-123"
-                  value={form.placa}
-                  onChange={onChange}
-                  aria-invalid={!!fieldErr["placa"]}
-                  aria-describedby={fieldErr["placa"] ? "err-placa" : undefined}
-                />
-              </div>
-              {fieldErr["placa"] && <div id="err-placa" className="error-message" role="alert">{fieldErr["placa"]}</div>}
-            </div>
-
-            {/* Marca (CAMBIADO A SELECT) */}
-            <div className="form-group reveal">
-              <label className="label" htmlFor="marca_vehiculo_id">Marca</label>
-              <div className={`input-wrap ${fieldErr["marca_vehiculo_id"] ? "has-error" : ""}`}>
-                <select
-                  id="marca_vehiculo_id"
-                  className="input"
-                  name="marca_vehiculo_id"
-                  value={form.marca_vehiculo_id}
-                  onChange={onChange}
-                  aria-invalid={!!fieldErr["marca_vehiculo_id"]}
-                  aria-describedby={fieldErr["marca_vehiculo_id"] ? "err-marca" : undefined}
-                >
-                  <option value="" disabled>
-                    {cargandoMarcas ? "Cargando..." : "Seleccione marca..."}
-                  </option>
-                  {marcas.map((m) => (
-                    <option key={m.marca_vehiculo_id} value={m.marca_vehiculo_id}>
-                      {m.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {fieldErr["marca_vehiculo_id"] && <div id="err-marca" className="error-message" role="alert">{fieldErr["marca_vehiculo_id"]}</div>}
-            </div>
-
-            {/* Modelo (CAMBIADO A SELECT) */}
-            <div className="form-group reveal">
-              <label className="label" htmlFor="modelo_vehiculo_id">Modelo</label>
-              <div className={`input-wrap ${fieldErr["modelo_vehiculo_id"] ? "has-error" : ""}`}>
-                <select
-                  id="modelo_vehiculo_id"
-                  className="input"
-                  name="modelo_vehiculo_id"
-                  value={form.modelo_vehiculo_id}
-                  onChange={onChange}
-                  disabled={!form.marca_vehiculo_id || cargandoModelos}
-                  aria-invalid={!!fieldErr["modelo_vehiculo_id"]}
-                  aria-describedby={fieldErr["modelo_vehiculo_id"] ? "err-modelo" : undefined}
-                >
-                  <option value="" disabled>
-                    {cargandoModelos ? "Cargando..." : (form.marca_vehiculo_id ? "Seleccione modelo..." : "Elija marca primero")}
-                  </option>
-                  {modelos.map((m) => (
-                    <option key={m.modelo_vehiculo_id} value={m.modelo_vehiculo_id}>
-                      {m.nombre}
-                    </option>
-                  ))}
-          _**     </div>
-              {fieldErr["modelo_vehiculo_id"] && <div id="err-modelo" className="error-message" role="alert">{fieldErr["modelo_vehiculo_id"]}</div>}
-            </div>
-
-            {/* Año (sin cambios) */}
-            <div className="form-group reveal">
-              <label className="label" htmlFor="anio">Año</label>
-              <div className={`input-wrap ${fieldErr["anio"] ? "has-error" : ""}`}>
-                <input
-                  id="anio"
-                  className="input"
-                  name="anio"
-                  type="number"
-                  placeholder="2020"
-                  min={1950}
-                  max={new Date().getFullYear() + 1}
-                  value={form.anio === "" ? "" : Number(form.anio)}
-                  onChange={onChange}
-                  aria-invalid={!!fieldErr["anio"]}
-                  aria-describedby={fieldErr["anio"] ? "err-anio" : undefined}
-                />
-              </div>
-              {fieldErr["anio"] && <div id="err-anio" className="error-message" role="alert">{fieldErr["anio"]}</div>}
-            </div>
-
-            {/* Color (opcional) (sin cambios) */}
-            <div className="form-group reveal">
-              <label className="label" htmlFor="color">Color (opcional)</label>
-              <div className="input-wrap">
-                <input
-                  id="color"
-                  className="input"
-                  name="color"
-                  type="text"
-                  placeholder="Negro"
-                  value={form.color ?? ""}
-                  onChange={onChange}
-                />
-        _**     </div>
-            </div>
-
-            {/* VIN (opcional) (sin cambios) */}
-            <div className="form-group reveal">
-              <label className="label" htmlFor="vin">VIN (opcional)</label>
-              <div className="input-wrap">
-                <input
-                  id="vin"
-                  className="input"
-                  name="vin"
-                  type="text"
-                  placeholder="3N1CB51D54L123456"
-                  value={form.vin ?? ""}
-                  onChange={onChange}
-                />
-              </div>
-            </div>
-
-            {/* Propietario (CAMBIADO A snake_case) */}
-            <div className="form-group reveal">
-              <label className="label" htmlFor="propietario_usuario_id">Propietario (Cliente)</label>
-              <div className={`input-wrap ${fieldErr["propietario_usuario_id"] ? "has-error" : ""}`}>
-                <select
-                  id="propietario_usuario_id"
-                  name="propietario_usuario_id"
-                  className="input"
-                  value={form.propietario_usuario_id ?? ""}
-                  onChange={onChange}
-                  aria-invalid={!!fieldErr["propietario_usuario_id"]}
-                  aria-describedby={fieldErr["propietario_usuario_id"] ? "err-prop" : undefined}
-                >
-                  <option value="" disabled>
-                    {cargandoProp ? "Cargando..." : "Seleccione propietario…"}
-                  </option>
-                  {propietarios.map((p) => (
-                    <option key={p.usuario_id} value={p.usuario_id}>
-                      {`${p.nombres} ${p.apellidos}`} (ID {p.usuario_id})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {fieldErr["propietario_usuario_id"] && (
-                <div id="err-prop" className="error-message" role="alert">
-                  {fieldErr["propietario_usuario_id"]}
-                </div>
-              )}
-              {citaId && (
-                <div className="helper">
-                  * Si vienes desde una cita, el propietario se tomará de la propia cita.
-                </div>
-              )}
-            </div>
-
-            <button type="submit" className="btn reveal" disabled={enviando || cargandoMarcas}>
-              {enviando ? "Registrando…" : "Registrar vehículo"}
-            </button>
-
-            {/* ... (mensajes de error y éxito sin cambios) ... */}
-            {formErr && (
-              <div className="error-message mt8 reveal" role="alert">
-                {formErr}
-              </div>
-            )}
-            {ok && (
-              <div className="success-message mt8 reveal" role="status">
-                Vehículo registrado. Redirigiendo…
-              </div>
-            )}
-          </form>
-
-          {/* ... (resto del archivo sin cambios) ... */}
-          <p className="helper reveal">
-            ¿Quieres salir?{" "}
-            <span className="textlink" onClick={() => navigate("/inicio")}>
-              Volver al inicio
-            </span>
-          </p>
-        </div>
-
-        <aside className="registrar__right reveal" aria-hidden="true">
-          <div className="registrar__hero">
-            <h2 className="registrar__heroTitle">Registro rápido y ordenado</h2>
-            <div className="registrar__heroPill">
-              <span aria-hidden>🚗</span>
-              <span>Registra vehículos en minutos</span>
-            </div>
-          </div>
-        </aside>
-      </section>
-    </main>
-  );
+     {/* Trabajos Realizados */}
+     <section className="historial-section">
+       <h2 className="historial-section__title">✅ Trabajos Realizados</h2>
+       {(data.trabajosRealizados?.length ?? 0) === 0 ? (
+         <p className="historial-section__empty">Aún no se han completado trabajos en este vehículo.</p>
+       ) : (
+         <div className="timeline">
+      s    {/* Este map funciona porque 'TrabajoItemConEvidencia' fue actualizado */}
+           {data.trabajosRealizados.map((t: TrabajoRealizado) => (
+             <TrabajoItemConEvidencia key={t.id} item={t} />
+           ))}
+         </div>
+      }
+     </section>
+   </main>
+ );
 }
