@@ -41,7 +41,7 @@ Get-Content $EnvFilePath | ForEach-Object {
 
 # Defaults si faltan
 if (-not $env:LLANTAPP_DB_SUPERUSER) { $env:LLANTAPP_DB_SUPERUSER = "postgres" }
-if (-not $env:LLANTAPP_DB_SUPERUSER_PASSWORD) { $env:LLANTAPP_DB_SUPERUSER_PASSWORD = "1234" }
+if (-not $env:LLANTAPP_DB_SUPERUSER_PASSWORD) { $env:LLANTAPP_DB_SUPERUSER_PASSWORD = "postgres" }
 if (-not $env:LLANTAPP_DB_REPL_USER) { $env:LLANTAPP_DB_REPL_USER = "replicator" }
 if (-not $env:LLANTAPP_DB_REPL_PASSWORD) { $env:LLANTAPP_DB_REPL_PASSWORD = "replicator" }
 if (-not $env:LLANTAPP_DATA_DIR_ROOT) { $env:LLANTAPP_DATA_DIR_ROOT = "C:/llantapp/patroni" }
@@ -59,13 +59,21 @@ if ($env:LLANTAPP_PG_BIN_DIR) {
     $env:PATRONI_POSTGRESQL_BIN_DIR = $env:LLANTAPP_PG_BIN_DIR
 }
 
-# Crear data dirs
+# Crear data dirs (PostgreSQL + Raft)
 $root = $env:LLANTAPP_DATA_DIR_ROOT
+
+# Datos de PostgreSQL
 $node1 = Join-Path $root "node1\data"
 $node2 = Join-Path $root "node2\data"
 $node3 = Join-Path $root "node3\data"
 
-$dirs = @($node1, $node2, $node3)
+# Datos de Raft por nodo
+$raftRoot = Join-Path $root "raft"
+$raft1 = Join-Path $raftRoot "node1"
+$raft2 = Join-Path $raftRoot "node2"
+$raft3 = Join-Path $raftRoot "node3"
+
+$dirs = @($node1, $node2, $node3, $raftRoot, $raft1, $raft2, $raft3)
 foreach ($d in $dirs) {
     if (!(Test-Path $d)) {
         New-Item -ItemType Directory -Force -Path $d | Out-Null

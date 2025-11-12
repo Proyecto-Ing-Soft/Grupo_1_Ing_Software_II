@@ -4,7 +4,6 @@ import calendarIcon from "../../../assets/public/calendar-day.svg";
 
 interface PreviewCitaProps {
   form: {
-    tipo: string;
     placaPreliminar: string;
     marcaPreliminar: string;
     modeloPreliminar: string;
@@ -18,11 +17,6 @@ export default function PreviewCita({ form }: PreviewCitaProps) {
       <div className="preview-header">
         <img src={calendarIcon} alt="icono calendario" className="preview-icon" />
         <h2 className="preview-title">Mi reserva</h2>
-      </div>
-
-      <div className="preview-field">
-        <label>Tipo de servicio</label>
-        <p>{form.tipo || "—"}</p>
       </div>
 
       <div className="preview-field">
