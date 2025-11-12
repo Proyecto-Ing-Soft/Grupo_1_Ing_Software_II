@@ -6,6 +6,7 @@ restapi:
   connect_address: 127.0.0.1:8008
 
 raft:
+  data_dir: C:/llantapp/patroni/raft
   self_addr: 127.0.0.1:7001
   partner_addrs:
     - 127.0.0.1:7002
@@ -19,6 +20,7 @@ bootstrap:
     synchronous_mode: true
     synchronous_node_count: 1
     postgresql:
+      use_pg_rewind: true
       parameters:
         wal_level: replica
         hot_standby: on
@@ -33,11 +35,32 @@ bootstrap:
   initdb:
     - encoding: UTF8
     - data-checksums
+  users:
+    postgres:
+      password: postgres
+      options:
+        - superuser
+        - createdb
+        - createrole
+        - replication
+    replicator:
+      password: replicator
+      options:
+        - replication
+        - login
 
 postgresql:
   listen: 127.0.0.1:5433
   connect_address: 127.0.0.1:5433
   data_dir: C:/llantapp/patroni/node1/data
+  bin_dir: 'C:/Program Files/PostgreSQL/15/bin'
+  authentication:
+    superuser:
+      username: postgres
+      password: postgres
+    replication:
+      username: replicator
+      password: replicator
   parameters:
     shared_preload_libraries: 'pg_stat_statements'
   pg_hba:
