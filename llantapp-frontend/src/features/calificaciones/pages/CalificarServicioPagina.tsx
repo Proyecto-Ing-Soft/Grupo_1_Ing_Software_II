@@ -7,5 +7,22 @@ export default function CalificarServicioPagina() {
   const navigate = useNavigate();
   const id = Number(citaId || 0);
   const token = undefined;
-  return <CalificarServicioModal citaId={id} token={token} onClose={() => navigate(-1)} />;
+
+  if (!id || Number.isNaN(id)) {
+    return (
+      <main className="mcals">
+        <div className="mcals__state mcals__state--error">
+          Cita no válida.
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <CalificarServicioModal
+      citaId={id}
+      token={token}
+      onClose={() => navigate(-1)}
+    />
+  );
 }

@@ -1,26 +1,38 @@
-// DRY + KISS: fachada HTTP única. Adjunta Authorization automáticamente si existe.
-const BASE = import.meta.env.VITE_API_BASE_URL as string;
-import { tokenMemoria } from '../utils/storageMemoria';
+// DRY + KISS: fachada HTTP única. Adjunta Authorization y x-taller-slug automáticamente.
 
-// Centraliza cómo conseguimos el token (localStorage, memoria, etc.)
-function getAccessToken(): string | undefined {
-  // Si usas AuthContext, puedes hacer que lo copie a localStorage después del login
-  return localStorage.getItem('access_token') ?? undefined;
-}
+const BASE = import.meta.env.VITE_API_BASE_URL as string;
+const TALLER_SLUG = import.meta.env.VITE_TALLER_SLUG as string | undefined;
+
+import { tokenMemoria } from '../utils/storageMemoria';
 
 type FetchOpts = { token?: string; body?: unknown };
 
+function buildHeaders(token?: string) {
+  const auth = token ?? tokenMemoria.get() ?? undefined;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (auth) {
+    headers.Authorization = `Bearer ${auth}`;
+  }
+
+  if (TALLER_SLUG) {
+    headers['x-taller-slug'] = TALLER_SLUG;
+  }
+
+  return headers;
+}
+
 async function reqJSON<T>(ruta: string, method: string, opts: FetchOpts = {}): Promise<T> {
-  const token = opts.token ?? tokenMemoria.get() ?? undefined;
   const r = await fetch(`${BASE}${ruta}`, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    credentials: 'include', // deja pasar cookie httpOnly para /auth/refresh si la usas
+    headers: buildHeaders(opts.token),
+    credentials: 'include',
     ...(opts.body !== undefined ? { body: JSON.stringify(opts.body) } : {}),
   });
+
   if (!r.ok) {
     let message = r.statusText;
     try {
@@ -32,13 +44,18 @@ async function reqJSON<T>(ruta: string, method: string, opts: FetchOpts = {}): P
         message = raw || r.statusText;
       }
     } catch {
-      /* ignore */
+      // ignore
     }
     const err: any = new Error(message);
     err.status = r.status;
     throw err;
   }
-  return r.json() as Promise<T>;
+
+  if (r.status === 204) {
+    return undefined as unknown as T;
+  }
+
+  return (await r.json()) as T;
 }
 
 export function getJSON<T>(ruta: string, token?: string) {
