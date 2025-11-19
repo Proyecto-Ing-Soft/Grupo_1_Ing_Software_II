@@ -1,4 +1,3 @@
-// [Ruta del archivo: src/paginas/vehiculos/api.ts]
 import { getJSON } from '../../core/http/_http';
 
 // Principio: Definición de Contratos (Tipos)

@@ -177,7 +177,7 @@ export class HistorialService {
        proximosServicios: proximosServicios.map((c) => ({
          id: Number(c.cita_id),
          tipo: c.servicio_nombre,
-S        estado: c.estado_nombre, // El frontend usa el nombre legible
+         estado: c.estado_nombre, // El frontend usa el nombre legible
          fecha_programada: c.fecha_programada,
          comentarios_cliente: c.comentarios_cliente,
          mecanico: [c.mecanico_nombres, c.mecanico_apellidos].filter(Boolean).join(' ') || null,

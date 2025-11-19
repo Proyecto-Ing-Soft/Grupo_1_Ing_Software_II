@@ -1,4 +1,3 @@
-// src/features/mantenimientos/api.ts
 import { getJSON } from '../../core/http/_http';
 
 export interface DetalleMantenimiento {
