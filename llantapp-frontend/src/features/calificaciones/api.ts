@@ -1,3 +1,4 @@
+// src/features/calificaciones/api.ts
 import { getJSON, postJSON } from '../../core/http/_http';
 
 type Raw = Record<string, any>;

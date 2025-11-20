@@ -18,7 +18,7 @@ type CalificacionDetalle = {
 };
 
 export const CalificarServicioModal: React.FC<{
-  citaId: number;
+  mantenimientoId: number;
   token?: string;
   onClose?: () => void;
 }> = ({ citaId, token, onClose }) => {
@@ -26,6 +26,7 @@ export const CalificarServicioModal: React.FC<{
   const [calif, setCalif] = useState<CalificacionDetalle | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+const [expirado72h, setExpirado72h] = useState(false);
   const [detLoading, setDetLoading] = useState(true);
   const [trabajos, setTrabajos] = useState<string | null>(null);
   const [media, setMedia] = useState<Media | null>(null);
