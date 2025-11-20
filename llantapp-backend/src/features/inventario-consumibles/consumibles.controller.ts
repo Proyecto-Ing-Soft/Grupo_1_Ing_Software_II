@@ -1,3 +1,4 @@
+/*
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ConsumiblesService } from './consumibles.service';
 import { TenantSchema } from '@/common/tenant/tenant.decorator';
@@ -64,3 +65,4 @@ const usuarioId = 1; // TODO: req.user.usuario_id
 return this.service.ajuste(schema, Number(id), dto, usuarioId);
 }
 }
+*/

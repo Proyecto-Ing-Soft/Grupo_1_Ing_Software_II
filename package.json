@@ -7,11 +7,16 @@
   ],
   "scripts": {
     "setup": "npm install",
-  "db:prepare": "npm run prisma:deploy -w llantapp-backend && npm run prisma:gen -w llantapp-backend",
+
+    "db:start": "powershell -NoProfile -ExecutionPolicy Bypass -Command \".\\.venv\\Scripts\\Activate.ps1; .\\infra\\start-ha.ps1\"",
+
+    "db:prepare": "npm run prisma:deploy -w llantapp-backend && npm run prisma:gen -w llantapp-backend",
+
     "dev:back": "npm run start:dev -w llantapp-backend",
     "dev:front": "npm run dev -w llantapp-frontend",
     "open:front": "powershell -NoProfile -Command \"Start-Sleep -Seconds 2; Start-Process http://localhost:5173\"",
-    "dev": "npm run db:prepare && concurrently -n FRONT,BACK,BROWSER -c auto \"npm run dev:front\" \"npm run dev:back\" \"npm run open:front\""
+
+    "dev": "npm run db:start && powershell -NoProfile -ExecutionPolicy Bypass -Command \"Start-Sleep -Seconds 25\" && npm run db:prepare && concurrently -n FRONT,BACK,BROWSER -c auto \"npm run dev:front\" \"npm run dev:back\" \"npm run open:front\""
   },
   "devDependencies": {
     "@types/nodemailer": "^7.0.2",

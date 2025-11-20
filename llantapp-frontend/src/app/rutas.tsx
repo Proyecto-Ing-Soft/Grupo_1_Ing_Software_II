@@ -43,11 +43,182 @@ import { RutaProtegidaPorRol } from '../common/componentes/RutaProtegidaPorRol';
 import { RutaProtegida } from '../common/componentes/RutaProtegida';
 import LayoutProtegido from '../common/componentes/LayoutProtegido';
 
-import NoEncontrada404 from "../common/paginas/NoEncontrada404";
+import NoEncontrada404 from '../common/paginas/NoEncontrada404';
+
+// --- Rutas hijas protegidas reutilizables (sin y con slug dinámico) ---
+const rutasProtegidas = [
+  { path: 'inicio', element: <InicioProtegido /> },
+
+  // Admin: Asignaciones (alias)
+  {
+    path: 'admin/citas-pendientes',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+        <AdminCitasPendientes />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'admin/asignaciones',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+        <AdminCitasPendientes />
+      </RutaProtegidaPorRol>
+    ),
+  },
+
+  // Admin: Servicios
+  {
+    path: 'admin/servicios',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+        <CatalogoServiciosPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'admin/servicios/asociar',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+        <AsociarMecanicoServicioPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+
+  // Admin: Gestión de Usuarios (lista/crear/editar — mismo componente)
+  {
+    path: 'admin/usuarios',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+        <GestionUsuariosPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'admin/usuarios/nuevo',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+        <GestionUsuariosPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'admin/usuarios/:id/editar',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+        <GestionUsuariosPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+
+  // Vehículos
+  {
+    path: 'vehiculos/registrar',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['ADMIN', 'MECANICO']}>
+        <RegistrarVehiculoPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'vehiculos/mios',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
+        <MisVehiculosPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'vehiculos/:id/historial',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['CLIENTE', 'ADMIN', 'MECANICO']}>
+        <HistorialDeServiciosPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+
+  // Mantenimientos / Citas
+  {
+    path: 'mantenimientos/registrar',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
+        <RegistrarMantenimientoPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'citas/agendar',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
+        <AgendarCitaPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'citas/mias',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
+        <MisCitasPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'citas/asignadas',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
+        <CitasMecanicoPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+
+  // Notificaciones
+  {
+    path: 'notificaciones',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['CLIENTE', 'MECANICO']}>
+        <NotificacionesLeerPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+
+  // Calificaciones
+  {
+    path: 'calificaciones/mias',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
+        <MisCalificacionesPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'calificaciones/cita/:citaId',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
+        <CalificarServicioPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'calificaciones/recibidas',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
+        <CalificacionesRecibidasPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+  {
+    path: 'admin/calificaciones',
+    element: (
+      <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+        <AdminCalificacionesPagina />
+      </RutaProtegidaPorRol>
+    ),
+  },
+];
 
 const router = createBrowserRouter(
   [
-    // Públicas
+    // Públicas (sin slug)
     { path: '/', element: <InicioPublico /> },
     { path: '/centro-ayuda', element: <CentroAyudaPagina /> },
     { path: '/contacto', element: <ContactoPagina /> },
@@ -58,7 +229,7 @@ const router = createBrowserRouter(
     { path: '/llantapp', element: <Navigate to="/" replace /> },
     { path: '/llantapp/*', element: <NoEncontrada404 /> },
 
-    // Login / Registro
+    // Login / Registro (sin slug) — /login?rol=cliente, /registro?rol=cliente, etc.
     {
       path: '/login/:rol',
       element: (
@@ -92,189 +263,66 @@ const router = createBrowserRouter(
       ),
     },
 
-    // Protegidas
+    // Login / Registro con slug dinámico (ej: /demo/login?rol=cliente)
+    {
+      path: '/:slug/login/:rol',
+      element: (
+        <RedirigirSiAutenticado>
+          <LoginPagina />
+        </RedirigirSiAutenticado>
+      ),
+    },
+    {
+      path: '/:slug/login',
+      element: (
+        <RedirigirSiAutenticado>
+          <LoginPagina />
+        </RedirigirSiAutenticado>
+      ),
+    },
+    {
+      path: '/:slug/registro/:rol',
+      element: (
+        <RedirigirSiAutenticado>
+          <RegistroPagina />
+        </RedirigirSiAutenticado>
+      ),
+    },
+    {
+      path: '/:slug/registro',
+      element: (
+        <RedirigirSiAutenticado>
+          <RegistroPagina />
+        </RedirigirSiAutenticado>
+      ),
+    },
+
+    // Protegidas sin slug (ej: /inicio)
     {
       element: (
         <RutaProtegida>
           <LayoutProtegido />
         </RutaProtegida>
       ),
-      children: [
-        { path: 'inicio', element: <InicioProtegido /> },
+      children: rutasProtegidas,
+    },
 
-        // Admin: Asignaciones (alias)
-        {
-          path: 'admin/citas-pendientes',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
-              <AdminCitasPendientes />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'admin/asignaciones',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
-              <AdminCitasPendientes />
-            </RutaProtegidaPorRol>
-          ),
-        },
-
-        // Admin: Servicios
-        {
-          path: 'admin/servicios',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
-              <CatalogoServiciosPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'admin/servicios/asociar',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
-              <AsociarMecanicoServicioPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-
-        // Admin: Gestión de Usuarios (lista/crear/editar — mismo componente)
-        {
-          path: 'admin/usuarios',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
-              <GestionUsuariosPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'admin/usuarios/nuevo',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
-              <GestionUsuariosPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'admin/usuarios/:id/editar',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
-              <GestionUsuariosPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-
-        // Vehículos
-        {
-          path: 'vehiculos/registrar',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['ADMIN', 'MECANICO']}>
-              <RegistrarVehiculoPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'vehiculos/mios',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
-              <MisVehiculosPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'vehiculos/:id/historial',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE', 'ADMIN', 'MECANICO']}>
-              <HistorialDeServiciosPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-
-        // Mantenimientos / Citas
-        {
-          path: 'mantenimientos/registrar',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
-              <RegistrarMantenimientoPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'citas/agendar',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
-              <AgendarCitaPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'citas/mias',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
-              <MisCitasPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'citas/asignadas',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
-              <CitasMecanicoPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-
-        // Notificaciones
-        {
-          path: 'notificaciones',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE', 'MECANICO']}>
-              <NotificacionesLeerPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-
-        // Calificaciones
-        {
-          path: 'calificaciones/mias',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
-              <MisCalificacionesPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'calificaciones/cita/:citaId',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
-              <CalificarServicioPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'calificaciones/recibidas',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
-              <CalificacionesRecibidasPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'admin/calificaciones',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
-              <AdminCalificacionesPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-      ],
+    // Protegidas con slug dinámico (ej: /demo/inicio)
+    {
+      path: '/:slug',
+      element: (
+        <RutaProtegida>
+          <LayoutProtegido />
+        </RutaProtegida>
+      ),
+      children: rutasProtegidas,
     },
 
     { path: '*', element: <NoEncontrada404 /> },
   ],
   {
     basename: (import.meta.env.BASE_URL || '/').replace(/\/$/, ''),
-  }
+  },
 );
 
 export function Rutas() {

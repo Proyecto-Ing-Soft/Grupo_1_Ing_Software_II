@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, Link, useParams, useSearchParams } from "react-router-dom";
 import { esquemaRegistro } from "../../features/usuarios/usuarioSchemas";
-import { apiAuth } from "../../features/autenticacion/api";
 import { postJSON } from "../../core/http/_http";
 import { Rol as RolApi } from "./api";
 
@@ -18,18 +17,26 @@ import imgLoginTaller from "../../assets/registro/registro-admin.png";
 import imgLoginDefault from "../../assets/login/login-default.png";
 
 type RolUi = "cliente" | "taller";
-const ROL_MAP: Record<RolUi, RolApi> = { cliente: "CLIENTE", taller: "ADMIN" };
+const ROL_MAP: Record<RolUi, RolApi> = {
+  cliente: "CLIENTE",
+  taller: "ADMIN_TALLER",
+};
 const esRolUi = (x: any): x is RolUi => x === "cliente" || x === "taller";
 
 // --- helpers ---
-function validarEmail(v: string){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
-function soloDigitos(v: string){ return /^[0-9]+$/.test(v); }
+function validarEmail(v: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+function soloDigitos(v: string) {
+  return /^[0-9]+$/.test(v);
+}
 
 export default function RegistroPagina() {
   const params = useParams();
   const [q] = useSearchParams();
   const rolParam = params.rol || q.get("rol") || "cliente";
   const rolUi: RolUi = esRolUi(rolParam) ? rolParam : "cliente";
+  const slugTaller = params.slugTaller || params.slug || undefined;
   const rolApi = ROL_MAP[rolUi];
 
   const fondoPorRol: Record<RolUi, string> = {
@@ -42,7 +49,12 @@ export default function RegistroPagina() {
     <>
       <HeaderPublico />
       {rolUi === "cliente" ? (
-        <RegistroCliente fondo={fondo} rolApi={rolApi} rolUi={rolUi} />
+        <RegistroCliente
+          fondo={fondo}
+          rolApi={rolApi}
+          rolUi={rolUi}
+          slugTaller={slugTaller}
+        />
       ) : (
         <SolicitudTaller fondo={fondo} />
       )}
@@ -56,18 +68,25 @@ function RegistroCliente({
   fondo,
   rolApi,
   rolUi,
+  slugTaller,
 }: {
   fondo: string;
   rolApi: RolApi;
   rolUi: RolUi;
+  slugTaller?: string;
 }) {
-  const [form, setForm] = useState({ nombreCompleto: "", correo: "", clave: "" });
+  const [form, setForm] = useState({
+    nombreCompleto: "",
+    correo: "",
+    clave: "",
+  });
   const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const navigate = useNavigate();
 
-  const LOGIN_PATH = `/login/${rolUi}`;
+  const baseSlugPath = slugTaller ? `/${slugTaller}` : "";
+  const LOGIN_PATH = `${baseSlugPath}/login/${rolUi}`;
   const REDIRECT_DELAY = 1200;
   const timeoutRef = useRef<number | null>(null);
 
@@ -75,7 +94,7 @@ function RegistroCliente({
     () => () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     },
-    []
+    [],
   );
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,8 +110,9 @@ function RegistroCliente({
     e.preventDefault();
     setFormErr(null);
     setFieldErr({});
+    setOk(false);
 
-    // Validación con zod (incluye rol)
+    // Validación con zod (incluye rol, aunque sea opcional)
     const parsed = esquemaRegistro.safeParse({ ...form, rol: rolApi });
     if (!parsed.success) {
       const fe: Record<string, string> = {};
@@ -106,13 +126,21 @@ function RegistroCliente({
     }
 
     try {
-      await apiAuth.registrar({ ...parsed.data, rol: rolApi });
+      // Cliente global: SIEMPRE usamos /auth/registrar-cliente-global (no requiere slugTaller).
+      await postJSON("/auth/registrar-cliente-global", {
+        nombreCompleto: parsed.data.nombreCompleto,
+        correo: parsed.data.correo,
+        clave: parsed.data.clave,
+        // El back ya fuerza rol CLIENTE, pero lo mandamos igual por claridad.
+        rol: rolApi,
+      });
+
       setOk(true);
 
-      // redirige al login del rol correspondiente
+      // Redirige al login del rol correspondiente
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = window.setTimeout(() => {
-        navigate(`/login/${rolUi}`);
+        navigate(LOGIN_PATH);
       }, REDIRECT_DELAY);
     } catch (err: any) {
       const msg =
@@ -122,13 +150,14 @@ function RegistroCliente({
     }
   };
 
-
   const titulo = "Crear cuenta";
-  const linkLogin = `/login/cliente`;
+  const linkLogin = LOGIN_PATH;
 
   return (
-    <main className="auth-page auth-register auth-clone" style={{ paddingTop: 24 }}>
-
+    <main
+      className="auth-page auth-register auth-clone"
+      style={{ paddingTop: 24 }}
+    >
       <section
         className="auth-split card-azul"
         role="region"
@@ -141,15 +170,24 @@ function RegistroCliente({
           </div>
 
           <h1 className="brand">{titulo}</h1>
-          <p className="sub">Regístrate para empezar a gestionar tus vehículos y servicios.</p>
+          <p className="sub">
+            Regístrate para empezar a gestionar tus vehículos y servicios.
+          </p>
 
           <form className="form" onSubmit={enviar} noValidate>
             <div className="form-group">
               <label className="label" htmlFor="nombreCompleto">
                 Nombre completo
               </label>
-              <div className={`input-wrap ${fieldErr["nombreCompleto"] ? "has-error" : ""}`}>
-                <span className="iconbox fa-regular fa-user" aria-hidden="true" />
+              <div
+                className={`input-wrap ${
+                  fieldErr["nombreCompleto"] ? "has-error" : ""
+                }`}
+              >
+                <span
+                  className="iconbox fa-regular fa-user"
+                  aria-hidden="true"
+                />
                 <input
                   id="nombreCompleto"
                   className="input"
@@ -160,7 +198,9 @@ function RegistroCliente({
                   onChange={onChange}
                   autoComplete="name"
                   aria-invalid={!!fieldErr["nombreCompleto"]}
-                  aria-describedby={fieldErr["nombreCompleto"] ? "err-nombre" : undefined}
+                  aria-describedby={
+                    fieldErr["nombreCompleto"] ? "err-nombre" : undefined
+                  }
                 />
               </div>
               {fieldErr["nombreCompleto"] && (
@@ -171,9 +211,18 @@ function RegistroCliente({
             </div>
 
             <div className="form-group">
-              <label className="label" htmlFor="correo">Correo</label>
-              <div className={`input-wrap ${fieldErr["correo"] ? "has-error" : ""}`}>
-                <span className="iconbox fa-regular fa-envelope" aria-hidden="true" />
+              <label className="label" htmlFor="correo">
+                Correo
+              </label>
+              <div
+                className={`input-wrap ${
+                  fieldErr["correo"] ? "has-error" : ""
+                }`}
+              >
+                <span
+                  className="iconbox fa-regular fa-envelope"
+                  aria-hidden="true"
+                />
                 <input
                   id="correo"
                   className="input"
@@ -184,7 +233,9 @@ function RegistroCliente({
                   onChange={onChange}
                   autoComplete="email"
                   aria-invalid={!!fieldErr["correo"]}
-                  aria-describedby={fieldErr["correo"] ? "err-correo" : undefined}
+                  aria-describedby={
+                    fieldErr["correo"] ? "err-correo" : undefined
+                  }
                 />
               </div>
               {fieldErr["correo"] && (
@@ -195,9 +246,18 @@ function RegistroCliente({
             </div>
 
             <div className="form-group">
-              <label className="label" htmlFor="clave">Contraseña</label>
-              <div className={`input-wrap ${fieldErr["clave"] ? "has-error" : ""}`}>
-                <span className="iconbox fa-solid fa-lock" aria-hidden="true" />
+              <label className="label" htmlFor="clave">
+                Contraseña
+              </label>
+              <div
+                className={`input-wrap ${
+                  fieldErr["clave"] ? "has-error" : ""
+                }`}
+              >
+                <span
+                  className="iconbox fa-solid fa-lock"
+                  aria-hidden="true"
+                />
                 <input
                   id="clave"
                   className="input"
@@ -208,7 +268,9 @@ function RegistroCliente({
                   onChange={onChange}
                   autoComplete="new-password"
                   aria-invalid={!!fieldErr["clave"]}
-                  aria-describedby={fieldErr["clave"] ? "err-clave" : undefined}
+                  aria-describedby={
+                    fieldErr["clave"] ? "err-clave" : undefined
+                  }
                 />
               </div>
               {fieldErr["clave"] && (
@@ -218,15 +280,25 @@ function RegistroCliente({
               )}
             </div>
 
-            <button type="submit" className="btn btn-cta">Registrarme</button>
+            <button type="submit" className="btn btn-cta">
+              Registrarme
+            </button>
 
             {formErr && (
-              <div className="error-message" style={{ marginTop: 8 }} role="alert">
+              <div
+                className="error-message"
+                style={{ marginTop: 8 }}
+                role="alert"
+              >
                 {formErr}
               </div>
             )}
             {ok && (
-              <div className="success-message" style={{ marginTop: 8 }} role="status">
+              <div
+                className="success-message"
+                style={{ marginTop: 8 }}
+                role="status"
+              >
                 Registro exitoso. Ahora puedes iniciar sesión.
               </div>
             )}
@@ -254,13 +326,21 @@ function RegistroCliente({
           <div className="auth-right-inner">
             <h2 className="hero-title">Crea tu cuenta en segundos</h2>
             <div className="hero-pill">
-              <span className="fa-solid fa-user-shield" aria-hidden="true" />
+              <span
+                className="fa-solid fa-user-shield"
+                aria-hidden="true"
+              />
               <span>Perfiles por rol y trazabilidad</span>
             </div>
           </div>
         </aside>
 
-        <img className="corner-mascot" src={llontoppEsquina} alt="Llontopp" aria-hidden="true" />
+        <img
+          className="corner-mascot"
+          src={llontoppEsquina}
+          alt="Llontopp"
+          aria-hidden="true"
+        />
       </section>
     </main>
   );

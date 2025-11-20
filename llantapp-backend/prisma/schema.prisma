@@ -12,3 +12,16 @@ datasource db {
   url      = env("DATABASE_URL")
   schemas  = ["app"]
 }
+
+model UsuarioCliente {
+  id            BigInt   @id @default(autoincrement()) @map("usuario_cliente_id")
+  nombreCompleto String   @map("nombre_completo")
+  email         String   @unique
+  telefono      String? 
+  passwordHash  String   @map("password_hash")
+  fechaCreacion DateTime @default(now()) @map("fecha_creacion")
+  ultimoLogin   DateTime? @map("ultimo_login")
+
+  @@map("usuario_cliente")
+  @@schema("app")
+}

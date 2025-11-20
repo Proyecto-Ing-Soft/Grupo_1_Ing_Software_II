@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { Encriptador } from '../autenticacion/encriptador';
+import { withTenant } from '../../common/prisma-tenant';
 
 // SRP: adapta las entidades de BD (usuario, usuario_rol, rol)
 // al modelo de usuario usado por autenticación y controladores.
@@ -73,14 +74,14 @@ export class UsuarioService {
     };
   }
 
-  // Obtiene un rol por su código desde la tabla app.rol
-  private async getRolPorCodigo(codigo: string): Promise<any> {
+  // Obtiene un rol por su código desde la tabla app.rol usando el mismo tx del tenant.
+  private async getRolPorCodigo(tx: any, codigo: string): Promise<any> {
     const cod = (codigo ?? '').trim();
     if (!cod) {
       throw new BadRequestException('Rol no especificado');
     }
 
-    const rol = await (this.prisma as any).rol.findUnique({
+    const rol = await tx.rol.findUnique({
       where: { codigo: cod },
     });
 
@@ -93,172 +94,170 @@ export class UsuarioService {
     return rol;
   }
 
-  // Crear usuario a partir de datos ya validados por AuthService.
-  async crear(datos: {
-    nombreCompleto: string;
-    correo: string;
-    hashClave: string;
-    rol?: string;
-  }): Promise<UsuarioDominio> {
-    const email = datos.correo.trim().toLowerCase();
+  // Crear usuario a partir de datos ya validados por AuthService en un taller concreto.
+  async crear(
+    slugTaller: string,
+    datos: {
+      nombreCompleto: string;
+      correo: string;
+      hashClave: string;
+      rol?: string;
+    },
+  ): Promise<UsuarioDominio> {
+    return withTenant(this.prisma, slugTaller, async (tx: any) => {
+      const email = datos.correo.trim().toLowerCase();
 
-    const existente = await (this.prisma as any).usuario.findUnique({
-      where: { email },
-    });
-    if (existente) {
-      throw new ConflictException('El correo ya está registrado');
-    }
+      const existente = await tx.usuario.findUnique({
+        where: { email },
+      });
+      if (existente) {
+        throw new ConflictException('El correo ya está registrado');
+      }
 
-    const [nombres, ...resto] = datos.nombreCompleto
-      .trim()
-      .split(/\s+/);
-    const apellidos = resto.join(' ') || nombres;
+      const [nombres, ...resto] = datos.nombreCompleto
+        .trim()
+        .split(/\s+/);
+      const apellidos = resto.join(' ') || nombres;
 
-    let rol: any | null = null;
-    if (datos.rol) {
-      rol = await this.getRolPorCodigo(datos.rol);
-    }
+      let rol: any | null = null;
+      if (datos.rol) {
+        rol = await this.getRolPorCodigo(tx, datos.rol);
+      }
 
-    const usuario = await (this.prisma as any).usuario.create({
-      data: {
-        nombres,
-        apellidos,
-        email,
-        passwordHash: datos.hashClave,
-        // Estado activo por defecto (configurado en usuario_estado)
-        usuarioEstado: {
-          connect: { codigo: 'activo' },
-        },
-        ...(rol && {
-          roles: {
-            create: [
-              {
-                rol: { connect: { id: rol.id } },
-              },
-            ],
+      const usuario = await tx.usuario.create({
+        data: {
+          nombres,
+          apellidos,
+          email,
+          passwordHash: datos.hashClave,
+          // Estado activo por defecto (configurado en usuario_estado)
+          usuarioEstado: {
+            connect: { codigo: 'activo' },
           },
-        }),
-      },
-      include: {
-        roles: { include: { rol: true } },
-      },
-    });
-
-    return this.mapUsuarioConRoles(usuario);
-  }
-
-  // Buscar usuario por correo (para login).
-  async buscarPorCorreo(correo: string): Promise<UsuarioDominio | null> {
-    const email = correo.trim().toLowerCase();
-
-    const usuario = await (this.prisma as any).usuario.findUnique({
-      where: { email },
-      include: {
-        roles: { include: { rol: true } },
-      },
-    });
-
-    if (!usuario) return null;
-
-    return this.mapUsuarioConRoles(usuario);
-  }
-
-  // Buscar usuario por id (para perfil, refresh, etc.).
-  async buscarPorId(id: number): Promise<UsuarioDominio | null> {
-    const usuario = await (this.prisma as any).usuario.findUnique({
-      where: { id },
-      include: {
-        roles: { include: { rol: true } },
-      },
-    });
-
-    if (!usuario) return null;
-
-    return this.mapUsuarioConRoles(usuario);
-  }
-
-  // Listar usuarios por código de rol (rol.codigo en BD).
-  async listarPorRol(rolCodigo: string) {
-    const rol = await this.getRolPorCodigo(rolCodigo);
-
-    const usuarios = await (this.prisma as any).usuario.findMany({
-      where: {
-        roles: {
-          some: { rolId: rol.id },
+          ...(rol && {
+            roles: {
+              create: [
+                {
+                  rol: { connect: { id: rol.id } },
+                },
+              ],
+            },
+          }),
         },
-      },
-      include: {
-        roles: { include: { rol: true } },
-      },
-      orderBy: { nombres: 'asc' },
-    });
+        include: {
+          roles: { include: { rol: true } },
+        },
+      });
 
-    return usuarios.map((u: any) =>
-      this.aPublico(this.mapUsuarioConRoles(u)),
-    );
+      return this.mapUsuarioConRoles(usuario);
+    });
   }
 
-  // Listar usuarios por varios códigos de rol.
-  async listarPorRoles(rolesCodigo: string[]) {
+  // Buscar usuario por correo (para login) en un taller concreto.
+  async buscarPorCorreo(
+    slugTaller: string,
+    correo: string,
+  ): Promise<UsuarioDominio | null> {
+    return withTenant(this.prisma, slugTaller, async (tx: any) => {
+      const email = correo.trim().toLowerCase();
+
+      const usuario = await tx.usuario.findUnique({
+        where: { email },
+        include: {
+          roles: { include: { rol: true } },
+        },
+      });
+
+      if (!usuario) return null;
+
+      return this.mapUsuarioConRoles(usuario);
+    });
+  }
+
+  // Buscar usuario por id (para perfil, refresh, etc.) en un taller concreto.
+  async buscarPorId(
+    slugTaller: string,
+    id: number,
+  ): Promise<UsuarioDominio | null> {
+    return withTenant(this.prisma, slugTaller, async (tx: any) => {
+      const usuario = await tx.usuario.findUnique({
+        where: { id },
+        include: {
+          roles: { include: { rol: true } },
+        },
+      });
+
+      if (!usuario) return null;
+
+      return this.mapUsuarioConRoles(usuario);
+    });
+  }
+
+  // Listar usuarios por código de rol (rol.codigo en BD) en un taller concreto.
+  async listarPorRol(slugTaller: string, rolCodigo: string) {
+    return withTenant(this.prisma, slugTaller, async (tx: any) => {
+      const rol = await this.getRolPorCodigo(tx, rolCodigo);
+
+      const usuarios = await tx.usuario.findMany({
+        where: {
+          roles: {
+            some: { rolId: rol.id },
+          },
+        },
+        include: {
+          roles: { include: { rol: true } },
+        },
+        orderBy: { nombres: 'asc' },
+      });
+
+      return usuarios.map((u: any) =>
+        this.aPublico(this.mapUsuarioConRoles(u)),
+      );
+    });
+  }
+
+  // Listar usuarios por varios códigos de rol en un taller concreto.
+  async listarPorRoles(slugTaller: string, rolesCodigo: string[]) {
     if (!rolesCodigo || rolesCodigo.length === 0) {
       return [];
     }
 
-    const roles = await (this.prisma as any).rol.findMany({
-      where: { codigo: { in: rolesCodigo } },
-    });
-    if (!roles.length) return [];
+    return withTenant(this.prisma, slugTaller, async (tx: any) => {
+      const roles = await tx.rol.findMany({
+        where: { codigo: { in: rolesCodigo } },
+      });
+      if (!roles.length) return [];
 
-    const rolIds = roles.map((r: any) => r.id);
+      const rolIds = roles.map((r: any) => r.id);
 
-    const usuarios = await (this.prisma as any).usuario.findMany({
-      where: {
-        roles: {
-          some: { rolId: { in: rolIds } },
+      const usuarios = await tx.usuario.findMany({
+        where: {
+          roles: {
+            some: { rolId: { in: rolIds } },
+          },
         },
-      },
-      include: {
-        roles: { include: { rol: true } },
-      },
-      orderBy: { nombres: 'asc' },
-    });
+        include: {
+          roles: { include: { rol: true } },
+        },
+        orderBy: { nombres: 'asc' },
+      });
 
-    return usuarios.map((u: any) =>
-      this.aPublico(this.mapUsuarioConRoles(u)),
-    );
+      return usuarios.map((u: any) =>
+        this.aPublico(this.mapUsuarioConRoles(u)),
+      );
+    });
   }
 
   // Personal del taller: usuarios con rol ADMIN_TALLER o MECANICO.
   // (Los códigos vienen de la tabla rol; aquí no usamos enums locales.)
-  async listarTaller() {
-    const roles = await (this.prisma as any).rol.findMany({
-      where: { codigo: { in: ['ADMIN_TALLER', 'MECANICO'] } },
-    });
-
-    if (!roles.length) return [];
-
-    const rolIds = roles.map((r: any) => r.id);
-
-    const usuarios = await (this.prisma as any).usuario.findMany({
-      where: {
-        roles: {
-          some: { rolId: { in: rolIds } },
-        },
-      },
-      include: {
-        roles: { include: { rol: true } },
-      },
-      orderBy: { nombres: 'asc' },
-    });
-
-    return usuarios.map((u: any) =>
-      this.aPublico(this.mapUsuarioConRoles(u)),
-    );
+  async listarTaller(slugTaller: string) {
+    return this.listarPorRoles(slugTaller, ['ADMIN_TALLER', 'MECANICO']);
   }
 
   // Crear personal del taller recibiendo clave en texto plano.
   // El rol se valida siempre contra la BD.
   async crearPersonalTaller(input: {
+    slugTaller: string;
     nombreCompleto: string;
     correo: string;
     clave: string;
@@ -266,7 +265,7 @@ export class UsuarioService {
   }) {
     const hashClave = await this.enc.hashear(input.clave);
 
-    const usuario = await this.crear({
+    const usuario = await this.crear(input.slugTaller, {
       nombreCompleto: input.nombreCompleto,
       correo: input.correo,
       hashClave,
@@ -278,107 +277,112 @@ export class UsuarioService {
 
   // Actualizar datos/rol de personal de taller (solo si tiene rol de taller).
   async actualizarPersonalTaller(
+    slugTaller: string,
     id: number,
     dto: { nombreCompleto?: string; correo?: string; rol?: string },
   ) {
-    const usuario = await (this.prisma as any).usuario.findUnique({
-      where: { id },
-      include: {
-        roles: { include: { rol: true } },
-      },
-    });
-    if (!usuario) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
-
-    const codigosActuales = (usuario.roles ?? []).map(
-      (r: any) => r.rol?.codigo,
-    );
-
-    if (
-      !codigosActuales.includes('ADMIN_TALLER') &&
-      !codigosActuales.includes('MECANICO')
-    ) {
-      throw new BadRequestException(
-        'Solo se puede actualizar personal de taller',
-      );
-    }
-
-    const data: any = {};
-
-    if (dto.nombreCompleto) {
-      const [nombres, ...resto] = dto.nombreCompleto
-        .trim()
-        .split(/\s+/);
-      data.nombres = nombres;
-      data.apellidos = resto.join(' ') || usuario.apellidos;
-    }
-
-    if (dto.correo) {
-      const email = dto.correo.trim().toLowerCase();
-      const dupe = await (this.prisma as any).usuario.findUnique({
-        where: { email },
+    return withTenant(this.prisma, slugTaller, async (tx: any) => {
+      const usuario = await tx.usuario.findUnique({
+        where: { id },
+        include: {
+          roles: { include: { rol: true } },
+        },
       });
-      if (dupe && dupe.id !== usuario.id) {
-        throw new ConflictException('El correo ya está registrado');
+      if (!usuario) {
+        throw new NotFoundException('Usuario no encontrado');
       }
-      data.email = email;
-    }
 
-    if (dto.rol) {
-      const rol = await this.getRolPorCodigo(dto.rol);
+      const codigosActuales = (usuario.roles ?? []).map(
+        (r: any) => r.rol?.codigo,
+      );
 
-      await (this.prisma as any).usuarioRol.deleteMany({
-        where: { usuarioId: usuario.id },
+      if (
+        !codigosActuales.includes('ADMIN_TALLER') &&
+        !codigosActuales.includes('MECANICO')
+      ) {
+        throw new BadRequestException(
+          'Solo se puede actualizar personal de taller',
+        );
+      }
+
+      const data: any = {};
+
+      if (dto.nombreCompleto) {
+        const [nombres, ...resto] = dto.nombreCompleto
+          .trim()
+          .split(/\s+/);
+        data.nombres = nombres;
+        data.apellidos = resto.join(' ') || usuario.apellidos;
+      }
+
+      if (dto.correo) {
+        const email = dto.correo.trim().toLowerCase();
+        const dupe = await tx.usuario.findUnique({
+          where: { email },
+        });
+        if (dupe && dupe.id !== usuario.id) {
+          throw new ConflictException('El correo ya está registrado');
+        }
+        data.email = email;
+      }
+
+      if (dto.rol) {
+        const rol = await this.getRolPorCodigo(tx, dto.rol);
+
+        await tx.usuarioRol.deleteMany({
+          where: { usuarioId: usuario.id },
+        });
+
+        data.roles = {
+          create: [{ rol: { connect: { id: rol.id } } }],
+        };
+      }
+
+      const actualizado = await tx.usuario.update({
+        where: { id },
+        data,
+        include: { roles: { include: { rol: true } } },
       });
 
-      data.roles = {
-        create: [{ rol: { connect: { id: rol.id } } }],
-      };
-    }
-
-    const actualizado = await (this.prisma as any).usuario.update({
-      where: { id },
-      data,
-      include: { roles: { include: { rol: true } } },
+      return this.aPublico(this.mapUsuarioConRoles(actualizado));
     });
-
-    return this.aPublico(this.mapUsuarioConRoles(actualizado));
   }
 
   // Eliminar personal de taller (solo si su rol es de taller).
-  async eliminarPersonalTaller(id: number) {
-    const usuario = await (this.prisma as any).usuario.findUnique({
-      where: { id },
-      include: {
-        roles: { include: { rol: true } },
-      },
-    });
+  async eliminarPersonalTaller(slugTaller: string, id: number) {
+    return withTenant(this.prisma, slugTaller, async (tx: any) => {
+      const usuario = await tx.usuario.findUnique({
+        where: { id },
+        include: {
+          roles: { include: { rol: true } },
+        },
+      });
 
-    if (!usuario) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
+      if (!usuario) {
+        throw new NotFoundException('Usuario no encontrado');
+      }
 
-    const codigos = (usuario.roles ?? []).map(
-      (r: any) => r.rol?.codigo,
-    );
-
-    if (
-      !codigos.includes('ADMIN_TALLER') &&
-      !codigos.includes('MECANICO')
-    ) {
-      throw new BadRequestException(
-        'Solo se puede eliminar personal de taller',
+      const codigos = (usuario.roles ?? []).map(
+        (r: any) => r.rol?.codigo,
       );
-    }
 
-    await (this.prisma as any).usuarioRol.deleteMany({
-      where: { usuarioId: usuario.id },
+      if (
+        !codigos.includes('ADMIN_TALLER') &&
+        !codigos.includes('MECANICO')
+      ) {
+        throw new BadRequestException(
+          'Solo se puede eliminar personal de taller',
+        );
+      }
+
+      await tx.usuarioRol.deleteMany({
+        where: { usuarioId: usuario.id },
+      });
+
+      await tx.usuario.delete({ where: { id } });
+
+      return { ok: true };
     });
-
-    await (this.prisma as any).usuario.delete({ where: { id } });
-
-    return { ok: true };
   }
 
   // Proyección pública (sin hash).

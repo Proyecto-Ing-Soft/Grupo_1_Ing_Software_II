@@ -1,3 +1,4 @@
+/*
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { TenantDbService } from '@/common/db/tenant-db.service';
 import { PrismaService } from '@/common/db/prisma.service';
@@ -49,4 +50,5 @@ if (existing.length) throw new BadRequestException('Código ya existe');
 
 const [created] = await tx.$queryRaw<any[]>`
 insert into consumible(codigo, nombre, categoria_producto_id, unidad_medida_id, stock_actual, stock_minimo_alerta, costo_unitario, activo)
-}
+`}
+*/

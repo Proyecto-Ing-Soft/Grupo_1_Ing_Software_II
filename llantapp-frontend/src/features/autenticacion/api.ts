@@ -1,6 +1,8 @@
-import { postJSON, getJSON } from '../../core/http/_http';
+import { postJSON, getJSON, obtenerSlugTallerActual } from '../../core/http/_http';
 
-export type Rol = 'OWNER' | 'ADMIN_TALLER' | 'MECANICO' | 'CLIENTE';
+// Los códigos de rol válidos provienen de la base de datos.
+// Aquí solo tipamos como string (ej: "OWNER", "ADMIN_TALLER", "MECANICO", "CLIENTE").
+export type Rol = string;
 
 export interface Perfil {
   id: number;
@@ -11,7 +13,9 @@ export interface Perfil {
   correo?: string;
   email?: string;
   rol: Rol;
-  tallerSlug?: string;
+  // Para roles de taller, el backend puede devolver el slug asociado
+  // y así el front puede redirigir al menú correcto.
+  tallerSlug?: string | null;
 }
 
 export interface LoginResponse {
@@ -22,16 +26,43 @@ export interface RefreshResponse {
   accessToken: string;
 }
 
+/**
+ * Slug opcional del taller:
+ * - Si la URL o el entorno lo proveen, se manda al backend como slugTaller.
+ * - Si no, se omite y el backend decide (modo global / detección por correo).
+ */
+function getSlugOpcional(): string | undefined {
+  const slug = obtenerSlugTallerActual();
+  return slug && slug.trim() ? slug.trim() : undefined;
+}
+
 export const apiAuth = {
   registrar: (datos: {
     nombreCompleto: string;
     correo: string;
     clave: string;
-    rol: Rol;
-  }) => postJSON('/auth/registrar', datos),
+    rol?: Rol;
+  }) => {
+    const slug = getSlugOpcional();
+    const body: any = { datos };
 
-  login: (credenciales: { correo: string; clave: string }) =>
-    postJSON<LoginResponse>('/auth/login', credenciales),
+    if (slug) {
+      body.slugTaller = slug;
+    }
+
+    return postJSON('/auth/registrar', body);
+  },
+
+  login: (credenciales: { correo: string; clave: string }) => {
+    const slug = getSlugOpcional();
+    const body: any = { credenciales };
+
+    if (slug) {
+      body.slugTaller = slug;
+    }
+
+    return postJSON<LoginResponse>('/auth/login', body);
+  },
 
   perfil: (token?: string) => getJSON<Perfil>('/auth/perfil', token),
 

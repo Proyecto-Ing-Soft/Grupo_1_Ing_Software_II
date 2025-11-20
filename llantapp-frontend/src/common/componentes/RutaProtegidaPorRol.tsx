@@ -2,7 +2,9 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../core/auth/AuthContext';
 
-type Rol = 'ADMIN' | 'MECANICO' | 'CLIENTE';
+// SRP: proteger rutas por rol, sin acoplarse a enums locales.
+// Los códigos de rol válidos vienen desde la base de datos / backend.
+type Rol = string;
 
 export const RutaProtegidaPorRol: React.FC<{
   rolesPermitidos: Rol[];

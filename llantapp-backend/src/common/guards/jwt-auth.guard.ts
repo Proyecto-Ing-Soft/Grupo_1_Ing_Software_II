@@ -10,6 +10,11 @@ import {
 import * as jwt from 'jsonwebtoken';
 import { JwtPayloadAcceso } from '../../features/autenticacion/tipos';
 
+type JwtAccesoConTenant = JwtPayloadAcceso & {
+  sub: number | string;
+  slugTaller?: string;
+};
+
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
@@ -34,9 +39,7 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException('Token inválido');
       }
 
-      const payload = decoded as unknown as JwtPayloadAcceso & {
-        sub: number | string;
-      };
+      const payload = decoded as unknown as JwtAccesoConTenant;
 
       const idNum =
         typeof payload.sub === 'string'

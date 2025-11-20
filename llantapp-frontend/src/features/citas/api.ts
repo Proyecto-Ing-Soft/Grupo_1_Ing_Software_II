@@ -26,7 +26,7 @@ export interface CitaDetalle {
   [key: string]: any;
 }
 
-// Servicios disponibles
+// Servicios disponibles (desde BD; aquí solo tipamos el contrato)
 export type ServicioMin = {
   id: number;
   nombre: string;
@@ -104,8 +104,7 @@ export const apiCitas = {
     postAuthed(`/citas/${id}/finalizar`, payload),
 
   // POST /citas/:id/finalizar sin detalle (atajo desde tarjetas)
-  terminar: (id: number) =>
-    postAuthed(`/citas/${id}/finalizar`, {}),
+  terminar: (id: number) => postAuthed(`/citas/${id}/finalizar`, {}),
 
   // GET /citas/mias
   mias: () => getAuthed<any[]>('/citas/mias'),
@@ -120,12 +119,12 @@ export const apiCitas = {
   serviciosDisponibles: () => getAuthed<ServicioMin[]>('/servicios'),
 };
 
-function getAuthToken(explicit?: string) {
-  return explicit ?? tokenMemoria.get() ?? localStorage.getItem('access_token') ?? undefined;
-}
-
-export async function descargarEvidenciaCita(citaId: number, token?: string): Promise<EvidenciaDescarga> {
-  const auth = getAuthToken(token);
+// Descarga de evidencia asociada a una cita
+export async function descargarEvidenciaCita(
+  citaId: number,
+  token?: string,
+): Promise<EvidenciaDescarga> {
+  const auth = readAuthToken(token);
   const r = await fetch(`${API_BASE}/citas/${citaId}/evidencia`, {
     method: 'GET',
     headers: {
@@ -141,6 +140,9 @@ export async function descargarEvidenciaCita(citaId: number, token?: string): Pr
 }
 
 // Helper tipado al nuevo /citas/:id
-export async function obtenerDetalleCita(citaId: number, token?: string): Promise<CitaDetalle> {
+export async function obtenerDetalleCita(
+  citaId: number,
+  token?: string,
+): Promise<CitaDetalle> {
   return getJSON<CitaDetalle>(`/citas/${citaId}`, token);
 }

@@ -35,7 +35,18 @@ export class UsuarioController {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    const usuario = await this.usuarios.buscarPorId(uid);
+    const slugTaller =
+      req.user?.slugTaller ??
+      req.user?.tallerSlug ??
+      req.user?.tenant ??
+      req.headers?.['x-slug-taller'] ??
+      req.headers?.['x-tenant'];
+
+    if (!slugTaller || typeof slugTaller !== 'string') {
+      throw new NotFoundException('Taller (slug) no encontrado en el token o encabezados');
+    }
+
+    const usuario = await this.usuarios.buscarPorId(slugTaller, uid);
     if (!usuario) {
       throw new NotFoundException('Usuario no encontrado');
     }
@@ -46,31 +57,79 @@ export class UsuarioController {
   // Lista usuarios por rol (rol.codigo en BD)
   @UseGuards(JwtAuthGuard)
   @Get()
-  async porRol(@Query() q: UsuariosPorRolQueryDto) {
+  async porRol(@Req() req: any, @Query() q: UsuariosPorRolQueryDto) {
     if (!q.rol) return [];
-    return this.usuarios.listarPorRol(q.rol);
+
+    const slugTaller =
+      req.user?.slugTaller ??
+      req.user?.tallerSlug ??
+      req.user?.tenant ??
+      req.headers?.['x-slug-taller'] ??
+      req.headers?.['x-tenant'];
+
+    if (!slugTaller || typeof slugTaller !== 'string') {
+      throw new NotFoundException('Taller (slug) no encontrado en el token o encabezados');
+    }
+
+    return this.usuarios.listarPorRol(slugTaller, q.rol);
   }
 
   // Personal del taller (ej. ADMIN_TALLER, MECANICO)
   @UseGuards(JwtAuthGuard)
   @Get('taller')
-  async listarTaller() {
-    return this.usuarios.listarTaller();
+  async listarTaller(@Req() req: any) {
+    const slugTaller =
+      req.user?.slugTaller ??
+      req.user?.tallerSlug ??
+      req.user?.tenant ??
+      req.headers?.['x-slug-taller'] ??
+      req.headers?.['x-tenant'];
+
+    if (!slugTaller || typeof slugTaller !== 'string') {
+      throw new NotFoundException('Taller (slug) no encontrado en el token o encabezados');
+    }
+
+    return this.usuarios.listarTaller(slugTaller);
   }
 
   // Actualizar datos / rol de personal de taller
+  @UseGuards(JwtAuthGuard)
   @Put('taller/:id')
   async actualizarPersonalTaller(
+    @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ActualizarUsuarioTallerDto,
   ) {
-    return this.usuarios.actualizarPersonalTaller(id, dto);
+    const slugTaller =
+      req.user?.slugTaller ??
+      req.user?.tallerSlug ??
+      req.user?.tenant ??
+      req.headers?.['x-slug-taller'] ??
+      req.headers?.['x-tenant'];
+
+    if (!slugTaller || typeof slugTaller !== 'string') {
+      throw new NotFoundException('Taller (slug) no encontrado en el token o encabezados');
+    }
+
+    return this.usuarios.actualizarPersonalTaller(slugTaller, id, dto);
   }
 
   // Eliminar personal de taller
+  @UseGuards(JwtAuthGuard)
   @Delete('taller/:id')
-  async eliminarPersonalTaller(@Param('id', ParseIntPipe) id: number) {
-    await this.usuarios.eliminarPersonalTaller(id);
+  async eliminarPersonalTaller(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    const slugTaller =
+      req.user?.slugTaller ??
+      req.user?.tallerSlug ??
+      req.user?.tenant ??
+      req.headers?.['x-slug-taller'] ??
+      req.headers?.['x-tenant'];
+
+    if (!slugTaller || typeof slugTaller !== 'string') {
+      throw new NotFoundException('Taller (slug) no encontrado en el token o encabezados');
+    }
+
+    await this.usuarios.eliminarPersonalTaller(slugTaller, id);
     return { ok: true };
   }
 }
