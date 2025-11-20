@@ -7,19 +7,19 @@ import "./calificacionesRecibidas.css";
 type Item = {
   id: number;
   citaId: number;
-  clienteId: number;
+  clienteId?: number;
   estrellas: number;
   comentario?: string | null;
   creadaEn: string;
   cita?: {
     id: number;
-    estado: string;
+    estado?: string;
     fechaMantenimiento?: string | null;
     placaPreliminar?: string | null;
     marcaPreliminar?: string | null;
     modeloPreliminar?: string | null;
   } | null;
-  cliente?: { id: number; nombreCompleto: string } | null;
+  cliente?: { id?: number; nombreCompleto: string } | null;
 };
 
 function fmtFecha(s?: string | null) {

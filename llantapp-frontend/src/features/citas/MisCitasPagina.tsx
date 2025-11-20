@@ -6,11 +6,11 @@ import noCitasImg from "../../assets/priv/cliente/no_citas.png";
 
 type Cita = {
   id: number;
-  tipo: string;
-  estado: string;
+  fechaProgramada?: string | null;
   comentario?: string | null;
-  programadaPara?: string | null;
   vehiculo?: { placa?: string | null } | null;
+  servicio?: { nombre?: string | null } | null;
+  estado?: { codigo?: string | null } | null;
 };
 
 export default function MisCitasPagina() {
@@ -37,15 +37,18 @@ export default function MisCitasPagina() {
   // Animaciones de entrada (reveal)
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
-    const t = window.setTimeout(() => nodes.forEach(n => n.classList.add("will-animate")), 0);
+    const t = window.setTimeout(() => nodes.forEach((n) => n.classList.add("will-animate")), 0);
 
-    const obs = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        const el = e.target as HTMLElement;
-        if (e.isIntersecting) el.classList.add("animate-in");
-        else el.classList.remove("animate-in");
-      }
-    }, { threshold: 0.12 });
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const el = e.target as HTMLElement;
+          if (e.isIntersecting) el.classList.add("animate-in");
+          else el.classList.remove("animate-in");
+        }
+      },
+      { threshold: 0.12 }
+    );
 
     nodes.forEach((n, i) => {
       n.dataset.reveal = String(Math.min(i + 1, 5));
@@ -54,7 +57,7 @@ export default function MisCitasPagina() {
 
     return () => {
       window.clearTimeout(t);
-      nodes.forEach(n => obs.unobserve(n));
+      nodes.forEach((n) => obs.unobserve(n));
       obs.disconnect();
     };
   }, [cargando, citas.length]);
@@ -68,7 +71,7 @@ export default function MisCitasPagina() {
         <div className="mc__titleWrap reveal" data-reveal="1">
           <h1 className="mc__title">Mis citas</h1>
           <p className="mc__sub">
-            Revisa el estado de tus atenciones. Puedes agendar una nueva cita cuando lo necesites.
+            Revisa el estado de tus citas. Puedes agendar una nueva cuando lo necesites.
           </p>
         </div>
 
@@ -80,7 +83,9 @@ export default function MisCitasPagina() {
               className="mc-btn mc-btn--gradient"
               title="Volver al inicio"
             >
-              <span className="mc-icon" aria-hidden>⬅️</span>
+              <span className="mc-icon" aria-hidden>
+                ⬅️
+              </span>
               <span className="mc-btn__text">Volver al inicio</span>
             </button>
           </div>
@@ -103,29 +108,44 @@ export default function MisCitasPagina() {
         <section className="mc__content mc__stack-xl">
           {citas.length > 0 && (
             <div className="mc__grid reveal" data-reveal="3" role="list">
-              {citas.map((c, idx) => (
-                <article
-                  key={c.id}
-                  role="listitem"
-                  className="mc__card"
-                  data-reveal={String((idx % 5) + 1)}
-                >
-                  <div className="mc__cardMain">
-                    <div className="mc__headline">
-                      <span className="mc__id">#{c.id}</span>
-                      <span className="mc__tipo">{c.tipo}</span>
-                      {c.vehiculo?.placa && <span className="mc__placa">{c.vehiculo.placa}</span>}
+              {citas.map((c, idx) => {
+                const estadoCodigo = (c.estado?.codigo || "").toLowerCase();
+                return (
+                  <article
+                    key={c.id}
+                    role="listitem"
+                    className="mc__card"
+                    data-reveal={String((idx % 5) + 1)}
+                  >
+                    <div className="mc__cardMain">
+                      <div className="mc__headline">
+                        <span className="mc__id">#{c.id}</span>
+                        <span className="mc__tipo">
+                          {c.servicio?.nombre ?? "Sin servicio"}
+                        </span>
+                        {c.vehiculo?.placa && (
+                          <span className="mc__placa">{c.vehiculo.placa}</span>
+                        )}
+                      </div>
+                      <div className="mc__meta">
+                        <span className="mc__metaItem">
+                          🗓 {fmtSoloFecha(c.fechaProgramada)}
+                        </span>
+                        {c.comentario && (
+                          <span className="mc__metaItem">💬 {c.comentario}</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="mc__meta">
-                      <span className="mc__metaItem">🗓 {fmtSoloFecha(c.programadaPara)}</span>
-                      {c.comentario && <span className="mc__metaItem">💬 {c.comentario}</span>}
-                    </div>
-                  </div>
-                  <span className={`mc__chip mc__chip--${String(c.estado || "").toLowerCase()}`}>
-                    {c.estado}
-                  </span>
-                </article>
-              ))}
+                    <span
+                      className={`mc__chip mc__chip--${
+                        estadoCodigo || "sin_estado"
+                      }`}
+                    >
+                      {(estadoCodigo || "sin_estado").replace("_", " ").toUpperCase()}
+                    </span>
+                  </article>
+                );
+              })}
             </div>
           )}
 
@@ -133,9 +153,11 @@ export default function MisCitasPagina() {
             <>
               <div className="mc__empty reveal" data-reveal="3" role="status" aria-live="polite">
                 <div className="mc__emptyInner mc__stack-md">
-                  <div className="mc__emptyEmoji" aria-hidden>📭</div>
+                  <div className="mc__emptyEmoji" aria-hidden>
+                    📭
+                  </div>
                   <div className="mc__emptyTitle">No tienes citas</div>
-                  <div className="mc__emptySub">Cuando agendes, las verás aquí.</div> 
+                  <div className="mc__emptySub">Cuando agendes, las verás aquí.</div>
                   <img
                     src={noCitasImg}
                     alt="Sin citas programadas"
@@ -147,7 +169,9 @@ export default function MisCitasPagina() {
 
               <div className="mc__ctaRow reveal" data-reveal="4">
                 <Link to="/citas/agendar" className="mc-btn mc-btn--gradient">
-                  <span className="mc-icon" aria-hidden>📅</span>
+                  <span className="mc-icon" aria-hidden>
+                    📅
+                  </span>
                   <span className="mc-btn__text">Agendar una cita</span>
                 </Link>
               </div>

@@ -1,0 +1,274 @@
+.ext {
+  --bg: #eef2f7;
+  --paper: #ffffff;
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --ink-3: #64748b;
+  --border: #cbd5e1;
+  --border-2: #94a3b8;
+  --shadow: 0 16px 36px rgba(2,6,23,.08);
+  --shadow-lg: 0 22px 50px rgba(2,6,23,.14);
+  --brand-a: #10b981;
+  --brand-b: #06b6d4;
+  --brand-soft-a: rgba(14,165,233,.12);
+  --brand-soft-b: rgba(34,197,94,.12);
+  --ok: #059669;
+  --err: #dc2626;
+  --radius: 16px;
+  --radius-lg: 20px;
+
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 600px at 20% -10%, #f5fbff 0%, rgba(245,251,255,0) 60%),
+    radial-gradient(1000px 500px at 100% 0%, #f0fff7 0%, rgba(240,255,247,0) 55%),
+    var(--bg);
+  min-height: 100dvh;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  padding: 28px 24px;
+}
+
+.ext,
+.ext *,
+.ext *::before,
+.ext *::after { box-sizing: border-box; }
+
+.ext ::selection { background: #e0f2fe; }
+.ext ::placeholder { color: #94a3b8 !important; }
+
+.ext .ext__stack-sm{ display:flex; flex-direction:column; gap:10px; }
+.ext .ext__stack-md{ display:flex; flex-direction:column; gap:14px; }
+.ext .ext__stack-lg{ display:flex; flex-direction:column; gap:18px; }
+.ext .ext__stack-xl{ display:flex; flex-direction:column; gap:28px; }
+
+.ext .ext__header,
+.ext .ext__content{
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.ext .ext__titleWrap{ display:flex; flex-direction:column; gap:10px; }
+.ext .ext__title{
+  font-size: clamp(26px, 3.2vw, 38px);
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0;
+}
+.ext .ext__sub{ color: var(--ink-2); margin: 0; }
+
+.ext .ext__toolbar{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 9999px;
+  background: linear-gradient(115deg, var(--brand-soft-a), var(--brand-soft-b));
+  box-shadow: 0 16px 36px rgba(2,6,23,.10);
+  overflow: hidden;
+  max-width: max-content;
+}
+.ext .ext__actions{ display: flex; flex-wrap: wrap; gap: 10px; align-items: center; z-index: 1; }
+
+.ext .mc-btn{
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 18px; border-radius: 9999px;
+  border: 1px solid transparent; background: #fff !important; color: var(--ink) !important;
+  font-weight: 600; text-decoration: none; cursor: pointer;
+  transition: transform .18s, box-shadow .25s, background-position .35s, opacity .2s;
+  mix-blend-mode: normal !important;
+}
+.ext .mc-btn:disabled{ opacity: .6; cursor: not-allowed; }
+
+.ext .mc-btn--gradient{
+  color: #fff !important;
+  background-image: linear-gradient(90deg, #22c55e 0%, var(--brand-a) 40%, var(--brand-b) 100%) !important;
+  background-size: 220% 100%;
+  box-shadow: 0 12px 26px rgba(16,185,129,.28);
+}
+.ext .mc-btn--gradient:hover{
+  transform: translateY(-1px);
+  background-position: 100% 0;
+  box-shadow: 0 16px 34px rgba(16,185,129,.35);
+}
+
+.ext .mc-btn--ghost{
+  background:#fff !important; color: var(--ink) !important;
+  border:1.5px solid var(--border) !important;
+  box-shadow: 0 8px 20px rgba(2,6,23,.06);
+}
+.ext .mc-btn--ghost:hover{ transform: translateY(-1px); }
+
+.ext .ext__filters{ max-width: 640px; }
+.ext .input-wrap{
+  position: relative;
+  border: 2px solid var(--border) !important;
+  border-radius: 14px;
+  background: #ffffff !important;
+  box-shadow: 0 1px 0 rgba(15,23,42,.03);
+  overflow: hidden;
+}
+.ext .input,
+.ext textarea.input,
+.ext select.input{
+  width: 100%;
+  border: 0 !important;
+  outline: none !important;
+  background: transparent !important;
+  padding: 12px 14px;
+  font-size: 15px;
+  color: var(--ink) !important;
+  mix-blend-mode: normal !important;
+}
+.ext .input:focus,
+.ext textarea.input:focus,
+.ext select.input:focus{
+  box-shadow: 0 0 0 4px rgba(14,165,233,.18) inset;
+}
+.ext textarea.input{ min-height: 110px; resize: vertical; }
+
+.ext .ext__panel{
+  position: relative;
+  background: #ffffff !important;
+  border: 2px solid var(--border) !important;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg) !important;
+  padding: 20px;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  z-index: 1;
+}
+.ext .ext__panel::before{
+  content:"";
+  position:absolute; inset:0 auto 0 0; width:12px; border-radius:20px 0 0 20px;
+  background: linear-gradient(180deg, #c7d2fe 0%, #dbeafe 100%);
+  opacity:1;
+}
+.ext .ext__panelHeader{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--border-2);
+}
+.ext .ext__panelTitle{ font-size: 20px; font-weight: 900; color: var(--ink); }
+
+.ext .ext__form{ display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 14px; }
+.ext .form-group{ display:flex; flex-direction:column; gap:8px; }
+.ext .label{ font-size: 14px; font-weight: 700; color: var(--ink-2) !important; }
+
+.ext .ext__form .input-wrap{
+  border: 2px solid var(--border) !important;
+  background: #ffffff !important;
+}
+.ext .ext__form .input-wrap:focus-within{
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 4px rgba(56,189,248,.18);
+}
+
+.ext .ext__formActions{ display:flex; justify-content: flex-end; margin-top: 6px; }
+
+.ext .btnActionDark{
+  padding: 9px 12px; border-radius: 12px; border: 0;
+  background: var(--ink) !important; color: #fff !important; font-weight: 700;
+  cursor: pointer;
+  transition: filter .15s, transform .15s;
+}
+.ext .btnActionDark:hover{ filter: brightness(1.05); transform: translateY(-1px); }
+
+.ext .btnGhost{
+  padding: 9px 12px; border-radius: 12px;
+  background:#fff !important; color: var(--ink) !important;
+  border: 1.5px solid var(--border) !important;
+  cursor: pointer;
+  transition: background .15s, transform .15s;
+}
+.ext .btnGhost:hover{ background:#f8fafc; transform: translateY(-1px); }
+
+.ext .error-message{ font-size: 14px; color: var(--err); }
+.ext .success-message{ font-size: 14px; color: var(--ok); }
+.ext .mt8{ margin-top: 8px; }
+
+.ext .ext__grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 22px;
+  align-items: stretch;
+}
+
+.ext .ext__card{
+  position: relative;
+  background: var(--paper);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  transition: transform .16s, box-shadow .16s, border-color .16s, background-color .25s;
+}
+.ext .ext__card:hover{
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(2,6,23,.12);
+  background-color: #f8fafc;
+}
+.ext .ext__card::before{
+  content:""; position:absolute; inset:auto auto auto 0; top:0; bottom:0; width:6px;
+  border-radius: 16px 0 0 16px;
+  background: linear-gradient(180deg, #fef3c7 0%, #fed7aa 100%);
+  opacity: .9;
+}
+
+.ext .ext__cardHeader{
+  display:flex; justify-content:space-between; align-items:flex-start; gap: 12px;
+}
+.ext .ext__meta{ font-size: 12px; color: var(--ink-3); }
+.ext .ext__vehiculo{ font-weight: 700; color: var(--ink-2); }
+
+.ext .ext__descripcion{
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.ext .ext__chipLink{
+  display:inline-flex; align-items:center; gap:6px;
+  margin-top: 8px;
+  padding:4px 8px;
+  border-radius:9999px;
+  font-size: 12px;
+  border:1px solid var(--border-2);
+  background:#f1f5f9;
+  color: var(--ink-2);
+  text-decoration:none;
+}
+
+.ext .reveal{
+  will-change: transform, opacity;
+  transition: transform .45s cubic-bezier(.2,.8,.2,1), opacity .45s;
+}
+.ext .will-animate{
+  opacity: 0;
+  transform: translateY(12px) scale(.99);
+}
+.ext .animate-in{
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .ext .reveal,
+  .ext .will-animate,
+  .ext .animate-in{
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+@media (max-width: 640px){
+  .ext{ padding: 22px 12px; }
+  .ext .ext__card{ padding: 16px; }
+  .ext .ext__toolbar{ width: 100%; justify-content: space-between; }
+  .ext .ext__actions{ width: 100%; justify-content: space-between; }
+}

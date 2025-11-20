@@ -6,7 +6,7 @@ import "./registrarMantenimiento.css";
 
 export default function RegistrarMantenimientoPagina() {
   const navigate = useNavigate();
-  const { usuario, tieneRol } = useAuth();
+  const { tieneRol } = useAuth();
   const { state } = useLocation() as { state?: { citaId?: number } };
 
   // citaId desde state o query ?cita=ID
@@ -23,7 +23,7 @@ export default function RegistrarMantenimientoPagina() {
 
   const [form, setForm] = useState({
     trabajosRealizados: "",
-    repuestos: "",                 // texto separado por comas
+    repuestos: "", // texto separado por comas
     evidenciaBase64: "" as string | null, // opcional
   });
   const [enviando, setEnviando] = useState(false);
@@ -32,17 +32,27 @@ export default function RegistrarMantenimientoPagina() {
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setForm(s => ({ ...s, [name]: value }));
+    setForm((s) => ({ ...s, [name]: value }));
   };
 
   const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (!f) { setForm(s => ({ ...s, evidenciaBase64: "" })); return; }
-    if (!/^image\/(png|jpe?g|webp)$/i.test(f.type)) { setError("Formato no permitido"); return; }
-    if (f.size > 5 * 1024 * 1024) { setError("La imagen no debe superar 5MB"); return; }
+    if (!f) {
+      setForm((s) => ({ ...s, evidenciaBase64: "" }));
+      return;
+    }
+    if (!/^image\/(png|jpe?g|webp)$/i.test(f.type)) {
+      setError("Formato no permitido");
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      setError("La imagen no debe superar 5MB");
+      return;
+    }
 
     const reader = new FileReader();
-    reader.onload = () => setForm(s => ({ ...s, evidenciaBase64: reader.result as string }));
+    reader.onload = () =>
+      setForm((s) => ({ ...s, evidenciaBase64: reader.result as string }));
     reader.onerror = () => setError("No se pudo leer la imagen");
     reader.readAsDataURL(f);
   };
@@ -55,14 +65,21 @@ export default function RegistrarMantenimientoPagina() {
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null); setOk(false);
+    setError(null);
+    setOk(false);
     const v = validar();
-    if (v) { setError(v); return; }
+    if (v) {
+      setError(v);
+      return;
+    }
 
     const payload: TerminarCitaPayload = {
       trabajosRealizados: form.trabajosRealizados.trim(),
       repuestos: form.repuestos
-        ? form.repuestos.split(",").map(s => s.trim()).filter(Boolean)
+        ? form.repuestos
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
         : undefined,
       evidenciaBase64: form.evidenciaBase64 || undefined, // la fecha la pone el backend
     };
@@ -71,12 +88,22 @@ export default function RegistrarMantenimientoPagina() {
       setEnviando(true);
       await apiCitas.registrarMantenimiento(citaId!, payload);
       setOk(true);
-      setTimeout(() => navigate("/inicio", {
-        replace: true,
-        state: { flash: { type: "success", text: `Mantenimiento de la cita #${citaId} registrado.`, ttlMs: 4000 } }
-      }), 900);
+      setTimeout(
+        () =>
+          navigate("/inicio", {
+            replace: true,
+            state: {
+              flash: {
+                type: "success",
+                text: `Cita #${citaId} finalizada.`,
+                ttlMs: 4000,
+              },
+            },
+          }),
+        900
+      );
     } catch (e: any) {
-      setError(e?.message || "No se pudo registrar el mantenimiento");
+      setError(e?.message || "No se pudo finalizar la cita");
     } finally {
       setEnviando(false);
     }
@@ -86,8 +113,10 @@ export default function RegistrarMantenimientoPagina() {
     <main className="registrar">
       <section className="registrar__split">
         <div className="registrar__left reveal">
-          <h1 className="registrar__title">Registrar mantenimiento</h1>
-          <p className="registrar__sub">La fecha se registrará automáticamente por el sistema.</p>
+          <h1 className="registrar__title">Finalizar cita</h1>
+          <p className="registrar__sub">
+            La fecha de finalización se registrará automáticamente por el sistema.
+          </p>
 
           {!citaId && (
             <div className="error-message" role="alert">
@@ -97,7 +126,9 @@ export default function RegistrarMantenimientoPagina() {
 
           <form className="form" onSubmit={enviar} noValidate>
             <div className="form-group">
-              <label className="label" htmlFor="trabajosRealizados">Trabajos realizados</label>
+              <label className="label" htmlFor="trabajosRealizados">
+                Trabajos realizados
+              </label>
               <div className="input-wrap">
                 <textarea
                   id="trabajosRealizados"
@@ -112,7 +143,9 @@ export default function RegistrarMantenimientoPagina() {
             </div>
 
             <div className="form-group">
-              <label className="label" htmlFor="repuestos">Repuestos utilizados (separados por coma)</label>
+              <label className="label" htmlFor="repuestos">
+                Repuestos utilizados (separados por coma)
+              </label>
               <div className="input-wrap">
                 <input
                   id="repuestos"
@@ -126,26 +159,36 @@ export default function RegistrarMantenimientoPagina() {
             </div>
 
             <div className="form-group">
-              <label className="label" htmlFor="evidencia">Foto de evidencia (opcional)</label>
+              <label className="label" htmlFor="evidencia">
+                Foto de evidencia (opcional)
+              </label>
               <div className="input-wrap">
                 <input id="evidencia" type="file" accept="image/*" onChange={onPickFile} />
               </div>
-              {form.evidenciaBase64 && (
-                <div className="helper">Imagen seleccionada ✓</div>
-              )}
+              {form.evidenciaBase64 && <div className="helper">Imagen seleccionada ✓</div>}
             </div>
 
             <button type="submit" className="btn" disabled={enviando || !citaId}>
-              {enviando ? "Guardando…" : "Guardar mantenimiento"}
+              {enviando ? "Guardando…" : "Finalizar cita"}
             </button>
 
-            {error && <div className="error-message mt8" role="alert">{error}</div>}
-            {ok && <div className="success-message mt8" role="status">Mantenimiento registrado.</div>}
+            {error && (
+              <div className="error-message mt8" role="alert">
+                {error}
+              </div>
+            )}
+            {ok && (
+              <div className="success-message mt8" role="status">
+                Cita finalizada.
+              </div>
+            )}
           </form>
 
           <p className="helper">
             ¿Quieres salir?{" "}
-            <span className="textlink" onClick={() => navigate("/inicio")}>Volver al inicio</span>
+            <span className="textlink" onClick={() => navigate("/inicio")}>
+              Volver al inicio
+            </span>
           </p>
         </div>
 

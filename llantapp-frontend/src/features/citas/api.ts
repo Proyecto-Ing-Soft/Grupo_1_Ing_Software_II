@@ -1,108 +1,146 @@
 // PATRONES/PRINCIPIOS:
-// - Facade: agrupa todas las rutas HTTP relacionadas a citas.
-// - DRY: centraliza endpoints y manejo de autenticación.
-// - KISS: interfaz simple y directa.
+// - Facade: este mini-módulo “fachadea” las rutas HTTP para la UI.
+// - DRY: centraliza rutas y parseo de tipos (IDs numéricos).
+// - KISS: métodos autoexplicativos y de un solo propósito.
 
-import { tokenMemoria } from "../../core/utils/storageMemoria";
-import { apiCatalogoServicios } from "../catalogo-servicios/api";
+import { getJSON } from '../../core/http/_http';
+import { tokenMemoria } from '../../core/utils/storageMemoria';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
-// === Tipos ===
 export type EvidenciaDescarga = { url: string; mime: string; blob: Blob };
 
-export interface CrearCitaPayload {
-  vehiculoId?: number;
-  servicioId: number;
-  comentario?: string;
-  fechaProgramada: string;
-  // Si el cliente no tiene vehículo aún
-  placaPreliminar?: string;
-  marcaPreliminar?: string;
-  modeloPreliminar?: string;
-  anioPreliminar?: number;
-  colorPreliminar?: string;
-  vinPreliminar?: string;
-}
+export type TerminarCitaPayload = {
+  trabajosRealizados?: string;
+  repuestos?: string[];
+  evidenciaBase64?: string | null;
+};
 
 export interface CitaDetalle {
   id: number;
   fechaProgramada: string;
-  vehiculo?: { placa: string | null } | null;
-  servicio?: { nombre: string | null } | null;
-  estado?: { codigo: string } | null;
   comentariosCliente?: string | null;
+  vehiculo?: { id: number; placa: string | null } | null;
+  servicio?: { id: number; nombre: string | null } | null;
+  estado?: { codigo: string; nombre?: string | null } | null;
+  [key: string]: any;
 }
 
+// Servicios disponibles
+export type ServicioMin = {
+  id: number;
+  nombre: string;
+  descripcion?: string | null;
+};
+
 function readAuthToken(explicit?: string) {
-  return (
-    explicit ??
-    tokenMemoria.get() ??
-    localStorage.getItem("access_token") ??
-    undefined
-  );
+  return explicit ?? tokenMemoria.get() ?? localStorage.getItem('access_token') ?? undefined;
 }
 
 async function getAuthed<T>(url: string, token?: string): Promise<T> {
   const auth = readAuthToken(token);
   const r = await fetch(`${API_BASE}${url}`, {
-    method: "GET",
+    method: 'GET',
     headers: {
-      Accept: "application/json",
+      Accept: 'application/json',
       ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
     },
-    credentials: "include",
+    credentials: 'include',
   });
-  if (!r.ok) throw new Error(await r.text().catch(() => r.statusText));
+  if (!r.ok) {
+    const text = await r.text().catch(() => r.statusText);
+    throw new Error(text || r.statusText);
+  }
   return r.json() as Promise<T>;
 }
 
-async function postAuthed<T>(
-  url: string,
-  body?: any,
-  token?: string
-): Promise<T> {
+async function postAuthed<T>(url: string, body?: any, token?: string): Promise<T> {
   const auth = readAuthToken(token);
   const r = await fetch(`${API_BASE}${url}`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
       ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
-    credentials: "include",
+    credentials: 'include',
   });
-  if (!r.ok) throw new Error(await r.text().catch(() => r.statusText));
+  if (!r.ok) {
+    const text = await r.text().catch(() => r.statusText);
+    throw new Error(text || r.statusText);
+  }
   return r.json() as Promise<T>;
 }
 
-// === API ===
-export const apiCitas = {
-  crear: (payload: CrearCitaPayload) => postAuthed("/citas", payload),
-  mias: () => getAuthed<any[]>("/citas/mias"),
-  asignadas: () => getAuthed<any[]>("/citas/asignadas"),
-  pendientesAdmin: () => getAuthed<any[]>("/citas/admin/pendientes"),
-  detalle: (id: number) => getAuthed<CitaDetalle>(`/citas/${id}`),
-  evidencia: (id: number) => getAuthed<Blob>(`/citas/${id}/evidencia`),
+// Payload de creación de cita
+export type CitaCrearPayload = {
+  vehiculoId: number;
+  servicioId: number;
+  comentario?: string;
+  fechaProgramada: string; // ISO 8601
 };
 
-// Utilidad para descarga de evidencia
-export async function descargarEvidenciaCita(
-  citaId: number,
-  token?: string
-): Promise<EvidenciaDescarga> {
-  const auth = readAuthToken(token);
+// PRINCIPIOS: Facade (rutas), DRY (tipos/payload unificados), KISS
+export const apiCitas = {
+  // POST /citas
+  crear: (payload: CitaCrearPayload) =>
+    postAuthed('/citas', {
+      vehiculoId: Number(payload.vehiculoId),
+      servicioId: Number(payload.servicioId),
+      comentario: payload.comentario?.trim() || undefined,
+      fechaProgramada: payload.fechaProgramada,
+    }),
+
+  // GET /citas/admin/pendientes
+  pendientesAdmin: () => getAuthed<any[]>('/citas/admin/pendientes'),
+
+  // POST /citas/:id/asignar
+  asignar: (id: number, mecanicoId: number) =>
+    postAuthed(`/citas/${id}/asignar`, { mecanicoId }),
+
+  // POST /citas/:id/finalizar con detalle (trabajos, evidencia)
+  registrarMantenimiento: (id: number, payload: TerminarCitaPayload) =>
+    postAuthed(`/citas/${id}/finalizar`, payload),
+
+  // POST /citas/:id/finalizar sin detalle (atajo desde tarjetas)
+  terminar: (id: number) =>
+    postAuthed(`/citas/${id}/finalizar`, {}),
+
+  // GET /citas/mias
+  mias: () => getAuthed<any[]>('/citas/mias'),
+
+  // GET /citas/asignadas
+  asignadas: () => getAuthed<any[]>('/citas/asignadas'),
+
+  // GET /citas/:id
+  detalle: (id: number) => getAuthed<CitaDetalle>(`/citas/${id}`),
+
+  // Catálogo de servicios para el cliente
+  serviciosDisponibles: () => getAuthed<ServicioMin[]>('/servicios'),
+};
+
+function getAuthToken(explicit?: string) {
+  return explicit ?? tokenMemoria.get() ?? localStorage.getItem('access_token') ?? undefined;
+}
+
+export async function descargarEvidenciaCita(citaId: number, token?: string): Promise<EvidenciaDescarga> {
+  const auth = getAuthToken(token);
   const r = await fetch(`${API_BASE}/citas/${citaId}/evidencia`, {
-    method: "GET",
+    method: 'GET',
     headers: {
       ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
     },
-    credentials: "include",
+    credentials: 'include',
   });
   if (!r.ok) throw new Error(await r.text().catch(() => r.statusText));
   const blob = await r.blob();
-  const mime = r.headers.get("Content-Type") || "application/octet-stream";
+  const mime = r.headers.get('Content-Type') || 'application/octet-stream';
   const url = URL.createObjectURL(blob);
   return { url, mime, blob };
+}
+
+// Helper tipado al nuevo /citas/:id
+export async function obtenerDetalleCita(citaId: number, token?: string): Promise<CitaDetalle> {
+  return getJSON<CitaDetalle>(`/citas/${citaId}`, token);
 }
