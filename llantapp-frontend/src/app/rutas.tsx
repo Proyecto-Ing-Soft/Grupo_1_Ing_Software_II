@@ -25,7 +25,6 @@ import MisCitasPagina from '../features/mantenimientos/MisCitasPagina';
 import CitasMecanicoPagina from '../features/mantenimientos/CitasMecanicoPagina';
 import AdminCitasPendientes from '../features/asignaciones/AsociarMecanicoPagina';
 import CatalogoServiciosPagina from '../features/catalogo-servicios/CatalogoServiciosPagina';
-import AsociarMecanicoServicioPagina from '../features/asignaciones/AsociarMecanicoHector';
 import GestionUsuariosPagina from '../features/gestion/GestionUsuariosPagina';
 import RegistrarMantenimientoPagina from '../features/mantenimientos/RegistrarMantenimientoPagina';
 import MisVehiculosPagina from '../features/vehiculos/MisVehiculosPagina';
@@ -126,14 +125,6 @@ const router = createBrowserRouter(
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
               <CatalogoServiciosPagina />
-            </RutaProtegidaPorRol>
-          ),
-        },
-        {
-          path: 'admin/servicios/asociar',
-          element: (
-            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
-              <AsociarMecanicoServicioPagina />
             </RutaProtegidaPorRol>
           ),
         },

@@ -123,7 +123,8 @@ export class CitasService {
       citaId: cita.id,
       vehiculoId: cita.vehiculoId ?? null,
       titulo: 'Solicitud registrada',
-      mensaje: 'Recibimos tu solicitud de mantenimiento. Un administrador la revisará y asignará un mecánico pronto.',
+      mensaje:
+        'Recibimos tu solicitud de mantenimiento. Un administrador la revisará y asignará un mecánico pronto.',
     });
 
     return cita;
@@ -133,7 +134,18 @@ export class CitasService {
   async asignarMecanico(citaId: number, mecanicoId: number, _adminId: number) {
     const cita = await this.prisma.citaMantenimiento.findUnique({ where: { id: citaId } });
     if (!cita) throw new BadRequestException('Cita no existe');
-    if (cita.estado === EstadoCita.TERMINADA) throw new BadRequestException('Cita ya terminada');
+    if (cita.estado === EstadoCita.TERMINADA) {
+      throw new BadRequestException('Cita ya terminada');
+    }
+
+    // 🔐 NUEVO: validar que el usuario existe y realmente es MECÁNICO
+    const mecanico = await this.prisma.usuario.findUnique({
+      where: { id: mecanicoId },
+      select: { id: true, rol: true, nombreCompleto: true },
+    });
+    if (!mecanico || mecanico.rol !== 'MECANICO') {
+      throw new BadRequestException('Mecánico no válido');
+    }
 
     const actualizada = await this.prisma.citaMantenimiento.update({
       where: { id: citaId },
@@ -144,6 +156,7 @@ export class CitasService {
     const fecha = actualizada.programadaPara
       ? new Date(actualizada.programadaPara).toLocaleDateString('es-PE')
       : 'fecha programada';
+
     await this.noti.enviar({
       usuarioId: actualizada.clienteId,
       citaId: actualizada.id,
@@ -168,18 +181,28 @@ export class CitasService {
   async terminar(
     citaId: number,
     mecanicoId: number,
-    dto?: { trabajosRealizados?: string; repuestos?: string[]; evidenciaBase64?: string | null }
+    dto?: {
+      trabajosRealizados?: string;
+      repuestos?: string[];
+      evidenciaBase64?: string | null;
+    },
   ) {
     const cita = await this.prisma.citaMantenimiento.findUnique({ where: { id: citaId } });
     if (!cita) throw new BadRequestException('Cita no existe');
     if (cita.mecanicoId !== mecanicoId) throw new ForbiddenException('No eres el mecánico asignado');
-    if (cita.estado !== EstadoCita.EN_PROGRESO) throw new BadRequestException('La cita no está en proceso');
-    if (!cita.programadaPara) throw new BadRequestException('La cita no tiene fecha programada');
+    if (cita.estado !== EstadoCita.EN_PROGRESO) {
+      throw new BadRequestException('La cita no está en proceso');
+    }
+    if (!cita.programadaPara) {
+      throw new BadRequestException('La cita no tiene fecha programada');
+    }
 
     // permite terminar el mismo día o después (comparación por YMD local)
     const hoy = this.toYMD(new Date());
     const programada = this.toYMD(new Date(cita.programadaPara));
-    if (hoy < programada) throw new BadRequestException('Aún no es el día programado');
+    if (hoy < programada) {
+      throw new BadRequestException('Aún no es el día programado');
+    }
 
     // 1) Intentar enlazar vehículo existente por placa si no hay vehiculoId
     let vehiculoId = cita.vehiculoId ?? null;
@@ -214,16 +237,20 @@ export class CitasService {
       fechaMantenimiento: new Date(), // ← si existe en tu schema
     };
     if (dto?.trabajosRealizados != null) dataUpdate.trabajosRealizados = dto.trabajosRealizados;
-    if (dto?.repuestos != null)         dataUpdate.repuestos          = dto.repuestos;
+    if (dto?.repuestos != null) dataUpdate.repuestos = dto.repuestos;
 
     // Evidencia (opcional, guardada como bytes + metadata)
     if (dto?.evidenciaBase64) {
       const m = /^data:(.+);base64,(.+)$/.exec(dto.evidenciaBase64);
       if (!m) throw new BadRequestException('Imagen inválida');
-      const mime = m[1]; const b64 = m[2]; const buf = Buffer.from(b64, 'base64');
-      if (buf.byteLength > 5 * 1024 * 1024) throw new BadRequestException('La imagen no debe superar 5MB');
-      dataUpdate.evidenciaBytes  = buf;
-      dataUpdate.evidenciaMime   = mime;
+      const mime = m[1];
+      const b64 = m[2];
+      const buf = Buffer.from(b64, 'base64');
+      if (buf.byteLength > 5 * 1024 * 1024) {
+        throw new BadRequestException('La imagen no debe superar 5MB');
+      }
+      dataUpdate.evidenciaBytes = buf;
+      dataUpdate.evidenciaMime = mime;
       dataUpdate.evidenciaNombre = `cita-${citaId}-${Date.now()}`;
     }
 
@@ -234,10 +261,10 @@ export class CitasService {
 
     // 3) Notificación final
     const placaMostrar =
-      vehiculo?.placa
-        ?? (cita.placaPreliminar && cita.placaPreliminar.trim()
-              ? cita.placaPreliminar.trim().toUpperCase()
-              : 'PLACA AÚN NO REGISTRADA');
+      vehiculo?.placa ??
+      (cita.placaPreliminar && cita.placaPreliminar.trim()
+        ? cita.placaPreliminar.trim().toUpperCase()
+        : 'PLACA AÚN NO REGISTRADA');
 
     await this.noti.enviar({
       usuarioId: terminada.clienteId,
@@ -257,9 +284,15 @@ export class CitasService {
     return this.prisma.citaMantenimiento.findMany({
       where: { clienteId },
       select: {
-        id: true, tipo: true, estado: true, comentario: true, programadaPara: true,
+        id: true,
+        tipo: true,
+        estado: true,
+        comentario: true,
+        programadaPara: true,
         vehiculo: { select: { placa: true } },
-        placaPreliminar: true, marcaPreliminar: true, modeloPreliminar: true,
+        placaPreliminar: true,
+        marcaPreliminar: true,
+        modeloPreliminar: true,
       },
       orderBy: { creadoEn: 'desc' },
     });
@@ -270,10 +303,16 @@ export class CitasService {
     return this.prisma.citaMantenimiento.findMany({
       where: { mecanicoId },
       select: {
-        id: true, tipo: true, estado: true, comentario: true, programadaPara: true,
+        id: true,
+        tipo: true,
+        estado: true,
+        comentario: true,
+        programadaPara: true,
         vehiculo: { select: { placa: true } },
         cliente: { select: { nombreCompleto: true } },
-        placaPreliminar: true, marcaPreliminar: true, modeloPreliminar: true,
+        placaPreliminar: true,
+        marcaPreliminar: true,
+        modeloPreliminar: true,
       },
       orderBy: [{ programadaPara: 'asc' }, { creadoEn: 'desc' }],
     });
@@ -289,7 +328,7 @@ export class CitasService {
         estado: true,
         comentario: true,
         programadaPara: true,
-        vehiculo: { select: { placa: true } }, 
+        vehiculo: { select: { placa: true } },
         placaPreliminar: true,
         marcaPreliminar: true,
         modeloPreliminar: true,

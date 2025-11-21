@@ -4,7 +4,20 @@
 // - Demeter: el controller solo “conoce” a su Service (no navega por capas internas).
 // - Seguridad por capas: aquí puedes aplicar Jwt/RolesGuard sin tocar el Service (OCP).
 
-import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, ParseIntPipe, Post, Req, StreamableFile, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  StreamableFile,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { CitasService } from './citas.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { AsignarMecanicoDto } from '../../asignaciones/asignaciones/dto/asignar-mecanico.dto';
@@ -28,15 +41,25 @@ export class CitasController {
     @Body() dto: AsignarMecanicoDto,
     @Req() req: any,
   ) {
+    // ⬇⬇⬇ CAMBIO IMPORTANTE PARA US-21: solo ADMIN puede asignar/reasignar ⬇⬇⬇
+    if (req.user?.rol !== 'ADMIN') {
+      throw new ForbiddenException('Solo admin puede asignar mecánicos');
+    }
+
     const adminId = Number(req.user?.id ?? req.user?.sub);
     if (!Number.isFinite(adminId)) throw new UnauthorizedException('Usuario no válido');
+
     return this.svc.asignarMecanico(id, dto.mecanicoId, adminId);
   }
 
   @Post(':id/terminar')
   terminar(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: { trabajosRealizados?: string; repuestos?: string[]; evidenciaBase64?: string | null },
+    @Body() dto: {
+      trabajosRealizados?: string;
+      repuestos?: string[];
+      evidenciaBase64?: string | null;
+    },
     @Req() req: any,
   ) {
     const mecanicoId = Number(req.user?.id ?? req.user?.sub);
@@ -94,10 +117,11 @@ export class CitasController {
 
       trabajosRealizados: (c as any).trabajosRealizados ?? null,
 
-      evidenciaDisponible: Boolean((c as any).evidenciaMime || (c as any).evidenciaNombre),
+      evidenciaDisponible: Boolean(
+        (c as any).evidenciaMime || (c as any).evidenciaNombre,
+      ),
     };
   }
-
 
   @Get(':id/evidencia')
   async evidencia(@Param('id', ParseIntPipe) id: number): Promise<StreamableFile> {
