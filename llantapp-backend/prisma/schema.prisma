@@ -60,8 +60,14 @@ model Usuario {
   // Calificaciones hechas
   calificacionesHechas CalificacionCita[]
 
-  // === NUEVO: servicios para los que el usuario (mecánico) está habilitado ===
+  // Servicios para los que el usuario (mecánico) está habilitado
   serviciosHabilitados ServicioMecanico[] @relation("MecanicosHabilitados")
+
+  // Intervenciones externas registradas por este usuario (cliente)
+  intervencionesExternas IntervencionExterna[]
+
+  // ✅ NUEVO: acciones de auditoría donde participa este usuario (actor)
+  acciones AccionUsuario[]
 }
 
 model Empresa {
@@ -103,20 +109,23 @@ model Vehiculo {
   // Notificaciones ligadas al vehículo (si aplica)
   notificaciones Notificacion[]
 
+  // Intervenciones externas asociadas a este vehículo
+  intervencionesExternas IntervencionExterna[]
+
   @@index([empresaId])
 }
 
-// === NUEVO: Catálogo de servicios ===
+// === Catálogo de servicios ===
 model Servicio {
-  id               Int       @id @default(autoincrement())
-  nombre           String    @unique
-  descripcion      String    @db.Text
-  activo           Boolean   @default(true)
-  precioSugerido   Decimal?  @db.Decimal(10, 2) // opcional
-  duracionMinutos  Int?                           // opcional
+  id              Int      @id @default(autoincrement())
+  nombre          String   @unique
+  descripcion     String   @db.Text
+  activo          Boolean  @default(true)
+  precioSugerido  Decimal? @db.Decimal(10, 2) // opcional
+  duracionMinutos Int? // opcional
 
-  creadoEn         DateTime  @default(now())
-  actualizadoEn    DateTime  @updatedAt
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
 
   // Mecánicos habilitados (muchos-a-muchos explícito)
   mecanicosHabilitados ServicioMecanico[]
@@ -125,13 +134,13 @@ model Servicio {
   citas CitaMantenimiento[]
 }
 
-// === NUEVO: Relación Servicio <-> Mecánico con habilitación ===
+// === Relación Servicio <-> Mecánico con habilitación ===
 model ServicioMecanico {
-  servicioId  Int
-  mecanicoId  Int
-  habilitado  Boolean  @default(true)
-  creadoEn    DateTime @default(now())
-  actualizadoEn DateTime @updatedAt
+  servicioId    Int
+  mecanicoId    Int
+  habilitado    Boolean  @default(true)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @default(now())
 
   servicio Servicio @relation(fields: [servicioId], references: [id])
   mecanico Usuario  @relation("MecanicosHabilitados", fields: [mecanicoId], references: [id])
@@ -149,8 +158,8 @@ model CitaMantenimiento {
   programadaPara     DateTime?
   fechaMantenimiento DateTime?
 
-  creadoEn           DateTime          @default(now())
-  actualizadoEn      DateTime          @updatedAt
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
 
   clienteId Int
   cliente   Usuario @relation("CitasCliente", fields: [clienteId], references: [id])
@@ -161,7 +170,7 @@ model CitaMantenimiento {
   vehiculoId Int?
   vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id])
 
-  // === NUEVO: referencia al ítem del catálogo (opcional para compatibilidad) ===
+  // referencia al ítem del catálogo (opcional para compatibilidad)
   servicioId Int?
   servicio   Servicio? @relation(fields: [servicioId], references: [id])
 
@@ -184,27 +193,30 @@ model CitaMantenimiento {
 
   calificacion CalificacionCita?
 
+  // Acciones asociadas a esta cita (crear, asignar, terminar, etc.)
+  acciones AccionUsuario[]
+
   @@index([clienteId])
   @@index([mecanicoId, estado])
   @@index([vehiculoId])
   @@index([placaPreliminar])
-  @@index([servicioId])   // NUEVO: consultas por servicio
+  @@index([servicioId])
 }
 
 model Notificacion {
-  id         Int     @id @default(autoincrement())
-  usuarioId  Int
-  usuario    Usuario @relation(fields: [usuarioId], references: [id])
+  id        Int     @id @default(autoincrement())
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
 
   vehiculoId Int?
   vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id])
 
-  citaId     Int?
-  cita       CitaMantenimiento? @relation(fields: [citaId], references: [id])
+  citaId Int?
+  cita   CitaMantenimiento? @relation(fields: [citaId], references: [id])
 
-  mensaje    String
-  estado     EstadoNotificacion    @default(PENDIENTE) // PENDIENTE | LEIDA
-  creadoEn   DateTime              @default(now())
+  mensaje  String
+  estado   EstadoNotificacion @default(PENDIENTE) // PENDIENTE | LEIDA
+  creadoEn DateTime           @default(now())
 
   @@index([usuarioId, estado])
   @@index([vehiculoId])
@@ -212,19 +224,82 @@ model Notificacion {
 }
 
 model CalificacionCita {
-  id          Int      @id @default(autoincrement())
-  citaId      Int      @unique
-  clienteId   Int
-  estrellas   Int      @db.SmallInt  // 1..5 (validar en servicio)
-  comentario  String?
-  creadaEn    DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  citaId     Int      @unique
+  clienteId  Int
+  estrellas  Int      @db.SmallInt // 1..5 (validar en servicio)
+  comentario String?
+  creadaEn   DateTime @default(now())
 
   // Relaciones
-  cita        CitaMantenimiento @relation(fields: [citaId], references: [id], onDelete: Cascade)
-  cliente     Usuario           @relation(fields: [clienteId], references: [id])
+  cita    CitaMantenimiento @relation(fields: [citaId], references: [id], onDelete: Cascade)
+  cliente Usuario           @relation(fields: [clienteId], references: [id])
 
   @@index([clienteId])
 }
+
+// === Bitácora de acciones de usuario sobre citas ===
+model AccionUsuario {
+  id Int @id @default(autoincrement())
+
+  // QUIÉN realizó la acción (actor)
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  // QUÉ acción fue
+  tipo String // p.ej.: "CREAR_CITA", "ASIGNAR_MECANICO", "TERMINAR_CITA"
+
+  // SOBRE QUÉ cita se hizo la acción (si aplica)
+  citaId Int?
+  cita   CitaMantenimiento? @relation(fields: [citaId], references: [id])
+
+  // MECÁNICO involucrado (si aplica, por ejemplo en la asignación o en el cierre)
+  mecanicoId Int?
+
+  // TEXTO legible para mostrar en la UI
+  descripcion String @db.Text
+
+  // CUÁNDO se registró la acción
+  creadoEn DateTime @default(now())
+
+  @@index([usuarioId, creadoEn])
+  @@index([tipo, creadoEn])
+  @@index([citaId])
+}
+
+model IntervencionExterna {
+  id Int @id @default(autoincrement())
+
+  vehiculoId Int
+  vehiculo   Vehiculo @relation(fields: [vehiculoId], references: [id])
+
+  clienteId Int
+  cliente   Usuario @relation(fields: [clienteId], references: [id])
+
+  fecha           DateTime
+  kilometraje     Int?
+  descripcion     String   @db.Text
+  tallerNombre    String?
+  costoAproximado Decimal? @db.Decimal(10, 2)
+
+  creadoEn DateTime @default(now())
+
+  @@index([vehiculoId])
+  @@index([clienteId, fecha])
+}
+
+model Consumible {
+  id            Int      @id @default(autoincrement())
+  nombre        String   @unique
+  unidad        String   // ej: "lt", "und", "kg"
+  stockActual   Int      @default(0)
+  stockMinimo   Int      @default(0)
+  descripcion   String?  @db.Text
+  activo        Boolean  @default(true)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+}
+
 
 // generator erd {
 //   provider = "prisma-erd-generator"

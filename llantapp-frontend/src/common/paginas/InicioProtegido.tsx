@@ -235,6 +235,16 @@ export default function InicioProtegido() {
               </div>
             </Link>
           )}
+
+          {tieneRol(["ADMIN"]) && (
+            <Link to="/admin/consumibles" className="btn-card btn-secondary reveal" data-delay="720">
+              <div className="btn-icon">🧴</div>
+              <div className="btn-text">
+                <div className="btn-title">Inventario de consumibles</div>
+                <div className="btn-sub">Gestiona stock de aceites, filtros y más</div>
+              </div>
+            </Link>
+          )}
         </div>
       </main>
     </div>

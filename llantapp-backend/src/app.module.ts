@@ -17,6 +17,10 @@ import { CatalogoServiciosModule } from './features/catalogo-servicios/catalogo-
 import { MailerModule } from './core/mailer/mailer.module';
 import { SolicitudesModule } from './features/solicitudes/solicitudes/solicitudes.module';
 
+// SPRINT 2
+import { IntervencionesExternasModule } from './features/intervenciones-externas/intervenciones-externas.module';
+import { ConsumiblesModule } from './features/consumibles/consumibles.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -32,6 +36,8 @@ import { SolicitudesModule } from './features/solicitudes/solicitudes/solicitude
     CitasModule,            // Citas de mantenimiento
     HistorialModule,        // Historial de mantenimientos
     CalificacionesModule,    // Calificaciones
+    IntervencionesExternasModule, // Intervenciones externas sprint 2
+    ConsumiblesModule, // SPRINT 2 DE CONSUMIBLES
 
     CatalogoServiciosModule, // Catálogo + habilitación de mecánicos (US-06)
     MailerModule,         // Envío de correos

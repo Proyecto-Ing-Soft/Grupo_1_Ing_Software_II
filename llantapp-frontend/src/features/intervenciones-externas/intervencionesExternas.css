@@ -1,0 +1,248 @@
+.iex {
+  --bg: #f8fafc;
+  --paper: #ffffff;
+  --ink: #0f172a;
+  --muted: #000000;
+  --line: #e2e8f0;
+
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px clamp(12px, 3vw, 20px);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Inter, Arial, "Noto Sans";
+}
+
+.iex__header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.iex__titleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.iex__title {
+  margin: 0;
+  font-size: clamp(26px, 3.2vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.iex__sub {
+  margin: 0;
+  color: var(--muted);
+  max-width: 72ch;
+}
+
+.iex__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.iex__linkHistorial {
+  font-size: 14px;
+  color: #0369a1;
+  text-decoration: none;
+}
+
+.iex__linkHistorial:hover {
+  text-decoration: underline;
+}
+
+.iex__alert {
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.iex__alert--error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.iex__alert--ok {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.iex__section {
+  margin-top: 18px;
+  padding: 18px 18px 20px;
+  border-radius: 18px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.iex__sectionTitle {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #000;
+}
+
+.iex__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.iex__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px 18px;
+}
+
+.iex__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.iex__field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.iex__field input,
+.iex__field textarea {
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 8px 10px;
+  font-size: 0.94rem;
+  font-family: inherit;
+  outline: none;
+  background: #f9fafb;
+  color: #000000;
+}
+
+.iex__field input:focus,
+.iex__field textarea:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.2);
+  background: #ffffff;
+}
+
+.iex__field textarea {
+  resize: vertical;
+}
+
+.iex__field--full {
+  grid-column: 1 / -1;
+}
+
+.iex__actions {
+  margin-top: 6px;
+}
+
+.iex__hint {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.iex__empty {
+  margin-top: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px dashed #cbd5e1;
+  text-align: center;
+  background: #f9fafb;
+}
+
+.iex__emptyEmoji {
+  font-size: 32px;
+  margin-bottom: 4px;
+}
+
+.iex__emptyTitle {
+  font-weight: 700;
+}
+
+.iex__title {
+  color: #000;
+}
+
+.iex__emptySub {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Tabla */
+.iex__tableWrap {
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.iex__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.iex__table th,
+.iex__table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  vertical-align: top;
+}
+
+.iex__table th {
+  font-weight: 600;
+  background: #f1f5f9;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Animaciones suaves (reusa clases de MisCitas adaptadas) */
+.reveal-interv {
+  will-change: transform, opacity;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease;
+}
+.will-animate {
+  opacity: 0;
+  transform: translateY(12px) scale(0.985);
+}
+.animate-in {
+  opacity: 1;
+  transform: none;
+}
+.animate-in[data-reveal="1"] {
+  transition-delay: 0.04s;
+}
+.animate-in[data-reveal="2"] {
+  transition-delay: 0.08s;
+}
+.animate-in[data-reveal="3"] {
+  transition-delay: 0.12s;
+}
+.animate-in[data-reveal="4"] {
+  transition-delay: 0.16s;
+}
+.animate-in[data-reveal="5"] {
+  transition-delay: 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-interv,
+  .will-animate,
+  .animate-in {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}

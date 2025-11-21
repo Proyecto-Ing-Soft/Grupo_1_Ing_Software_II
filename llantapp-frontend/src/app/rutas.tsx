@@ -39,7 +39,8 @@ import AdminCalificacionesPagina from '../features/calificaciones/pages/AdminCal
 // NUEVO: SPRINT 2
 import EnviarPromocionPagina from '../features/promociones/EnviarPromocionPagina';
 import ResumenTecnicoPagina from '../features/mantenimientos/ResumenTecnicoPagina';
-
+import RegistrarIntervencionExternaPagina from "../features/intervenciones-externas/RegistrarIntervencionExternaPagina";
+import AdminConsumiblesPagina from '../features/consumibles/AdminConsumiblesPagina';
 
 // GUARDS / LAYOUT
 import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';
@@ -144,6 +145,16 @@ const router = createBrowserRouter(
           ),
         },
 
+        // Admin: Inventario de consumibles
+        {
+          path: 'admin/consumibles',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+              <AdminConsumiblesPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
         // Admin: Gestión de Usuarios (lista/crear/editar — mismo componente)
         {
           path: 'admin/usuarios',
@@ -226,6 +237,14 @@ const router = createBrowserRouter(
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
               <CitasMecanicoPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+        {
+          path: 'vehiculos/:id/intervenciones-externas',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
+              <RegistrarIntervencionExternaPagina />
             </RutaProtegidaPorRol>
           ),
         },
