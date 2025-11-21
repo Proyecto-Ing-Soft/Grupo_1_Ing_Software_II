@@ -1,0 +1,147 @@
+.mant-vencidos {
+  padding: 1.5rem 0;
+}
+
+/* Header */
+.mant-vencidos .page__header {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+
+.mant-vencidos .page__headerMain {
+  flex: 1 1 auto;
+}
+
+.mant-vencidos .page__headerActions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Botón "Volver al inicio" */
+.mant-vencidos .page__headerActions .mc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mant-vencidos .page__title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #041321 !important;
+  opacity: 1 !important;
+  margin-bottom: 0.25rem;
+}
+
+.mant-vencidos .page__subtitle {
+  font-size: 0.95rem;
+  color: #4b5563 !important;
+  opacity: 1 !important;
+}
+
+/* Mensajes simples */
+.mant-vencidos__info {
+  margin-top: 0.5rem;
+  color: #475569;
+}
+
+/* Tabla */
+.mant-vencidos .table-wrap {
+  width: 100%;
+  margin-top: 1rem;
+  overflow-x: auto;
+}
+
+.mant-vencidos__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: #ffffff;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.mant-vencidos__table th,
+.mant-vencidos__table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.mant-vencidos__table th {
+  background: #f8fafc;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+}
+
+.mant-vencidos__table tbody tr:nth-child(even) {
+  background: #f9fbff;
+}
+
+.mant-vencidos__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Hover sutil */
+.mant-vencidos__table tbody tr {
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.mant-vencidos__table tbody tr:hover {
+  background: #fef2f2;
+  transform: translateY(-1px);
+}
+
+/* Columnas específicas */
+.mant-vencidos__table th:nth-child(1),
+.mant-vencidos__table td:nth-child(1) {
+  white-space: nowrap;
+}
+
+.mant-vencidos__table th:nth-child(2),
+.mant-vencidos__table td:nth-child(2),
+.mant-vencidos__table th:nth-child(3),
+.mant-vencidos__table td:nth-child(3) {
+  white-space: nowrap;
+}
+
+.mant-vencidos__dias {
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+/* Estado como pill */
+.mant-vencidos__estado {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* Mensajes de error */
+.mant-vencidos .error-message {
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mant-vencidos .page__header {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .mant-vencidos .page__title {
+    font-size: 1.3rem;
+  }
+
+  .mant-vencidos__table th,
+  .mant-vencidos__table td {
+    padding: 0.6rem 0.7rem;
+  }
+}

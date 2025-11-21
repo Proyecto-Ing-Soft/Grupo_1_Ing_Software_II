@@ -186,6 +186,22 @@ export default function InicioProtegido() {
           )}
 
           {tieneRol(["ADMIN"]) && (
+            <Link
+              to="/admin/mantenimientos-vencidos"
+              className="btn-card btn-secondary reveal"
+              data-delay="700"
+            >
+              <div className="btn-icon">⏰</div>
+              <div className="btn-text">
+                <div className="btn-title">Mantenimientos vencidos</div>
+                <div className="btn-sub">
+                  Identifica vehículos con mantenimiento vencido
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {tieneRol(["ADMIN"]) && (
             <Link to="/admin/usuarios" className="btn-card btn-secondary reveal" data-delay="760">
               <div className="btn-icon">👥</div>
               <div className="btn-text">

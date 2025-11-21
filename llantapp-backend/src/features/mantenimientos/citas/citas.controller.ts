@@ -41,7 +41,7 @@ export class CitasController {
     @Body() dto: AsignarMecanicoDto,
     @Req() req: any,
   ) {
-    // ⬇⬇⬇ CAMBIO IMPORTANTE PARA US-21: solo ADMIN puede asignar/reasignar ⬇⬇⬇
+    // US-21: solo ADMIN puede asignar/reasignar
     if (req.user?.rol !== 'ADMIN') {
       throw new ForbiddenException('Solo admin puede asignar mecánicos');
     }
@@ -55,10 +55,17 @@ export class CitasController {
   @Post(':id/terminar')
   terminar(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: {
+    @Body()
+    dto: {
       trabajosRealizados?: string;
       repuestos?: string[];
       evidenciaBase64?: string | null;
+
+      // US-20: consumibles usados para descontar stock
+      consumos?: {
+        consumibleId: number;
+        cantidad: number;
+      }[];
     },
     @Req() req: any,
   ) {
@@ -85,6 +92,13 @@ export class CitasController {
   pendientes(@Req() req: any) {
     if (req.user?.rol !== 'ADMIN') throw new ForbiddenException('Solo admin');
     return this.svc.listarPendientes();
+  }
+
+  // US-24: citas/mantenimientos vencidos (fecha programada ya pasó y no están terminadas)
+  @Get('admin/vencidas')
+  vencidas(@Req() req: any) {
+    if (req.user?.rol !== 'ADMIN') throw new ForbiddenException('Solo admin');
+    return this.svc.listarVencidas();
   }
 
   @Get(':id')
@@ -147,5 +161,4 @@ export class CitasController {
 
     return this.svc.generarResumenTecnico(id, userId, rol);
   }
-
 }

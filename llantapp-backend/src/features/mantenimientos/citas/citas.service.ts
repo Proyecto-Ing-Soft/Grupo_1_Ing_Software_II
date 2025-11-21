@@ -42,8 +42,8 @@ export class CitasService {
     if (!dto.programadaPara || !/^\d{4}-\d{2}-\d{2}$/.test(dto.programadaPara)) {
       throw new BadRequestException('Fecha inválida (usa AAAA-MM-DD)');
     }
-    const hoyYMD = this.toYMD(new Date());        // ← hoy local
-    const ymd = dto.programadaPara.slice(0, 10);  // normalizamos a YYYY-MM-DD
+    const hoyYMD = this.toYMD(new Date()); // ← hoy local
+    const ymd = dto.programadaPara.slice(0, 10); // normalizamos a YYYY-MM-DD
     if (ymd < hoyYMD) {
       throw new BadRequestException('La fecha programada debe ser hoy o una fecha futura');
     }
@@ -65,30 +65,40 @@ export class CitasService {
     if (dto.vehiculoId) {
       const vehiculo = await this.prisma.vehiculo.findFirst({
         where: { id: dto.vehiculoId, propietarioUsuarioId: clienteId },
-        select: { id: true, placa: true, marca: true, modelo: true, anio: true, color: true, vin: true },
+        select: {
+          id: true,
+          placa: true,
+          marca: true,
+          modelo: true,
+          anio: true,
+          color: true,
+          vin: true,
+        },
       });
       if (!vehiculo) throw new BadRequestException('Vehículo no válido para este usuario');
 
       vehiculoId = vehiculo.id;
       snapshot = {
-        ...(vehiculo.placa  ? { placaPreliminar: vehiculo.placa.toUpperCase() } : {}),
-        ...(vehiculo.marca  ? { marcaPreliminar: vehiculo.marca } : {}),
+        ...(vehiculo.placa ? { placaPreliminar: vehiculo.placa.toUpperCase() } : {}),
+        ...(vehiculo.marca ? { marcaPreliminar: vehiculo.marca } : {}),
         ...(vehiculo.modelo ? { modeloPreliminar: vehiculo.modelo } : {}),
         ...(vehiculo.anio != null ? { anioPreliminar: vehiculo.anio } : {}),
         ...(vehiculo.color ? { colorPreliminar: vehiculo.color } : {}),
-        ...(vehiculo.vin   ? { vinPreliminar: vehiculo.vin } : {}),
+        ...(vehiculo.vin ? { vinPreliminar: vehiculo.vin } : {}),
       };
     } else {
       if (!dto.placaPreliminar || !dto.marcaPreliminar || !dto.modeloPreliminar) {
         throw new BadRequestException('Selecciona un vehículo o completa placa, marca y modelo');
       }
       snapshot = {
-        ...(dto.placaPreliminar  ? { placaPreliminar: dto.placaPreliminar.trim().toUpperCase() } : {}),
-        ...(dto.marcaPreliminar  ? { marcaPreliminar: dto.marcaPreliminar.trim() } : {}),
+        ...(dto.placaPreliminar
+          ? { placaPreliminar: dto.placaPreliminar.trim().toUpperCase() }
+          : {}),
+        ...(dto.marcaPreliminar ? { marcaPreliminar: dto.marcaPreliminar.trim() } : {}),
         ...(dto.modeloPreliminar ? { modeloPreliminar: dto.modeloPreliminar.trim() } : {}),
         ...(dto.anioPreliminar != null ? { anioPreliminar: dto.anioPreliminar } : {}),
         ...(dto.colorPreliminar ? { colorPreliminar: dto.colorPreliminar.trim() } : {}),
-        ...(dto.vinPreliminar   ? { vinPreliminar: dto.vinPreliminar.trim() } : {}),
+        ...(dto.vinPreliminar ? { vinPreliminar: dto.vinPreliminar.trim() } : {}),
       };
     }
 
@@ -140,7 +150,7 @@ export class CitasService {
       throw new BadRequestException('Cita ya terminada');
     }
 
-    // 🔐 NUEVO: validar que el usuario existe y realmente es MECÁNICO
+    // 🔐 Validar que el usuario existe y realmente es MECÁNICO
     const mecanico = await this.prisma.usuario.findUnique({
       where: { id: mecanicoId },
       select: { id: true, rol: true, nombreCompleto: true },
@@ -197,7 +207,9 @@ export class CitasService {
   ) {
     const cita = await this.prisma.citaMantenimiento.findUnique({ where: { id: citaId } });
     if (!cita) throw new BadRequestException('Cita no existe');
-    if (cita.mecanicoId !== mecanicoId) throw new ForbiddenException('No eres el mecánico asignado');
+    if (cita.mecanicoId !== mecanicoId) {
+      throw new ForbiddenException('No eres el mecánico asignado');
+    }
     if (cita.estado !== EstadoCita.EN_PROGRESO) {
       throw new BadRequestException('La cita no está en proceso');
     }
@@ -249,8 +261,12 @@ export class CitasService {
       estado: EstadoCita.TERMINADA,
       fechaMantenimiento: new Date(), // ← si existe en tu schema
     };
-    if (dto?.trabajosRealizados != null) dataUpdate.trabajosRealizados = dto.trabajosRealizados;
-    if (dto?.repuestos != null) dataUpdate.repuestos = dto.repuestos;
+    if (dto?.trabajosRealizados != null) {
+      dataUpdate.trabajosRealizados = dto.trabajosRealizados;
+    }
+    if (dto?.repuestos != null) {
+      dataUpdate.repuestos = dto.repuestos;
+    }
 
     // Evidencia (opcional, guardada como bytes + metadata)
     if (dto?.evidenciaBase64) {
@@ -356,6 +372,35 @@ export class CitasService {
     });
   }
 
+  // ADMIN: citas vencidas (fecha programada pasada y no TERMINADA)
+  async listarVencidas() {
+    // Normalizamos "hoy" a medianoche local para comparación limpia
+    const hoyYMD = this.toYMD(new Date());
+    const hoyLocal = this.parseYMDLocal(hoyYMD);
+
+    return this.prisma.citaMantenimiento.findMany({
+      where: {
+        programadaPara: { lt: hoyLocal },
+        estado: { not: EstadoCita.TERMINADA },
+      },
+      select: {
+        id: true,
+        tipo: true,
+        estado: true,
+        comentario: true,
+        programadaPara: true,
+        vehiculo: { select: { placa: true } },
+        placaPreliminar: true,
+        marcaPreliminar: true,
+        modeloPreliminar: true,
+        cliente: { select: { id: true, nombreCompleto: true } },
+        mecanicoId: true,
+        mecanico: { select: { id: true, nombreCompleto: true } },
+      },
+      orderBy: [{ programadaPara: 'asc' }, { creadoEn: 'desc' }],
+    });
+  }
+
   async buscarPorIdConVehiculo(id: number) {
     return this.prisma.citaMantenimiento.findUnique({
       where: { id },
@@ -428,8 +473,7 @@ export class CitasService {
       `Fecha de mantenimiento: ${fechaMantenimientoTexto}`,
       `Tipo de mantenimiento: ${cita.tipo}`,
       '',
-      `Vehículo: ${marca ?? '-'} ${modelo ?? ''}`.trim() +
-        (anio ? ` (${anio})` : ''),
+      `Vehículo: ${marca ?? '-'} ${modelo ?? ''}`.trim() + (anio ? ` (${anio})` : ''),
       `Placa: ${placa ?? '-'}`,
       '',
       `Cliente: ${cita.cliente?.nombreCompleto ?? '-'}`,

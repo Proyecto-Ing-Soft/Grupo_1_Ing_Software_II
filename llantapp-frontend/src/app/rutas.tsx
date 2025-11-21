@@ -41,6 +41,7 @@ import EnviarPromocionPagina from '../features/promociones/EnviarPromocionPagina
 import ResumenTecnicoPagina from '../features/mantenimientos/ResumenTecnicoPagina';
 import RegistrarIntervencionExternaPagina from "../features/intervenciones-externas/RegistrarIntervencionExternaPagina";
 import AdminConsumiblesPagina from '../features/consumibles/AdminConsumiblesPagina';
+import MantenimientosVencidosPagina from "../features/mantenimientos/MantenimientosVencidosPagina";
 
 // GUARDS / LAYOUT
 import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';
@@ -213,6 +214,14 @@ const router = createBrowserRouter(
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
               <RegistrarMantenimientoPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+        {
+          path: "admin/mantenimientos-vencidos",
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={["ADMIN"]}>
+              <MantenimientosVencidosPagina />
             </RutaProtegidaPorRol>
           ),
         },

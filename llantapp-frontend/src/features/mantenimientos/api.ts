@@ -49,7 +49,12 @@ export interface CitaDetalle {
 }
 
 function readAuthToken(explicit?: string) {
-  return explicit ?? tokenMemoria.get() ?? localStorage.getItem('access_token') ?? undefined;
+  return (
+    explicit ??
+    tokenMemoria.get() ??
+    localStorage.getItem('access_token') ??
+    undefined
+  );
 }
 
 async function getAuthed<T>(url: string, token?: string): Promise<T> {
@@ -122,7 +127,11 @@ export const apiCitas = {
     programadaPara: string;
   }) => postAuthed('/citas-mantenimiento', payload),
 
+  // US-21: citas pendientes para ADMIN (solicitadas / en progreso)
   pendientesAdmin: () => getAuthed<any[]>('/citas-mantenimiento/admin/pendientes'),
+
+  // US-24: citas/mantenimientos vencidos (fecha pasada y no terminadas)
+  vencidasAdmin: () => getAuthed<any[]>('/citas-mantenimiento/admin/vencidas'),
 
   asignar: (id: number, mecanicoId: number) =>
     postAuthed(`/citas-mantenimiento/${id}/asignar`, { mecanicoId }),
@@ -143,7 +152,12 @@ export const apiCitas = {
 };
 
 function getAuthToken(explicit?: string) {
-  return explicit ?? tokenMemoria.get() ?? localStorage.getItem('access_token') ?? undefined;
+  return (
+    explicit ??
+    tokenMemoria.get() ??
+    localStorage.getItem('access_token') ??
+    undefined
+  );
 }
 
 export async function descargarEvidenciaCita(
