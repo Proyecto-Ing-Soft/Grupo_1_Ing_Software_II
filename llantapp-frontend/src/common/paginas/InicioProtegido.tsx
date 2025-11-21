@@ -180,7 +180,7 @@ export default function InicioProtegido() {
               <div className="btn-icon">👷</div>
               <div className="btn-text">
                 <div className="btn-title">Asignar mecánico</div>
-                <div className="btn-sub">Gestiona las citas nuevas del taller</div>
+                <div className="btn-sub">Gestiona las citas nuevas y pendientes del taller</div>
               </div>
             </Link>
           )}

@@ -15,9 +15,16 @@ interface CitaRow {
   tipo: TipoMantenimientoFE;
   estado: EstadoCitaFE;
   programadaPara?: string | null;
-  vehiculo?: { placa: string } | null;
+  vehiculo?: { placa: string } | null; // Opción A: Vehículo registrado
+  placaPreliminar?: string | null;     // Opción B: Texto manual
   clienteId: number;
   mecanicoId?: number | null;
+  //Nuevo
+  mecanico?: {                // El objeto completo (para leer el nombre o ID)
+      id: number; 
+      nombreCompleto: string 
+  } | null;
+
 }
 interface MecanicoRow {
   id: number;
@@ -32,6 +39,8 @@ export default function AdminCitasPendientes() {
   const [seleccion, setSeleccion] = useState<Record<number, number>>({});
   const [q, setQ] = useState("");
   const [okMsg, setOkMsg] = useState<string | null>(null);
+  // NUEVO: Para saber qué ID de cita estamos modificando actualmente
+  const [editandoId, setEditandoId] = useState<number | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -66,8 +75,14 @@ export default function AdminCitasPendientes() {
 
   const filtradas = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return citas;
-    return citas.filter(c =>
+    // 1. Primero filtramos las que NO sean TERMINADA
+    // (Esto es útil si tu backend decide mandar historial también)
+    const activas = citas.filter(c => c.estado !== "TERMINADA");
+
+    if (!s) return activas;
+
+    // 2. Luego aplicamos el buscador sobre las activas
+    return activas.filter(c =>
       String(c.id).includes(s) ||
       c.tipo.toLowerCase().includes(s) ||
       (c.vehiculo?.placa ?? "").toLowerCase().includes(s) ||
@@ -77,10 +92,28 @@ export default function AdminCitasPendientes() {
 
   const asignar = async (citaId: number) => {
     const mecId = seleccion[citaId];
-    if (!mecId) return alert("Selecciona un mecánico");
+    const citaActual = citas.find(c => c.id === citaId);
+    const idFinal = mecId || citaActual?.mecanicoId || citaActual?.mecanico?.id;
+    //if (!mecId) return alert("Selecciona un mecánico");
+    if (!idFinal) return alert("Selecciona un mecánico");
+    
     setOkMsg(null);
     await apiCitas.asignar(citaId, mecId);
-    setCitas(prev => prev.filter(c => c.id !== citaId));
+
+    // CAMBIO AQUÍ: Usamos map en vez de filter
+    setCitas(prev => prev.map(cita => {
+      if (cita.id === citaId) {
+        return { 
+          ...cita, 
+          // Marcamos que ya tiene mecánico (esto nos sirve para bloquear el botón)
+          mecanicoId: mecId,
+          // Opcional: Cambiamos el estado visualmente si tu backend lo hace
+          estado: "EN_PROGRESO" 
+        }; 
+      }
+      return cita;
+    }));
+
     setOkMsg(`Cita #${citaId} asignada correctamente.`);
   };
 
@@ -133,51 +166,104 @@ export default function AdminCitasPendientes() {
           </div>
         ) : (
           <div className="ams__split reveal" data-reveal="3">
-            {filtradas.map(c => (
-              <article key={c.id} className="ams__box" aria-label={`Cita #${c.id}`}>
-                <header className="box__meta">
-                  <span className="pill"><span className="pill__dot" />#{c.id}</span>
-                  <span className="pill">{c.tipo.replace("_", " ")}</span>
-                  <span className="pill">{c.estado.replace("_", " ")}</span>
-                </header>
+            {filtradas.map(c => {
+              // CORRECCIÓN: Lógica explícita y limpia
+              const yaAsignada = c.mecanicoId != null || c.estado === "EN_PROGRESO";
+              
+              // ¿La estamos editando AHORA MISMO?
+              const esModoEdicion = editandoId === c.id;
 
-                <div className="selList">
-                  <div className="selRow"><strong>Placa</strong><span>{c.vehiculo?.placa ?? "—"}</span></div>
-                  <div className="selRow"><strong>Fecha</strong><span>{fmtFechaCorta(c.programadaPara)}</span></div>
-                </div>
+              // Lógica de bloqueo
+              const bloqueado = yaAsignada && !esModoEdicion;
 
-                <div className="form form--one">
-                  <div className="form-group">
-                    <label className="label" htmlFor={`mec-${c.id}`}>Mecánico</label>
-                    <div className="input-wrap">
-                      <select
-                        id={`mec-${c.id}`}
-                        className="input"
-                        value={seleccion[c.id] ?? ""}
-                        onChange={e => {
-                          const val = Number(e.target.value);
-                          setSeleccion(s => ({ ...s, [c.id]: (val || undefined) as any }));
-                        }}
-                      >
-                        <option value="">Asignar…</option>
-                        {mecanicos.map(m => (<option key={m.id} value={m.id}>{m.nombreCompleto}</option>))}
-                      </select>
+              return (
+                <article key={c.id} className="ams__box" aria-label={`Cita #${c.id}`}>
+                  {/* ... resto del componente igual ... */}
+                  <header className="box__meta">
+                    <span className="pill"><span className="pill__dot" />#{c.id}</span>
+                    <span className="pill">{c.tipo.replace("_", " ")}</span>
+                    <span className="pill">{c.estado.replace("_", " ")}</span>
+                  </header>
+
+                  <div className="selList">
+                    <div className="selRow"><strong>Placa</strong><span>{c.vehiculo?.placa || c.placaPreliminar || "—"}</span></div>
+                    <div className="selRow"><strong>Fecha</strong><span>{fmtFechaCorta(c.programadaPara)}</span></div>
+                  </div>
+
+                  <div className="form form--one">
+                    <div className="form-group">
+                      <label className="label" htmlFor={`mec-${c.id}`}>Mecánico</label>
+                      <div className="input-wrap">
+                        <select
+                          id={`mec-${c.id}`}
+                          className="input"
+                          disabled={bloqueado}
+                          value={seleccion[c.id] || c.mecanicoId || c.mecanico?.id || ""}
+                          onChange={e => {
+                            const val = Number(e.target.value);
+                            setSeleccion(s => ({ ...s, [c.id]: (val || undefined) as any }));
+                          }}
+                        >
+                          <option value="">Asignar…</option>
+                          {mecanicos.map(m => (
+                            <option key={m.id} value={m.id}>{m.nombreCompleto}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="actions">
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => asignar(c.id)}
-                    title="Asignar mecánico a la cita"
-                  >
-                    🧰 Asignar
-                  </button>
-                </div>
-              </article>
-            ))}
+                  <div className="actions" style={{ gap: '8px' }}>
+                    {/* Botón MODIFICAR si ya está asignada */}
+                    {yaAsignada && !esModoEdicion && (
+                      <button
+                        type="button"
+                        className="btn"
+                        style={{ background: '#fff', color: '#0f172a', border: '1px solid #cbd5e1', boxShadow: 'none' }}
+                        onClick={() => setEditandoId(c.id)}
+                      >
+                        ✏️ Modificar
+                      </button>
+                    )}
+
+                    {/* Botón CANCELAR si estamos editando */}
+                    {esModoEdicion && (
+                      <button
+                        type="button"
+                        className="btn"
+                        style={{ background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca', boxShadow: 'none', padding: '10px 14px' }}
+                        onClick={() => {
+                             setEditandoId(null);
+                             setSeleccion(s => { const copy = {...s}; delete copy[c.id]; return copy; });
+                        }} 
+                        title="Cancelar cambios"
+                      >
+                        ✕
+                      </button>
+                    )}
+
+                    {/* Botón GUARDAR/ASIGNAR */}
+                    {(!yaAsignada || esModoEdicion) && (
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => asignar(c.id)}
+                        title={esModoEdicion ? "Guardar nuevo mecánico" : "Asignar mecánico"}
+                      >
+                        {esModoEdicion ? "💾 Guardar" : "🧰 Asignar"}
+                      </button>
+                    )}
+                    
+                    {/* Etiqueta Visual */}
+                    {yaAsignada && !esModoEdicion && (
+                         <span style={{ display: 'flex', alignItems: 'center', color: '#059669', fontWeight: 'bold', fontSize: '14px', marginLeft: '4px' }}>
+                             ✅ Asignado
+                         </span>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
         {okMsg && <div className="success-message mt8" role="alert">{okMsg}</div>}

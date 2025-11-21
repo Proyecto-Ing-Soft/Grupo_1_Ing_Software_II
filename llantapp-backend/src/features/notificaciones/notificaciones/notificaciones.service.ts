@@ -55,15 +55,40 @@ export class NotificacionesService {
       throw new BadRequestException('Título y mensaje son obligatorios');
     }
 
-    // 1) Obtener todos los clientes
+    // ─────────────────────────────────────────────
+    // 1) Caso seleccion de usuarios
+    // ─────────────────────────────────────────────
+    if (dto.usuarios && dto.usuarios.length > 0) {
+      // Validar IDs positivos
+      const idsValidos = dto.usuarios.filter(id => Number(id) > 0);
+      if (idsValidos.length === 0) {
+        throw new BadRequestException('La lista de usuarios no es válida');
+      }
+
+      await Promise.all(
+        idsValidos.map(uid =>
+          this.repo.crear({
+            usuarioId: uid,
+            mensaje: `${dto.titulo}: ${dto.mensaje}`,
+            vehiculoId: null,
+            citaId: null,
+          })
+        )
+      );
+
+      return { enviados: idsValidos.length, modo: 'selectivo' };
+    }
+
+    // ─────────────────────────────────────────────
+    // 2) Caso Envío masivo a todos los clientes
+    // ─────────────────────────────────────────────
     const clientes = await this.prisma.usuario.findMany({
       where: { rol: 'CLIENTE' },
       select: { id: true },
     });
 
-    if (clientes.length === 0) return { enviados: 0 };
+    if (clientes.length === 0) return { enviados: 0, modo: 'todos' };
 
-    // 2) Crear notificación para cada cliente
     await Promise.all(
       clientes.map(c =>
         this.repo.crear({
@@ -71,10 +96,10 @@ export class NotificacionesService {
           mensaje: `${dto.titulo}: ${dto.mensaje}`,
           vehiculoId: null,
           citaId: null,
-        }),
-      ),
+        })
+      )
     );
 
-    return { enviados: clientes.length };
+    return { enviados: clientes.length, modo: 'todos' };
   }
 }
