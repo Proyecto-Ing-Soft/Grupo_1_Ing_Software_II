@@ -321,7 +321,9 @@ export class CitasService {
   // ADMIN: citas pendientes por asignar
   async listarPendientes() {
     return this.prisma.citaMantenimiento.findMany({
-      where: { estado: EstadoCita.SOLICITADA },
+      // AQUÍ ESTÁ LA CLAVE 1: Traer todo lo que NO esté terminado
+      // (Incluye SOLICITADA y EN_PROGRESO)
+      where: { estado: { not: EstadoCita.TERMINADA }},
       select: {
         id: true,
         tipo: true,
@@ -333,6 +335,11 @@ export class CitasService {
         marcaPreliminar: true,
         modeloPreliminar: true,
         cliente: { select: { id: true, nombreCompleto: true } },
+        
+        // AQUÍ ESTÁ LA CLAVE 2: Traer la información del mecánico asignado
+        // para que no desaparezca al recargar la página
+        mecanicoId: true, 
+        mecanico: { select: { id: true, nombreCompleto: true } }
       },
       orderBy: [{ creadoEn: 'desc' }],
     });
@@ -444,4 +451,3 @@ export class CitasService {
   }
 
 }
-
