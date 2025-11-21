@@ -21,7 +21,7 @@ export type ConsumibleLite = {
   id: number;
   nombre: string;
   unidad: string;
-  // opcional, por si más adelante quieres que el backend también lo devuelva
+  stockActual: number;  // <-- NUEVO
   activo?: boolean;
 };
 

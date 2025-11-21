@@ -8,9 +8,21 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Min,
   MinLength,
 } from 'class-validator';
 import { TipoMantenimiento } from '@prisma/client';
+import { Type } from 'class-transformer';
+
+export class ConsumoDto {
+  @IsInt()
+  @Min(1)
+  consumibleId!: number;
+
+  @IsInt()
+  @Min(1)
+  cantidad!: number;
+}
 
 export class CrearCitaDto {
   @IsEnum(TipoMantenimiento)

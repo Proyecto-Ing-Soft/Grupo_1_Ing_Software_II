@@ -5,6 +5,12 @@ import { apiCitas, TerminarCitaPayload } from "./api";
 import { apiConsumibles, ConsumibleLite } from "../consumibles/api";
 import "./registrarMantenimiento.css";
 
+type ConsumoDetalle = {
+  consumibleId: number;
+  cantidad: number;
+  etiqueta: string;
+};
+
 export default function RegistrarMantenimientoPagina() {
   const navigate = useNavigate();
   const { tieneRol } = useAuth();
@@ -39,6 +45,7 @@ export default function RegistrarMantenimientoPagina() {
   const [errorConsumibles, setErrorConsumibles] = useState<string | null>(null);
 
   const [repuestos, setRepuestos] = useState<string[]>([]);
+  const [consumos, setConsumos] = useState<ConsumoDetalle[]>([]);
   const [consumibleSeleccionadoId, setConsumibleSeleccionadoId] = useState<number | "">("");
   const [cantidadConsumible, setCantidadConsumible] = useState<number>(1);
 
@@ -96,23 +103,53 @@ export default function RegistrarMantenimientoPagina() {
     return null;
   };
 
-  // === Consumibles: agregar / quitar del array repuestos ===
+  // === Consumibles: agregar / quitar del array repuestos + consumos ===
   const agregarConsumible = () => {
     if (!consumibleSeleccionadoId || cantidadConsumible <= 0) return;
+
     const c = catalogoConsumibles.find((x) => x.id === consumibleSeleccionadoId);
     if (!c) return;
 
+    // Sumar lo ya solicitado de este consumible
+    const yaConsumido = consumos
+      .filter((x) => x.consumibleId === c.id)
+      .reduce((acc, x) => acc + x.cantidad, 0);
+
+    const totalSolicitado = yaConsumido + cantidadConsumible;
+
+    if (c.stockActual != null && totalSolicitado > c.stockActual) {
+      setError(
+        `No hay stock suficiente de "${c.nombre}". Disponible: ${c.stockActual}, solicitado: ${totalSolicitado}.`,
+      );
+      return;
+    }
+
     const etiqueta = `${c.nombre} x ${cantidadConsumible} ${c.unidad}`.trim();
 
+    // Mantener lista de repuestos (para resumen técnico)
     setRepuestos((prev) => (prev.includes(etiqueta) ? prev : [...prev, etiqueta]));
+
+    // Mantener estructura de consumos (para backend)
+    setConsumos((prev) =>
+      prev.some(
+        (item) =>
+          item.consumibleId === c.id &&
+          item.cantidad === cantidadConsumible &&
+          item.etiqueta === etiqueta,
+      )
+        ? prev
+        : [...prev, { consumibleId: c.id, cantidad: cantidadConsumible, etiqueta }],
+    );
 
     // reset mini-form
     setConsumibleSeleccionadoId("");
     setCantidadConsumible(1);
+    setError(null);
   };
 
   const quitarConsumible = (etiqueta: string) => {
     setRepuestos((prev) => prev.filter((r) => r !== etiqueta));
+    setConsumos((prev) => prev.filter((c) => c.etiqueta !== etiqueta));
   };
 
   const enviar = async (e: React.FormEvent) => {
@@ -129,6 +166,15 @@ export default function RegistrarMantenimientoPagina() {
       trabajosRealizados: form.trabajosRealizados.trim(),
       repuestos: repuestos.length ? repuestos : undefined,
       evidenciaBase64: form.evidenciaBase64 || undefined, // la fecha la pone el backend
+
+      // US-20: enviar consumos estructurados para descontar stock en backend
+      consumos:
+        consumos.length > 0
+          ? consumos.map(({ consumibleId, cantidad }) => ({
+              consumibleId,
+              cantidad,
+            }))
+          : undefined,
     };
 
     try {
@@ -155,6 +201,13 @@ export default function RegistrarMantenimientoPagina() {
       setEnviando(false);
     }
   };
+
+  // Helper para obtener stock máximo del consumible seleccionado
+  const maxCantidadSeleccionada = (() => {
+    if (!consumibleSeleccionadoId) return undefined;
+    const c = catalogoConsumibles.find((x) => x.id === consumibleSeleccionadoId);
+    return c?.stockActual;
+  })();
 
   return (
     <main className="registrar">
@@ -199,11 +252,14 @@ export default function RegistrarMantenimientoPagina() {
                   <select
                     className="input"
                     value={consumibleSeleccionadoId}
-                    onChange={(e) =>
-                      setConsumibleSeleccionadoId(
-                        e.target.value ? Number(e.target.value) : "",
-                      )
-                    }
+                    onChange={(e) => {
+                      const value = e.target.value
+                        ? Number(e.target.value)
+                        : "";
+                      setConsumibleSeleccionadoId(value);
+                      setCantidadConsumible(1);
+                      setError(null);
+                    }}
                     disabled={cargandoConsumibles || !!errorConsumibles}
                   >
                     <option value="">
@@ -213,7 +269,10 @@ export default function RegistrarMantenimientoPagina() {
                     </option>
                     {catalogoConsumibles.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.nombre} ({c.unidad})
+                        {c.nombre} ({c.unidad}){" "}
+                        {typeof c.stockActual === "number"
+                          ? `– Stock: ${c.stockActual}`
+                          : ""}
                       </option>
                     ))}
                   </select>
@@ -223,11 +282,27 @@ export default function RegistrarMantenimientoPagina() {
                   <input
                     type="number"
                     min={1}
+                    max={maxCantidadSeleccionada}
                     className="input"
                     value={cantidadConsumible}
-                    onChange={(e) =>
-                      setCantidadConsumible(Number(e.target.value || 1))
-                    }
+                    onChange={(e) => {
+                      const raw = Number(e.target.value || "0");
+                      if (!consumibleSeleccionadoId) {
+                        setCantidadConsumible(
+                          !Number.isFinite(raw) || raw <= 0 ? 1 : raw,
+                        );
+                        return;
+                      }
+                      const cSel = catalogoConsumibles.find(
+                        (c) => c.id === consumibleSeleccionadoId,
+                      );
+                      const max = cSel?.stockActual ?? 1;
+                      const safe = !Number.isFinite(raw)
+                        ? 1
+                        : Math.max(1, Math.min(raw, max));
+                      setCantidadConsumible(safe);
+                      setError(null);
+                    }}
                     placeholder="Cantidad"
                   />
                 </div>

@@ -12,12 +12,14 @@ import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { EstadoCita } from '@prisma/client';
 import { Notificador } from '../../notificaciones/notificaciones/envio/notificador';
+import { ConsumiblesService } from '../../consumibles/consumibles.service';
 
 @Injectable()
 export class CitasService {
   constructor(
     private prisma: PrismaService,
     private noti: Notificador, // DIP: fachada de notificaciones
+    private consumiblesService: ConsumiblesService, // US-20: lógica de consumo de stock
   ) {}
 
   // DRY: YYYY-MM-DD en HORA LOCAL (sin UTC)
@@ -185,6 +187,12 @@ export class CitasService {
       trabajosRealizados?: string;
       repuestos?: string[];
       evidenciaBase64?: string | null;
+
+      // US-20: consumibles usados para descontar stock
+      consumos?: {
+        consumibleId: number;
+        cantidad: number;
+      }[];
     },
   ) {
     const cita = await this.prisma.citaMantenimiento.findUnique({ where: { id: citaId } });
@@ -202,6 +210,11 @@ export class CitasService {
     const programada = this.toYMD(new Date(cita.programadaPara));
     if (hoy < programada) {
       throw new BadRequestException('Aún no es el día programado');
+    }
+
+    // 0) US-20: consumir stock de los consumibles usados (si se envían)
+    if (dto?.consumos && dto.consumos.length > 0) {
+      await this.consumiblesService.consumirEnMantenimiento(dto.consumos);
     }
 
     // 1) Intentar enlazar vehículo existente por placa si no hay vehiculoId
@@ -318,12 +331,11 @@ export class CitasService {
     });
   }
 
-  // ADMIN: citas pendientes por asignar
+  // ADMIN: citas pendientes por asignar o en progreso
   async listarPendientes() {
     return this.prisma.citaMantenimiento.findMany({
-      // AQUÍ ESTÁ LA CLAVE 1: Traer todo lo que NO esté terminado
-      // (Incluye SOLICITADA y EN_PROGRESO)
-      where: { estado: { not: EstadoCita.TERMINADA }},
+      // Traer todo lo que NO esté terminado (SOLICITADA y EN_PROGRESO)
+      where: { estado: { not: EstadoCita.TERMINADA } },
       select: {
         id: true,
         tipo: true,
@@ -335,11 +347,10 @@ export class CitasService {
         marcaPreliminar: true,
         modeloPreliminar: true,
         cliente: { select: { id: true, nombreCompleto: true } },
-        
-        // AQUÍ ESTÁ LA CLAVE 2: Traer la información del mecánico asignado
-        // para que no desaparezca al recargar la página
-        mecanicoId: true, 
-        mecanico: { select: { id: true, nombreCompleto: true } }
+
+        // Info del mecánico asignado para que no desaparezca al recargar
+        mecanicoId: true,
+        mecanico: { select: { id: true, nombreCompleto: true } },
       },
       orderBy: [{ creadoEn: 'desc' }],
     });
@@ -352,7 +363,7 @@ export class CitasService {
     });
   }
 
-    // ============================================
+  // ============================================
   // US-07: RESUMEN TÉCNICO DE UNA CITA TERMINADA
   // ============================================
   async generarResumenTecnico(
@@ -449,5 +460,4 @@ export class CitasService {
       resumenTexto,
     };
   }
-
 }

@@ -15,6 +15,12 @@ export type TerminarCitaPayload = {
   trabajosRealizados: string;
   repuestos?: string[];
   evidenciaBase64?: string | null;
+
+  // US-20: consumibles utilizados para descontar stock en backend
+  consumos?: {
+    consumibleId: number;
+    cantidad: number;
+  }[];
 };
 
 export interface CitaDetalle {
@@ -140,7 +146,10 @@ function getAuthToken(explicit?: string) {
   return explicit ?? tokenMemoria.get() ?? localStorage.getItem('access_token') ?? undefined;
 }
 
-export async function descargarEvidenciaCita(citaId: number, token?: string): Promise<EvidenciaDescarga> {
+export async function descargarEvidenciaCita(
+  citaId: number,
+  token?: string,
+): Promise<EvidenciaDescarga> {
   const auth = getAuthToken(token);
   const r = await fetch(`${API_BASE}/citas-mantenimiento/${citaId}/evidencia`, {
     method: 'GET',
@@ -158,7 +167,7 @@ export async function descargarEvidenciaCita(citaId: number, token?: string): Pr
 
 export async function obtenerDetalleCita(
   citaId: number,
-  token?: string
+  token?: string,
 ): Promise<{
   id: number;
   programadaPara: string | null;

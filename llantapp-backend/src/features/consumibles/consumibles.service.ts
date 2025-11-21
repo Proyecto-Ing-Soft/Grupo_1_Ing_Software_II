@@ -34,7 +34,7 @@ export class ConsumiblesService {
     const filas = await this.prisma.consumible.findMany({
       orderBy: { nombre: 'asc' },
     });
-    return filas.map(c => this.toView(c));
+    return filas.map((c) => this.toView(c));
   }
 
   async buscarPorId(id: number) {
@@ -115,6 +115,7 @@ export class ConsumiblesService {
   // ===============================
   // LISTAR ACTIVOS (LITE) - MECÁNICO
   // ===============================
+  // Shape compatible con `ConsumibleLite` del frontend (US-20)
   async listarActivosLite() {
     const filas = await this.prisma.consumible.findMany({
       where: { activo: true },
@@ -122,17 +123,66 @@ export class ConsumiblesService {
         id: true,
         nombre: true,
         unidad: true,
+        stockActual: true, // <-- usado para validar en front
       },
-      orderBy: { nombre: 'asc' },
+      orderBy: [{ nombre: 'asc' }],
     });
 
-    // Shape compatible con `ConsumibleLite` del frontend
-    return filas.map(f => ({
+    return filas.map((f) => ({
       id: f.id,
       nombre: f.nombre,
       unidad: f.unidad,
+      stockActual: f.stockActual,
     }));
   }
 
-  
+  // =========================================
+  // US-20: CONSUMIR STOCK EN MANTENIMIENTO
+  // =========================================
+  async consumirEnMantenimiento(
+    items: { consumibleId: number; cantidad: number }[],
+  ) {
+    if (!items?.length) return;
+
+    // Agrupar por consumibleId (por si el mismo consumible llega repetido)
+    const porConsumible = new Map<number, number>();
+    for (const it of items) {
+      const id = Number(it.consumibleId);
+      const qty = Number(it.cantidad);
+      if (!Number.isFinite(id) || !Number.isFinite(qty) || qty <= 0) continue;
+      porConsumible.set(id, (porConsumible.get(id) ?? 0) + qty);
+    }
+
+    if (!porConsumible.size) return;
+
+    const ids = [...porConsumible.keys()];
+    const consumibles = await this.prisma.consumible.findMany({
+      where: { id: { in: ids } },
+    });
+
+    if (consumibles.length !== ids.length) {
+      throw new BadRequestException('Algún consumible no existe');
+    }
+
+    // Validar stock disponible
+    for (const c of consumibles) {
+      const solicitado = porConsumible.get(c.id)!;
+      if (solicitado > c.stockActual) {
+        throw new BadRequestException(
+          `Stock insuficiente para "${c.nombre}". Disponible: ${c.stockActual}, solicitado: ${solicitado}`,
+        );
+      }
+    }
+
+    // Descontar stock en una transacción
+    await this.prisma.$transaction(
+      consumibles.map((c) => {
+        const usado = porConsumible.get(c.id)!;
+        return this.prisma.consumible.update({
+          where: { id: c.id },
+          data: { stockActual: c.stockActual - usado },
+        });
+      }),
+    );
+  }
 }
