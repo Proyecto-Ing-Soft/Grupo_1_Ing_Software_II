@@ -179,8 +179,8 @@ export default function InicioProtegido() {
             <Link to="/admin/citas-pendientes" className="btn-card btn-secondary reveal" data-delay="680">
               <div className="btn-icon">👷</div>
               <div className="btn-text">
-                <div className="btn-title">Asociar mecánico</div>
-                <div className="btn-sub">Habilita personal para cada servicio</div>
+                <div className="btn-title">Asignar mecánico</div>
+                <div className="btn-sub">Gestiona las citas pendientes del taller</div>
               </div>
             </Link>
           )}
@@ -191,6 +191,17 @@ export default function InicioProtegido() {
               <div className="btn-text">
                 <div className="btn-title">Usuarios del taller</div>
                 <div className="btn-sub">Crea y gestiona usuarios</div>
+              </div>
+            </Link>
+          )}
+
+          {/* NUEVO: botón para US-04 - Enviar promociones */}
+          {tieneRol(["ADMIN"]) && (
+            <Link to="/admin/promociones" className="btn-card btn-highlight reveal" data-delay="800">
+              <div className="btn-icon">💌</div>
+              <div className="btn-text">
+                <div className="btn-title">Promociones</div>
+                <div className="btn-sub">Envía ofertas a tus clientes</div>
               </div>
             </Link>
           )}

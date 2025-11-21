@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { NotificacionPrismaRepo } from './repos/notificacion.prisma.repo';
+import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
+import { EnviarPromocionDto } from './dto/enviar-promocion.dto';
 
 // SRP + Facade: interfaz simple para publicar notificaciones desde el dominio
 export interface EnvioNotificacion {
@@ -12,10 +14,12 @@ export interface EnvioNotificacion {
 
 @Injectable()
 export class NotificacionesService {
-  constructor(private readonly repo: NotificacionPrismaRepo) {}
+  constructor(
+    private readonly repo: NotificacionPrismaRepo,
+    private readonly prisma: PrismaService, // ⬅ necesario para obtener clientes
+  ) {}
 
   async enviar(data: EnvioNotificacion): Promise<void> {
-
     const cuerpo = `${data.titulo}: ${data.mensaje}`;
     await this.repo.crear({
       usuarioId: data.usuarioId,
@@ -40,5 +44,37 @@ export class NotificacionesService {
   async marcarLeida(id: number, usuarioId: number) {
     await this.repo.marcarLeida(id, usuarioId);
     return { ok: true };
+  }
+
+  // ============================================================
+  // === NUEVO MÉTODO — US-04: enviar promoción a todos clientes ===
+  // ============================================================
+
+  async enviarPromocionATodosClientes(dto: EnviarPromocionDto) {
+    if (!dto.titulo?.trim() || !dto.mensaje?.trim()) {
+      throw new BadRequestException('Título y mensaje son obligatorios');
+    }
+
+    // 1) Obtener todos los clientes
+    const clientes = await this.prisma.usuario.findMany({
+      where: { rol: 'CLIENTE' },
+      select: { id: true },
+    });
+
+    if (clientes.length === 0) return { enviados: 0 };
+
+    // 2) Crear notificación para cada cliente
+    await Promise.all(
+      clientes.map(c =>
+        this.repo.crear({
+          usuarioId: c.id,
+          mensaje: `${dto.titulo}: ${dto.mensaje}`,
+          vehiculoId: null,
+          citaId: null,
+        }),
+      ),
+    );
+
+    return { enviados: clientes.length };
   }
 }

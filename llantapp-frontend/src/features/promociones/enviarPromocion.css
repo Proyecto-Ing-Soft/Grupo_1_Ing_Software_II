@@ -1,0 +1,126 @@
+/* CONTENEDOR GENERAL */
+.promo-page {
+  padding: 2.5rem 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* CARD CENTRAL */
+.promo-card {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  padding: 2rem 2.5rem;
+  box-shadow: 0 14px 45px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* CABECERA */
+.promo-title {
+  font-size: 1.9rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: #0f172a;
+}
+
+.promo-sub {
+  margin: 0 0 1.75rem;
+  color: #4b5563;
+}
+
+/* BOTÓN VOLVER */
+.promo-backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.95rem;
+  margin-bottom: 1.75rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #0f172a, #1f2937);
+  color: #f9fafb;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.promo-backBtn:hover {
+  filter: brightness(1.05);
+}
+
+/* FORMULARIO */
+.promo-form {
+  max-width: 540px;
+}
+
+.promo-field {
+  margin-bottom: 1.2rem;
+}
+
+.promo-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: #111827;
+}
+
+.promo-input,
+.promo-textarea {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.75rem;
+  border: 1px solid #d1d5db;
+  font: inherit;
+  resize: vertical;
+  background: #ffffff;
+  color: #111827;
+}
+
+.promo-input::placeholder,
+.promo-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.promo-input:focus,
+.promo-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+}
+
+/* TEXTO AYUDA */
+.promo-helper {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* MENSAJES */
+.promo-error {
+  color: #b91c1c;
+  margin-bottom: 0.9rem;
+  font-size: 0.9rem;
+}
+
+.promo-success {
+  color: #15803d;
+  margin-bottom: 0.9rem;
+  font-size: 0.9rem;
+}
+
+/* BOTÓN ENVIAR */
+.promo-submit {
+  padding: 0.65rem 1.6rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  color: #f9fafb;
+  font-weight: 600;
+  font-size: 0.98rem;
+}
+
+.promo-submit:disabled {
+  opacity: 0.55;
+  cursor: default;
+  background: #e5e7eb;
+  color: #9ca3af;
+}

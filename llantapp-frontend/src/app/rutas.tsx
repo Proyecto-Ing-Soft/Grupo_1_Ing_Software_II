@@ -36,6 +36,9 @@ import CalificarServicioPagina from '../features/calificaciones/pages/CalificarS
 import CalificacionesRecibidasPagina from '../features/calificaciones/pages/CalificacionesRecibidasPagina';
 import AdminCalificacionesPagina from '../features/calificaciones/pages/AdminCalificacionesPagina';
 
+// 🔹 NUEVO: página para enviar promociones
+import EnviarPromocionPagina from '../features/promociones/EnviarPromocionPagina';
+
 // GUARDS / LAYOUT
 import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';
 import { RutaProtegidaPorRol } from '../common/componentes/RutaProtegidaPorRol';
@@ -115,6 +118,16 @@ const router = createBrowserRouter(
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
               <AdminCitasPendientes />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
+        // 🔹 Admin: Promociones
+        {
+          path: 'admin/promociones',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
+              <EnviarPromocionPagina />
             </RutaProtegidaPorRol>
           ),
         },
