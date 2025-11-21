@@ -1,0 +1,177 @@
+/* CONTEXTO GENERAL */
+.rt-page {
+  --bg:#f6f9fc;
+  --paper:#ffffff;
+  --ink:#0f172a;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --line-2:#cbd5e1;
+
+  background:var(--bg);
+  min-height:calc(100vh - 80px);
+  padding:32px 16px;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+
+/* CARD PRINCIPAL */
+.rt-card {
+  width:100%;
+  max-width:960px;
+  background:var(--paper);
+  border-radius:22px;
+  padding:24px 28px 28px;
+  border:1px solid var(--line);
+  box-shadow:0 18px 40px rgba(15,23,42,.12);
+}
+
+/* CABECERA */
+.rt-head h1 {
+  font-size:clamp(1.8rem, 2.2vw, 2.1rem);
+  font-weight:900;
+  margin:0 0 0.35rem;
+  color:var(--ink);
+  letter-spacing:-0.02em;
+}
+
+.rt-head p {
+  margin:0 0 1.3rem;
+  color:var(--muted);
+}
+
+/* ACCIONES (VOLVER / COPIAR / BADGE) */
+.rt-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.75rem;
+  align-items:center;
+  margin-bottom:0.5rem;
+}
+
+.rt-actions button {
+  border-radius:999px;
+  padding:0.48rem 1.1rem;
+  font-size:0.9rem;
+  cursor:pointer;
+  border:1px solid transparent;
+  display:inline-flex;
+  align-items:center;
+  gap:0.35rem;
+}
+
+/* Botón volver */
+.rt-actions button:first-of-type {
+  background:#f3f4f6;
+  color:#111827;
+  border-color:var(--line-2);
+}
+.rt-actions button:first-of-type:hover {
+  background:#e5e7eb;
+}
+
+/* Botón copiar */
+.rt-actions button:nth-of-type(2) {
+  background:linear-gradient(135deg,#2563eb,#0ea5e9);
+  color:#f9fafb;
+  font-weight:600;
+}
+.rt-actions button:nth-of-type(2):hover {
+  filter:brightness(1.05);
+}
+
+/* Badge de copiado (no flotante) */
+.rt-copyBadge {
+  font-size:0.82rem;
+  padding:0.25rem 0.7rem;
+  border-radius:999px;
+  background:#ecfdf5;
+  color:#166534;
+  border:1px solid rgba(34,197,94,.4);
+}
+
+/* Error de copiado */
+.rt-errorMsg {
+  margin-top:0.25rem;
+  font-size:0.85rem;
+  color:#b91c1c;
+}
+
+/* SECCIONES */
+.rt-section {
+  margin-top:1.7rem;
+}
+
+.rt-section h2 {
+  margin:0 0 0.7rem;
+  font-size:1.05rem;
+  font-weight:700;
+  color:var(--ink);
+}
+
+.rt-section p {
+  margin:0.1rem 0;
+  color:#374151;
+  font-size:0.94rem;
+}
+
+.rt-section strong {
+  font-weight:600;
+  color:#4b5563;
+}
+
+/* BLOQUE DE TEXTO (TRABAJOS REALIZADOS) */
+.rt-pre {
+  background:#f3f4f6;
+  border-radius:0.9rem;
+  padding:0.9rem 1rem;
+  border:1px solid #cbd5e1;
+  font-family:system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size:0.93rem;
+  white-space:pre-wrap;
+  line-height:1.45;
+  color:#0f172a;
+}
+
+/* LISTA DE REPUESTOS */
+.rt-section ul {
+  margin:0.25rem 0 0;
+  padding-left:1.3rem;
+  font-size:0.94rem;
+}
+
+.rt-section li {
+  color:#0f172a;        /* texto más oscuro (aceite ya no gris) */
+  margin-bottom:0.15rem;
+}
+
+.rt-section li::marker {
+  color:#2563eb;
+}
+
+/* Sección extra: resumen completo para compartir */
+.rt-section--share {
+  margin-top:2rem;
+  border-top:1px dashed var(--line-2);
+  padding-top:1.5rem;
+}
+
+.rt-shareHint {
+  margin:0 0 0.5rem;
+  font-size:0.85rem;
+  color:var(--muted);
+}
+
+.rt-pre--share {
+  background:#0f172a;
+  color:#f9fafb;
+  border-color:#0f172a;
+}
+
+/* Responsive */
+@media (max-width:640px) {
+  .rt-card {
+    padding:20px 16px 22px;
+    border-radius:18px;
+  }
+}

@@ -114,14 +114,34 @@ export default function MisCitasPagina() {
                     <div className="mc__headline">
                       <span className="mc__id">#{c.id}</span>
                       <span className="mc__tipo">{c.tipo}</span>
-                      {c.vehiculo?.placa && <span className="mc__placa">{c.vehiculo.placa}</span>}
+                      {c.vehiculo?.placa && (
+                        <span className="mc__placa">{c.vehiculo.placa}</span>
+                      )}
                     </div>
                     <div className="mc__meta">
                       <span className="mc__metaItem">🗓 {fmtSoloFecha(c.programadaPara)}</span>
-                      {c.comentario && <span className="mc__metaItem">💬 {c.comentario}</span>}
+                      {c.comentario && (
+                        <span className="mc__metaItem">💬 {c.comentario}</span>
+                      )}
                     </div>
+
+                    {/* Botón solo cuando la cita está TERMINADA */}
+                    {c.estado === "TERMINADA" && (
+                      <div className="mc__meta mc__metaActions">
+                        <button
+                          type="button"
+                          className="mc-btn mc-btn--ghost mc-btn--sm"
+                          onClick={() => navigate(`/citas/${c.id}/resumen`)}
+                        >
+                          📄 Ver resumen técnico
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <span className={`mc__chip mc__chip--${String(c.estado || "").toLowerCase()}`}>
+
+                  <span
+                    className={`mc__chip mc__chip--${String(c.estado || "").toLowerCase()}`}
+                  >
                     {c.estado}
                   </span>
                 </article>
@@ -135,7 +155,7 @@ export default function MisCitasPagina() {
                 <div className="mc__emptyInner mc__stack-md">
                   <div className="mc__emptyEmoji" aria-hidden>📭</div>
                   <div className="mc__emptyTitle">No tienes citas</div>
-                  <div className="mc__emptySub">Cuando agendes, las verás aquí.</div> 
+                  <div className="mc__emptySub">Cuando agendes, las verás aquí.</div>
                   <img
                     src={noCitasImg}
                     alt="Sin citas programadas"

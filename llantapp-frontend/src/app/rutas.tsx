@@ -36,8 +36,10 @@ import CalificarServicioPagina from '../features/calificaciones/pages/CalificarS
 import CalificacionesRecibidasPagina from '../features/calificaciones/pages/CalificacionesRecibidasPagina';
 import AdminCalificacionesPagina from '../features/calificaciones/pages/AdminCalificacionesPagina';
 
-// 🔹 NUEVO: página para enviar promociones
+// NUEVO: SPRINT 2
 import EnviarPromocionPagina from '../features/promociones/EnviarPromocionPagina';
+import ResumenTecnicoPagina from '../features/mantenimientos/ResumenTecnicoPagina';
+
 
 // GUARDS / LAYOUT
 import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';
@@ -224,6 +226,14 @@ const router = createBrowserRouter(
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['MECANICO']}>
               <CitasMecanicoPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+        {
+          path: 'citas/:citaId/resumen',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE']}>
+              <ResumenTecnicoPagina />
             </RutaProtegidaPorRol>
           ),
         },

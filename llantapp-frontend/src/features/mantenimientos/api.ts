@@ -1,4 +1,4 @@
-// PATRONES/PRINCIPIOS:
+// PATRONES/PRINCIPIOS: 
 // - Facade: este mini-módulo “fachadea” las rutas HTTP para la UI.
 // - DRY: centraliza rutas y parseo de tipos (vehiculoId a Number).
 // - KISS: métodos autoexplicativos y de un solo propósito.
@@ -9,7 +9,7 @@ import { tokenMemoria } from '../../core/utils/storageMemoria';
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 export type EvidenciaDescarga = { url: string; mime: string; blob: Blob };
-type Tipo = 'PREVENTIVO' | 'CORRECTIVO' | 'LEGAL_ITV' | 'EXTRAS';
+export type Tipo = 'PREVENTIVO' | 'CORRECTIVO' | 'LEGAL_ITV' | 'EXTRAS';
 
 export type TerminarCitaPayload = {
   trabajosRealizados: string;
@@ -82,6 +82,25 @@ async function postAuthed<T>(url: string, body?: any, token?: string): Promise<T
   return r.json() as Promise<T>;
 }
 
+// === US-07: Resumen técnico ===
+export interface ResumenTecnico {
+  citaId: number;
+  tipo: Tipo;
+  estado: string;
+  fechaMantenimiento: string | null;
+  cliente: { id: number; nombreCompleto: string } | null;
+  mecanico: { id: number; nombreCompleto: string } | null;
+  vehiculo: {
+    placa: string | null;
+    marca: string | null;
+    modelo: string | null;
+    anio: number | null;
+  };
+  trabajosRealizados: string;
+  repuestos: string[];
+  resumenTexto: string;
+}
+
 // PRINCIPIOS: Facade (rutas), DRY (tipos/payload unificados), KISS
 export const apiCitas = {
   crear: (payload: {
@@ -111,6 +130,10 @@ export const apiCitas = {
   asignadas: () => getAuthed<any[]>('/citas-mantenimiento/asignadas'),
 
   detalle: (id: number) => getAuthed<CitaDetalle>(`/citas-mantenimiento/${id}`),
+
+  // US-07: obtener resumen técnico de una cita terminada
+  resumenTecnico: (id: number) =>
+    getAuthed<ResumenTecnico>(`/citas-mantenimiento/${id}/resumen-tecnico`),
 };
 
 function getAuthToken(explicit?: string) {
@@ -133,7 +156,10 @@ export async function descargarEvidenciaCita(citaId: number, token?: string): Pr
   return { url, mime, blob };
 }
 
-export async function obtenerDetalleCita(citaId: number, token?: string): Promise<{
+export async function obtenerDetalleCita(
+  citaId: number,
+  token?: string
+): Promise<{
   id: number;
   programadaPara: string | null;
   placaPreliminar: string | null;

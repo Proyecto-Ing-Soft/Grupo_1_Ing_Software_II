@@ -1,4 +1,4 @@
-.mc{
+.mc{ 
   --bg:#f6f9fc;
   --paper:#ffffff;
   --ink:#0f172a;
@@ -67,7 +67,29 @@
   background-image:linear-gradient(90deg,var(--grad-1) 0%, var(--grad-2) 40%, var(--grad-3) 100%);
   background-size:220% 100%; box-shadow:var(--btn-shadow);
 }
-.mc-btn--gradient:hover{ background-position:100% 0; transform:translateY(-1px); box-shadow:var(--btn-shadow-h); filter:saturate(1.06); }
+.mc-btn--gradient:hover{
+  background-position:100% 0;
+  transform:translateY(-1px);
+  box-shadow:var(--btn-shadow-h);
+  filter:saturate(1.06);
+}
+
+/* Botón peque para acciones dentro de la tarjeta (Ver resumen técnico) */
+.mc-btn--ghost{
+  background:#f8fafc !important;
+  color:#0f172a !important;
+  border-color:var(--line-2);
+  box-shadow:none;
+}
+.mc-btn--ghost:hover{
+  background:#e2e8f0 !important;
+  transform:translateY(-1px);
+}
+.mc-btn--sm{
+  padding:6px 12px;
+  font-size:13px;
+  font-weight:600;
+}
 
 .mc__grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:24px; }
 
@@ -92,9 +114,23 @@
 .mc__headline{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; font-weight:900; color:#0b1220; min-width:0; }
 .mc__id{ color:#334155; }
 .mc__tipo{ text-transform:uppercase; letter-spacing:.04em; color:#0ea5b7; }
-.mc__placa{ background:#f1f5f9; color:#0f172a; border:1px solid var(--line); padding:2px 8px; border-radius:8px; white-space:nowrap; }
-.mc__meta{ margin-top:6px; color:#475569; font-size:14px; display:flex; gap:12px; flex-wrap:wrap; }
+.mc__placa{
+  background:#f1f5f9; color:#0f172a; border:1px solid var(--line);
+  padding:2px 8px; border-radius:8px; white-space:nowrap;
+}
+
+.mc__meta{
+  margin-top:6px; color:#475569; font-size:14px;
+  display:flex; gap:12px; flex-wrap:wrap;
+}
 .mc__metaItem{ display:inline-flex; align-items:center; gap:6px; }
+
+/* Contenedor de acciones extra (Ver resumen técnico) */
+.mc__metaActions{
+  margin-top:8px;
+  display:flex;
+  flex-wrap:wrap;
+}
 
 .mc__chip{
   padding:6px 10px; border-radius:9999px; font-size:12px; font-weight:800;
@@ -150,5 +186,7 @@
 }
 
 @media (prefers-reduced-motion: reduce){
-  .reveal, .will-animate, .animate-in{ transition:none !important; transform:none !important; opacity:1 !important; }
+  .reveal, .will-animate, .animate-in{
+    transition:none !important; transform:none !important; opacity:1 !important;
+  }
 }
