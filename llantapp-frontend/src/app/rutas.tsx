@@ -261,7 +261,7 @@ const router = createBrowserRouter(
         {
           path: 'notificaciones',
           element: (
-            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE', 'MECANICO']}>
+            <RutaProtegidaPorRol rolesPermitidos={['CLIENTE', 'MECANICO', 'ADMIN']}>
               <NotificacionesLeerPagina />
             </RutaProtegidaPorRol>
           ),

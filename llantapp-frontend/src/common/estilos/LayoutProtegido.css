@@ -1252,3 +1252,36 @@ body.linea-activa .steps{
 
 .lp__brand,
 .lp__brand .lp__title { color: #000000; }  
+
+.lp__notifBtn{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--border);
+}
+
+.lp__notifBtn:hover{
+  background: rgba(255,255,255,.12);
+}
+
+.lp__notifDot{
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #ef4444;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

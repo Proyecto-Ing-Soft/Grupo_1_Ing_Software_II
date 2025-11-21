@@ -1,18 +1,24 @@
 // PRINCIPIOS: 
-// - SRP: manejar solo lógica de inventario de consumibles.
-// - KISS: CRUD básico; sin mezclar HTTP ni detalles de UI.
-// - DRY: mapeo a shape de respuesta en helpers pequeños.
+// - SRP: lógica de negocio del inventario (stock, mínimos, notificaciones).
+// - KISS: reglas claras y aisladas.
+// - DRY: helpers reutilizables para shape de respuesta y notificaciones.
 
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma/prisma.service';
 import { CrearConsumibleDto } from './dto/crear-consumible.dto';
 import { ActualizarConsumibleDto } from './dto/actualizar-consumible.dto';
+import { Notificador } from '../notificaciones/notificaciones/envio/notificador';
 
 @Injectable()
 export class ConsumiblesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly noti: Notificador, // US-14: alertas de stock bajo
+  ) {}
 
-  // helper para devolver siempre el mismo shape al frontend
+  // ------------------------
+  // HELPER: shape para UI
+  // ------------------------
   private toView(c: any) {
     return {
       id: c.id,
@@ -25,6 +31,41 @@ export class ConsumiblesService {
       creadoEn: c.creadoEn.toISOString(),
       actualizadoEn: c.actualizadoEn.toISOString(),
     };
+  }
+
+  // ------------------------------------------
+  // US-14: Notificar a ADMIN si el stock es bajo
+  // ------------------------------------------
+  private async notificarBajoInventario(c: {
+    id: number;
+    nombre: string;
+    unidad: string;
+    stockActual: number;
+    stockMinimo: number;
+    activo: boolean;
+  }) {
+    if (!c.activo) return;
+    if (c.stockActual > c.stockMinimo) return; // stock OK → nada
+
+    const admins = await this.prisma.usuario.findMany({
+      where: { rol: 'ADMIN' },
+      select: { id: true },
+    });
+
+    if (!admins.length) return;
+
+    const msg = `El consumible "${c.nombre}" tiene stock bajo: ${c.stockActual} ${c.unidad} (mínimo recomendado: ${c.stockMinimo}).`;
+
+    await Promise.all(
+      admins.map((a) =>
+        this.noti.enviar({
+          usuarioId: a.id,
+          // citaId y vehiculoId son opcionales, así que simplemente no los mandamos
+          titulo: 'Alerta: stock bajo de consumible',
+          mensaje: msg,
+        }),
+      ),
+    );
   }
 
   // ==============
@@ -67,6 +108,9 @@ export class ConsumiblesService {
       },
     });
 
+    // US-14: si nace ya bajo mínimo → notificar
+    await this.notificarBajoInventario(creado);
+
     return this.toView(creado);
   }
 
@@ -77,7 +121,7 @@ export class ConsumiblesService {
     const actual = await this.prisma.consumible.findUnique({ where: { id } });
     if (!actual) throw new BadRequestException('Consumible no existe');
 
-    // Validar nombre duplicado si se cambia
+    // Validar nombre duplicado
     if (dto.nombre && dto.nombre.trim() !== actual.nombre) {
       const duplicado = await this.prisma.consumible.findUnique({
         where: { nombre: dto.nombre.trim() },
@@ -99,6 +143,9 @@ export class ConsumiblesService {
       },
     });
 
+    // US-14: notificar si quedó bajo
+    await this.notificarBajoInventario(actualizado);
+
     return this.toView(actualizado);
   }
 
@@ -106,16 +153,13 @@ export class ConsumiblesService {
   // ELIMINAR
   // ==========
   async eliminar(id: number) {
-    // Si prefieres "soft delete", aquí podrías hacer:
-    // await this.prisma.consumible.update({ where: { id }, data: { activo: false } });
     await this.prisma.consumible.delete({ where: { id } });
     return { ok: true };
   }
 
-  // ===============================
-  // LISTAR ACTIVOS (LITE) - MECÁNICO
-  // ===============================
-  // Shape compatible con `ConsumibleLite` del frontend (US-20)
+  // =================================================
+  // LISTAR ACTIVOS (LITE) - usado por MECÁNICO (US-20)
+  // =================================================
   async listarActivosLite() {
     const filas = await this.prisma.consumible.findMany({
       where: { activo: true },
@@ -123,7 +167,8 @@ export class ConsumiblesService {
         id: true,
         nombre: true,
         unidad: true,
-        stockActual: true, // <-- usado para validar en front
+        stockActual: true,
+        stockMinimo: true,
       },
       orderBy: [{ nombre: 'asc' }],
     });
@@ -133,6 +178,7 @@ export class ConsumiblesService {
       nombre: f.nombre,
       unidad: f.unidad,
       stockActual: f.stockActual,
+      stockMinimo: f.stockMinimo,
     }));
   }
 
@@ -144,7 +190,7 @@ export class ConsumiblesService {
   ) {
     if (!items?.length) return;
 
-    // Agrupar por consumibleId (por si el mismo consumible llega repetido)
+    // Agrupar por consumibleId
     const porConsumible = new Map<number, number>();
     for (const it of items) {
       const id = Number(it.consumibleId);
@@ -164,7 +210,7 @@ export class ConsumiblesService {
       throw new BadRequestException('Algún consumible no existe');
     }
 
-    // Validar stock disponible
+    // Validar stock
     for (const c of consumibles) {
       const solicitado = porConsumible.get(c.id)!;
       if (solicitado > c.stockActual) {
@@ -174,8 +220,8 @@ export class ConsumiblesService {
       }
     }
 
-    // Descontar stock en una transacción
-    await this.prisma.$transaction(
+    // Actualizar stock
+    const actualizados = await this.prisma.$transaction(
       consumibles.map((c) => {
         const usado = porConsumible.get(c.id)!;
         return this.prisma.consumible.update({
@@ -183,6 +229,11 @@ export class ConsumiblesService {
           data: { stockActual: c.stockActual - usado },
         });
       }),
+    );
+
+    // US-14: notificar si después del descuento quedó bajo mínimo
+    await Promise.all(
+      actualizados.map((c) => this.notificarBajoInventario(c)),
     );
   }
 }
