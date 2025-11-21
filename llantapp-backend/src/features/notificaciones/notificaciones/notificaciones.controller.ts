@@ -38,6 +38,10 @@ export class NotificacionesController {
     if (req.user?.rol !== 'ADMIN') {
       throw new ForbiddenException('Solo admin puede enviar promociones');
     }
-    return this.servicio.enviarPromocionATodosClientes(dto);
+    return this.servicio.enviarPromocionATodosClientes({
+      titulo: dto.titulo,
+      mensaje: dto.mensaje,
+      usuarios: dto.usuarios ?? undefined
+    });
   }
 }
