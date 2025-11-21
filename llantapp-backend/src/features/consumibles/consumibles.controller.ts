@@ -1,6 +1,6 @@
 // PRINCIPIOS:
 // - SRP: adaptar HTTP ⇄ Service para consumibles.
-// - Seguridad: solo ADMIN puede gestionar inventario.
+// - Seguridad: solo ADMIN puede gestionar inventario (salvo activos-lite para mecánico).
 
 import {
   Body,
@@ -32,10 +32,25 @@ export class ConsumiblesController {
     }
   }
 
+  // ============================================
+  // US-20: catálogo reducido para mecánico
+  // GET /consumibles/activos-lite
+  // ============================================
+  @Get('activos-lite')
+  async listarActivosLite() {
+    // No pedimos rol de admin aquí: lo usan mecánicos
+    return this.svc.listarActivosLite();
+  }
+
+  // ============================================
+  // Rutas de administración (ADMIN)
+  // ============================================
+
   @Get()
   async listar(@Req() req: any) {
     this.assertAdmin(req);
-    return this.svc.listarTodos();
+    // ⬅️ Aquí usamos `listar()` (no listarTodos)
+    return this.svc.listar();
   }
 
   @Get(':id')

@@ -1,12 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../core/auth/AuthContext";
 import { apiCitas, TerminarCitaPayload } from "./api";
+import { apiConsumibles, ConsumibleLite } from "../consumibles/api";
 import "./registrarMantenimiento.css";
 
 export default function RegistrarMantenimientoPagina() {
   const navigate = useNavigate();
-  const { usuario, tieneRol } = useAuth();
+  const { tieneRol } = useAuth();
   const { state } = useLocation() as { state?: { citaId?: number } };
 
   // citaId desde state o query ?cita=ID
@@ -16,33 +17,75 @@ export default function RegistrarMantenimientoPagina() {
     return state?.citaId ?? (Number.isFinite(byQuery) ? byQuery : undefined);
   }, [state?.citaId]);
 
-  // guard (ajusta si quieres permitir otros)
-  if (!tieneRol(["MECANICO"])) {
-    navigate("/inicio", { replace: true });
-  }
+  // Guard de rol (solo mecánico)
+  useEffect(() => {
+    if (!tieneRol(["MECANICO"])) {
+      navigate("/inicio", { replace: true });
+    }
+  }, [tieneRol, navigate]);
 
-  const [form, setForm] = useState({
+  // Form principal
+  const [form, setForm] = useState<{
+    trabajosRealizados: string;
+    evidenciaBase64: string | null;
+  }>({
     trabajosRealizados: "",
-    repuestos: "",                 // texto separado por comas
-    evidenciaBase64: "" as string | null, // opcional
+    evidenciaBase64: "" as string | null,
   });
+
+  // Catálogo de consumibles y selección (US-20)
+  const [catalogoConsumibles, setCatalogoConsumibles] = useState<ConsumibleLite[]>([]);
+  const [cargandoConsumibles, setCargandoConsumibles] = useState(false);
+  const [errorConsumibles, setErrorConsumibles] = useState<string | null>(null);
+
+  const [repuestos, setRepuestos] = useState<string[]>([]);
+  const [consumibleSeleccionadoId, setConsumibleSeleccionadoId] = useState<number | "">("");
+  const [cantidadConsumible, setCantidadConsumible] = useState<number>(1);
+
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
 
+  // Cargar consumibles activos del catálogo
+  useEffect(() => {
+    (async () => {
+      try {
+        setCargandoConsumibles(true);
+        setErrorConsumibles(null);
+        const data = await apiConsumibles.listarActivosLite();
+        setCatalogoConsumibles(data);
+      } catch (e: any) {
+        console.error("[REG-MANT] No se pudieron cargar consumibles", e);
+        setErrorConsumibles("No se pudieron cargar los consumibles activos.");
+      } finally {
+        setCargandoConsumibles(false);
+      }
+    })();
+  }, []);
+
   const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setForm(s => ({ ...s, [name]: value }));
+    setForm((s) => ({ ...s, [name]: value }));
   };
 
   const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (!f) { setForm(s => ({ ...s, evidenciaBase64: "" })); return; }
-    if (!/^image\/(png|jpe?g|webp)$/i.test(f.type)) { setError("Formato no permitido"); return; }
-    if (f.size > 5 * 1024 * 1024) { setError("La imagen no debe superar 5MB"); return; }
+    if (!f) {
+      setForm((s) => ({ ...s, evidenciaBase64: "" }));
+      return;
+    }
+    if (!/^image\/(png|jpe?g|webp)$/i.test(f.type)) {
+      setError("Formato no permitido");
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      setError("La imagen no debe superar 5MB");
+      return;
+    }
 
     const reader = new FileReader();
-    reader.onload = () => setForm(s => ({ ...s, evidenciaBase64: reader.result as string }));
+    reader.onload = () =>
+      setForm((s) => ({ ...s, evidenciaBase64: reader.result as string }));
     reader.onerror = () => setError("No se pudo leer la imagen");
     reader.readAsDataURL(f);
   };
@@ -53,17 +96,38 @@ export default function RegistrarMantenimientoPagina() {
     return null;
   };
 
+  // === Consumibles: agregar / quitar del array repuestos ===
+  const agregarConsumible = () => {
+    if (!consumibleSeleccionadoId || cantidadConsumible <= 0) return;
+    const c = catalogoConsumibles.find((x) => x.id === consumibleSeleccionadoId);
+    if (!c) return;
+
+    const etiqueta = `${c.nombre} x ${cantidadConsumible} ${c.unidad}`.trim();
+
+    setRepuestos((prev) => (prev.includes(etiqueta) ? prev : [...prev, etiqueta]));
+
+    // reset mini-form
+    setConsumibleSeleccionadoId("");
+    setCantidadConsumible(1);
+  };
+
+  const quitarConsumible = (etiqueta: string) => {
+    setRepuestos((prev) => prev.filter((r) => r !== etiqueta));
+  };
+
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null); setOk(false);
+    setError(null);
+    setOk(false);
     const v = validar();
-    if (v) { setError(v); return; }
+    if (v) {
+      setError(v);
+      return;
+    }
 
     const payload: TerminarCitaPayload = {
       trabajosRealizados: form.trabajosRealizados.trim(),
-      repuestos: form.repuestos
-        ? form.repuestos.split(",").map(s => s.trim()).filter(Boolean)
-        : undefined,
+      repuestos: repuestos.length ? repuestos : undefined,
       evidenciaBase64: form.evidenciaBase64 || undefined, // la fecha la pone el backend
     };
 
@@ -71,10 +135,20 @@ export default function RegistrarMantenimientoPagina() {
       setEnviando(true);
       await apiCitas.registrarMantenimiento(citaId!, payload);
       setOk(true);
-      setTimeout(() => navigate("/inicio", {
-        replace: true,
-        state: { flash: { type: "success", text: `Mantenimiento de la cita #${citaId} registrado.`, ttlMs: 4000 } }
-      }), 900);
+      setTimeout(
+        () =>
+          navigate("/inicio", {
+            replace: true,
+            state: {
+              flash: {
+                type: "success",
+                text: `Mantenimiento de la cita #${citaId} registrado.`,
+                ttlMs: 4000,
+              },
+            },
+          }),
+        900,
+      );
     } catch (e: any) {
       setError(e?.message || "No se pudo registrar el mantenimiento");
     } finally {
@@ -87,7 +161,9 @@ export default function RegistrarMantenimientoPagina() {
       <section className="registrar__split">
         <div className="registrar__left reveal">
           <h1 className="registrar__title">Registrar mantenimiento</h1>
-          <p className="registrar__sub">La fecha se registrará automáticamente por el sistema.</p>
+          <p className="registrar__sub">
+            La fecha se registrará automáticamente por el sistema.
+          </p>
 
           {!citaId && (
             <div className="error-message" role="alert">
@@ -96,8 +172,11 @@ export default function RegistrarMantenimientoPagina() {
           )}
 
           <form className="form" onSubmit={enviar} noValidate>
+            {/* Trabajos realizados */}
             <div className="form-group">
-              <label className="label" htmlFor="trabajosRealizados">Trabajos realizados</label>
+              <label className="label" htmlFor="trabajosRealizados">
+                Trabajos realizados
+              </label>
               <div className="input-wrap">
                 <textarea
                   id="trabajosRealizados"
@@ -111,24 +190,104 @@ export default function RegistrarMantenimientoPagina() {
               </div>
             </div>
 
+            {/* Consumibles utilizados (US-20) */}
             <div className="form-group">
-              <label className="label" htmlFor="repuestos">Repuestos utilizados (separados por coma)</label>
-              <div className="input-wrap">
-                <input
-                  id="repuestos"
-                  name="repuestos"
-                  className="input"
-                  placeholder="Filtro de aceite, Pastillas de freno, ..."
-                  value={form.repuestos}
-                  onChange={onChange}
-                />
+              <label className="label">Consumibles utilizados</label>
+
+              <div className="cons-row">
+                <div className="input-wrap">
+                  <select
+                    className="input"
+                    value={consumibleSeleccionadoId}
+                    onChange={(e) =>
+                      setConsumibleSeleccionadoId(
+                        e.target.value ? Number(e.target.value) : "",
+                      )
+                    }
+                    disabled={cargandoConsumibles || !!errorConsumibles}
+                  >
+                    <option value="">
+                      {cargandoConsumibles
+                        ? "Cargando consumibles…"
+                        : "Selecciona un consumible…"}
+                    </option>
+                    {catalogoConsumibles.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre} ({c.unidad})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="input-wrap cons-cantidad">
+                  <input
+                    type="number"
+                    min={1}
+                    className="input"
+                    value={cantidadConsumible}
+                    onChange={(e) =>
+                      setCantidadConsumible(Number(e.target.value || 1))
+                    }
+                    placeholder="Cantidad"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={agregarConsumible}
+                  disabled={
+                    !consumibleSeleccionadoId ||
+                    cantidadConsumible <= 0 ||
+                    !!errorConsumibles ||
+                    cargandoConsumibles
+                  }
+                >
+                  Añadir
+                </button>
               </div>
+
+              {errorConsumibles && (
+                <div className="error-message mt4" role="alert">
+                  {errorConsumibles}
+                </div>
+              )}
+
+              {repuestos.length === 0 ? (
+                <p className="helper">
+                  Aún no has registrado consumibles para este mantenimiento.
+                </p>
+              ) : (
+                <ul className="cons-list">
+                  {repuestos.map((r) => (
+                    <li key={r} className="cons-chip">
+                      <span>{r}</span>
+                      <button
+                        type="button"
+                        className="cons-chip__remove"
+                        onClick={() => quitarConsumible(r)}
+                        aria-label={`Quitar ${r}`}
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
+            {/* Evidencia */}
             <div className="form-group">
-              <label className="label" htmlFor="evidencia">Foto de evidencia (opcional)</label>
+              <label className="label" htmlFor="evidencia">
+                Foto de evidencia (opcional)
+              </label>
               <div className="input-wrap">
-                <input id="evidencia" type="file" accept="image/*" onChange={onPickFile} />
+                <input
+                  id="evidencia"
+                  type="file"
+                  accept="image/*"
+                  onChange={onPickFile}
+                />
               </div>
               {form.evidenciaBase64 && (
                 <div className="helper">Imagen seleccionada ✓</div>
@@ -139,13 +298,23 @@ export default function RegistrarMantenimientoPagina() {
               {enviando ? "Guardando…" : "Guardar mantenimiento"}
             </button>
 
-            {error && <div className="error-message mt8" role="alert">{error}</div>}
-            {ok && <div className="success-message mt8" role="status">Mantenimiento registrado.</div>}
+            {error && (
+              <div className="error-message mt8" role="alert">
+                {error}
+              </div>
+            )}
+            {ok && (
+              <div className="success-message mt8" role="status">
+                Mantenimiento registrado.
+              </div>
+            )}
           </form>
 
           <p className="helper">
             ¿Quieres salir?{" "}
-            <span className="textlink" onClick={() => navigate("/inicio")}>Volver al inicio</span>
+            <span className="textlink" onClick={() => navigate("/inicio")}>
+              Volver al inicio
+            </span>
           </p>
         </div>
 

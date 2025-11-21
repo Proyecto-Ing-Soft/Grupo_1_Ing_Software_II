@@ -1,4 +1,5 @@
-// Facade simple para CRUD de consumibles desde la UI admin.
+// Facade simple para CRUD de consumibles desde la UI admin
+// y para el listado "lite" que usan los mecánicos al registrar mantenimientos.
 
 import { tokenMemoria } from '../../core/utils/storageMemoria';
 
@@ -16,8 +17,21 @@ export interface Consumible {
   actualizadoEn: string;
 }
 
+export type ConsumibleLite = {
+  id: number;
+  nombre: string;
+  unidad: string;
+  // opcional, por si más adelante quieres que el backend también lo devuelva
+  activo?: boolean;
+};
+
 function readAuthToken(explicit?: string) {
-  return explicit ?? tokenMemoria.get() ?? localStorage.getItem('access_token') ?? undefined;
+  return (
+    explicit ??
+    tokenMemoria.get() ??
+    localStorage.getItem('access_token') ??
+    undefined
+  );
 }
 
 async function requestJSON<T>(
@@ -48,6 +62,7 @@ async function requestJSON<T>(
 }
 
 export const apiConsumibles = {
+  // === ADMIN: CRUD completo ===
   listar: (token?: string) =>
     requestJSON<Consumible[]>('GET', '/consumibles', undefined, token),
 
@@ -74,4 +89,13 @@ export const apiConsumibles = {
 
   eliminar: (id: number) =>
     requestJSON<{ ok: true }>('DELETE', `/consumibles/${id}`),
+
+  // === MECÁNICO / ADMIN: listado lite para select en registrar mantenimiento ===
+  listarActivosLite: (token?: string): Promise<ConsumibleLite[]> =>
+    requestJSON<ConsumibleLite[]>(
+      'GET',
+      '/consumibles/activos-lite',
+      undefined,
+      token,
+    ),
 };

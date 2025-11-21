@@ -1,4 +1,4 @@
-// PRINCIPIOS:
+// PRINCIPIOS: 
 // - SRP: manejar solo lógica de inventario de consumibles.
 // - KISS: CRUD básico; sin mezclar HTTP ni detalles de UI.
 // - DRY: mapeo a shape de respuesta en helpers pequeños.
@@ -12,6 +12,7 @@ import { ActualizarConsumibleDto } from './dto/actualizar-consumible.dto';
 export class ConsumiblesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // helper para devolver siempre el mismo shape al frontend
   private toView(c: any) {
     return {
       id: c.id,
@@ -26,11 +27,14 @@ export class ConsumiblesService {
     };
   }
 
-  async listarTodos() {
+  // ==============
+  // LISTAR (ADMIN)
+  // ==============
+  async listar() {
     const filas = await this.prisma.consumible.findMany({
       orderBy: { nombre: 'asc' },
     });
-    return filas.map(this.toView);
+    return filas.map(c => this.toView(c));
   }
 
   async buscarPorId(id: number) {
@@ -39,9 +43,14 @@ export class ConsumiblesService {
     return this.toView(c);
   }
 
+  // ==========
+  // CREAR
+  // ==========
   async crear(dto: CrearConsumibleDto) {
+    const nombreNorm = dto.nombre.trim();
+
     const existe = await this.prisma.consumible.findUnique({
-      where: { nombre: dto.nombre.trim() },
+      where: { nombre: nombreNorm },
     });
     if (existe) {
       throw new BadRequestException('Ya existe un consumible con ese nombre');
@@ -49,7 +58,7 @@ export class ConsumiblesService {
 
     const creado = await this.prisma.consumible.create({
       data: {
-        nombre: dto.nombre.trim(),
+        nombre: nombreNorm,
         unidad: dto.unidad.trim(),
         stockActual: dto.stockActual,
         stockMinimo: dto.stockMinimo,
@@ -61,10 +70,14 @@ export class ConsumiblesService {
     return this.toView(creado);
   }
 
+  // ==========
+  // ACTUALIZAR
+  // ==========
   async actualizar(id: number, dto: ActualizarConsumibleDto) {
     const actual = await this.prisma.consumible.findUnique({ where: { id } });
     if (!actual) throw new BadRequestException('Consumible no existe');
 
+    // Validar nombre duplicado si se cambia
     if (dto.nombre && dto.nombre.trim() !== actual.nombre) {
       const duplicado = await this.prisma.consumible.findUnique({
         where: { nombre: dto.nombre.trim() },
@@ -89,9 +102,37 @@ export class ConsumiblesService {
     return this.toView(actualizado);
   }
 
+  // ==========
+  // ELIMINAR
+  // ==========
   async eliminar(id: number) {
-    // Puedes cambiar esto a "soft delete" (activo=false) si prefieres
+    // Si prefieres "soft delete", aquí podrías hacer:
+    // await this.prisma.consumible.update({ where: { id }, data: { activo: false } });
     await this.prisma.consumible.delete({ where: { id } });
     return { ok: true };
   }
+
+  // ===============================
+  // LISTAR ACTIVOS (LITE) - MECÁNICO
+  // ===============================
+  async listarActivosLite() {
+    const filas = await this.prisma.consumible.findMany({
+      where: { activo: true },
+      select: {
+        id: true,
+        nombre: true,
+        unidad: true,
+      },
+      orderBy: { nombre: 'asc' },
+    });
+
+    // Shape compatible con `ConsumibleLite` del frontend
+    return filas.map(f => ({
+      id: f.id,
+      nombre: f.nombre,
+      unidad: f.unidad,
+    }));
+  }
+
+  
 }
