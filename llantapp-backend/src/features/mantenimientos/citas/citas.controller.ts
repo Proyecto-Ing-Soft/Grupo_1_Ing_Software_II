@@ -136,4 +136,16 @@ export class CitasController {
       disposition: `inline; filename="${name}"`,
     });
   }
+
+  @Get(':id/resumen-tecnico')
+  async resumenTecnico(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const userId = Number(req.user?.id ?? req.user?.sub);
+    if (!Number.isFinite(userId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
+    const rol = req.user?.rol as string | undefined;
+
+    return this.svc.generarResumenTecnico(id, userId, rol);
+  }
+
 }

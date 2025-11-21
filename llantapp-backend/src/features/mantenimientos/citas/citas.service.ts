@@ -344,4 +344,104 @@ export class CitasService {
       include: { vehiculo: true },
     });
   }
+
+    // ============================================
+  // US-07: RESUMEN TÉCNICO DE UNA CITA TERMINADA
+  // ============================================
+  async generarResumenTecnico(
+    citaId: number,
+    solicitanteId: number,
+    solicitanteRol?: string,
+  ) {
+    const cita = await this.prisma.citaMantenimiento.findUnique({
+      where: { id: citaId },
+      include: {
+        vehiculo: true,
+        cliente: { select: { id: true, nombreCompleto: true } },
+        mecanico: { select: { id: true, nombreCompleto: true } },
+      },
+    });
+
+    if (!cita) {
+      throw new BadRequestException('Cita no existe');
+    }
+
+    // Solo ADMIN, cliente dueño o mecánico asignado pueden ver el resumen
+    const esAdmin = solicitanteRol === 'ADMIN';
+    const esCliente = cita.clienteId === solicitanteId;
+    const esMecanico = cita.mecanicoId === solicitanteId;
+
+    if (!esAdmin && !esCliente && !esMecanico) {
+      throw new ForbiddenException('No tienes permiso para ver esta cita');
+    }
+
+    if (cita.estado !== EstadoCita.TERMINADA) {
+      throw new BadRequestException('La cita aún no está terminada');
+    }
+
+    // Info de vehículo: preferir vehiculo real, luego snapshot
+    const placa =
+      cita.vehiculo?.placa ??
+      (cita.placaPreliminar ? cita.placaPreliminar.toUpperCase() : null);
+    const marca = cita.vehiculo?.marca ?? cita.marcaPreliminar ?? null;
+    const modelo = cita.vehiculo?.modelo ?? cita.modeloPreliminar ?? null;
+    const anio = cita.vehiculo?.anio ?? cita.anioPreliminar ?? null;
+
+    // Repuestos: se guardan como JSON (array de strings en nuestro flujo)
+    let repuestos: string[] = [];
+    if (Array.isArray(cita.repuestos)) {
+      repuestos = cita.repuestos as string[];
+    }
+
+    const fechaMantenimientoISO = cita.fechaMantenimiento
+      ? cita.fechaMantenimiento.toISOString()
+      : null;
+
+    const fechaMantenimientoTexto = cita.fechaMantenimiento
+      ? cita.fechaMantenimiento.toLocaleString('es-PE', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        })
+      : 'Sin fecha registrada';
+
+    // Texto “bonito” para compartir/copiar
+    const resumenTexto = [
+      `Resumen técnico – Cita #${cita.id}`,
+      `Fecha de mantenimiento: ${fechaMantenimientoTexto}`,
+      `Tipo de mantenimiento: ${cita.tipo}`,
+      '',
+      `Vehículo: ${marca ?? '-'} ${modelo ?? ''}`.trim() +
+        (anio ? ` (${anio})` : ''),
+      `Placa: ${placa ?? '-'}`,
+      '',
+      `Cliente: ${cita.cliente?.nombreCompleto ?? '-'}`,
+      `Mecánico: ${cita.mecanico?.nombreCompleto ?? '-'}`,
+      '',
+      'Trabajos realizados:',
+      cita.trabajosRealizados?.trim() || '-',
+      '',
+      'Repuestos utilizados:',
+      repuestos.length ? `- ${repuestos.join('\n- ')}` : '-',
+    ].join('\n');
+
+    return {
+      citaId: cita.id,
+      tipo: cita.tipo,
+      estado: cita.estado,
+      fechaMantenimiento: fechaMantenimientoISO,
+      cliente: cita.cliente ?? null,
+      mecanico: cita.mecanico ?? null,
+      vehiculo: {
+        placa,
+        marca,
+        modelo,
+        anio,
+      },
+      trabajosRealizados: cita.trabajosRealizados ?? '',
+      repuestos,
+      resumenTexto,
+    };
+  }
+
 }
+
