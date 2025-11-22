@@ -13,7 +13,7 @@
     "strict": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
-    "types": ["node", "express"]
+    "types": ["node", "express", "jest"]
   },
   "exclude": ["node_modules", "dist"]
 }
