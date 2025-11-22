@@ -19,7 +19,7 @@ export default function InicioProtegido() {
     ? "Gestiona tu taller desde un solo lugar"
     : "Gestiona tus vehículos desde un solo lugar";
 
-  // Animación reveal robusta: visible por defecto y se aplica también a nodos insertados tras login
+  // Animación reveal robusta
   useEffect(() => {
     const scope =
       document.querySelector<HTMLElement>(".inicio-container") ?? document;
@@ -31,7 +31,6 @@ export default function InicioProtegido() {
         const delay = Number(el.dataset.delay ?? i * 80);
         const id = window.setTimeout(() => {
           el.classList.add("animate-in");
-          // al terminar la transición, retiramos el flag de preparación
           const handler = () => el.classList.remove("will-animate");
           el.addEventListener("transitionend", handler, { once: true });
           el.addEventListener("animationend", handler, { once: true });
@@ -67,7 +66,7 @@ export default function InicioProtegido() {
         el.classList.remove("will-animate", "animate-in");
       });
     };
-  }, [sesion?.perfil?.rol]); // se reprocesa cuando cambia el rol / llega sesión
+  }, [sesion?.perfil?.rol]);
 
   return (
     <div className="inicio-container">
@@ -358,8 +357,25 @@ export default function InicioProtegido() {
             </Link>
           )}
 
+          {/* NUEVO: Bitácora de acciones (ADMIN + OWNER) */}
+          {tieneRol(["ADMIN", "OWNER"]) && (
+            <Link
+              to="/admin/bitacora-acciones"
+              className="btn-card btn-secondary reveal"
+              data-delay="900"
+            >
+              <div className="btn-icon">📋</div>
+              <div className="btn-text">
+                <div className="btn-title">Bitácora de acciones</div>
+                <div className="btn-sub">
+                  Revisa quién creó, asignó y terminó mantenimientos
+                </div>
+              </div>
+            </Link>
+          )}
+
           {/* OWNER - Solicitudes de taller */}
-          {tieneRol(["OWNER"] as any) && (
+          {tieneRol(["OWNER"]) && (
             <Link
               to="/owner/solicitudes-taller"
               className="btn-card btn-highlight reveal"

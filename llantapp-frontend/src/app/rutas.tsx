@@ -1,3 +1,4 @@
+// llantapp-frontend/src/app/rutas.tsx
 import React from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
@@ -43,6 +44,9 @@ import RegistrarIntervencionExternaPagina from "../features/intervenciones-exter
 import AdminConsumiblesPagina from '../features/consumibles/AdminConsumiblesPagina';
 import MantenimientosVencidosPagina from "../features/mantenimientos/MantenimientosVencidosPagina";
 import { SolicitudesTallerOwnerPagina } from "../features/solicitudes-taller/SolicitudesTallerOwnerPagina";
+
+// 🔹 Auditoría / Bitácora
+import AdminBitacoraAccionesPagina from '../features/auditoria/AdminBitacoraAccionesPagina';
 
 // GUARDS / LAYOUT
 import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';
@@ -317,6 +321,16 @@ const router = createBrowserRouter(
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['OWNER' as any]}>
               <SolicitudesTallerOwnerPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
+        // 🔹 ADMIN + OWNER: bitácora de acciones
+        {
+          path: 'admin/bitacora-acciones',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['ADMIN', 'OWNER' as any]}>
+              <AdminBitacoraAccionesPagina />
             </RutaProtegidaPorRol>
           ),
         },

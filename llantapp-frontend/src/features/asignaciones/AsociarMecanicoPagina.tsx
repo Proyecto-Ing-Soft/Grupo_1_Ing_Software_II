@@ -35,7 +35,7 @@ interface CitaRow {
     nombreCompleto: string;
   } | null;
 
-  // 🔹 Servicio (tipo de mantenimiento real)
+  // Servicio (tipo de mantenimiento real)
   servicioId?: number | null;
   servicio?: ServicioLite | null;
 }
@@ -50,7 +50,8 @@ export default function AdminCitasPendientes() {
 
   const [citas, setCitas] = useState<CitaRow[]>([]);
   const [mecanicos, setMecanicos] = useState<MecanicoRow[]>([]);
-  const [seleccion, setSeleccion] = useState<Record<number, number>>({});
+  // permitimos undefined en el valor (sin problema)
+  const [seleccion, setSeleccion] = useState<Record<number, number | undefined>>({});
   const [q, setQ] = useState("");
   const [okMsg, setOkMsg] = useState<string | null>(null);
   const [editandoId, setEditandoId] = useState<number | null>(null);
@@ -59,7 +60,7 @@ export default function AdminCitasPendientes() {
     let alive = true;
     (async () => {
       const [cs, ms] = await Promise.all([
-        apiCitas.pendientesAdmin(),          // debe devolver servicio / servicioId
+        apiCitas.pendientesAdmin(), // debe devolver servicio / servicioId / vehiculo / placaPreliminar
         apiUsuarios.listarPorRol("MECANICO"),
       ]);
       if (!alive) return;
@@ -107,12 +108,9 @@ export default function AdminCitasPendientes() {
   const filtradas = useMemo(() => {
     const s = q.trim().toLowerCase();
 
-    // 1. Primero filtramos las que NO sean TERMINADA
     const activas = citas.filter((c) => c.estado !== "TERMINADA");
-
     if (!s) return activas;
 
-    // 2. Buscamos por: ID, nombre servicio, placa, estado
     return activas.filter((c) => {
       const nombreServicio = (c.servicio?.nombre ?? "").toLowerCase();
       const placa = (c.vehiculo?.placa ?? c.placaPreliminar ?? "").toLowerCase();
@@ -127,21 +125,31 @@ export default function AdminCitasPendientes() {
   }, [q, citas]);
 
   const asignar = async (citaId: number) => {
-    const mecId = seleccion[citaId];
+    const mecIdSeleccionado = seleccion[citaId];
     const citaActual = citas.find((c) => c.id === citaId);
-    const idFinal = mecId || citaActual?.mecanicoId || citaActual?.mecanico?.id;
 
-    if (!idFinal) return alert("Selecciona un mecánico");
+    // idFinal: garantizamos que sea un number
+    const idFinal =
+      mecIdSeleccionado ??
+      citaActual?.mecanicoId ??
+      citaActual?.mecanico?.id;
+
+    if (!idFinal) {
+      alert("Selecciona un mecánico");
+      return;
+    }
 
     setOkMsg(null);
-    await apiCitas.asignar(citaId, mecId);
+
+    // 👇 aquí usamos SIEMPRE un number (idFinal), no number | undefined
+    await apiCitas.asignar(citaId, idFinal);
 
     setCitas((prev) =>
       prev.map((cita) =>
         cita.id === citaId
           ? {
               ...cita,
-              mecanicoId: mecId,
+              mecanicoId: idFinal,
               estado: "EN_PROGRESO",
             }
           : cita
@@ -149,6 +157,7 @@ export default function AdminCitasPendientes() {
     );
 
     setOkMsg(`Cita #${citaId} asignada correctamente.`);
+    setEditandoId(null);
   };
 
   return (
@@ -214,9 +223,7 @@ export default function AdminCitasPendientes() {
                 c.mecanicoId != null || c.estado === "EN_PROGRESO";
 
               const esModoEdicion = editandoId === c.id;
-
               const bloqueado = yaAsignada && !esModoEdicion;
-
               const nombreServicio = c.servicio?.nombre ?? "Sin servicio";
 
               return (
@@ -229,7 +236,6 @@ export default function AdminCitasPendientes() {
                     <span className="pill">
                       <span className="pill__dot" />#{c.id}
                     </span>
-                    {/* 🔹 En vez de tipo enum, mostramos el nombre del servicio */}
                     <span className="pill">{nombreServicio}</span>
                     <span className="pill">
                       {c.estado.replace("_", " ")}
@@ -251,10 +257,7 @@ export default function AdminCitasPendientes() {
 
                   <div className="form form--one">
                     <div className="form-group">
-                      <label
-                        className="label"
-                        htmlFor={`mec-${c.id}`}
-                      >
+                      <label className="label" htmlFor={`mec-${c.id}`}>
                         Mecánico
                       </label>
                       <div className="input-wrap">
@@ -263,16 +266,16 @@ export default function AdminCitasPendientes() {
                           className="input"
                           disabled={bloqueado}
                           value={
-                            seleccion[c.id] ||
-                            c.mecanicoId ||
-                            c.mecanico?.id ||
+                            seleccion[c.id] ??
+                            c.mecanicoId ??
+                            c.mecanico?.id ??
                             ""
                           }
                           onChange={(e) => {
                             const val = Number(e.target.value);
                             setSeleccion((s) => ({
                               ...s,
-                              [c.id]: (val || undefined) as any,
+                              [c.id]: val || undefined,
                             }));
                           }}
                         >

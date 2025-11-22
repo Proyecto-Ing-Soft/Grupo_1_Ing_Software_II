@@ -1,15 +1,15 @@
-// PATRONES/PRINCIPIOS: 
+// llantapp-frontend/src/features/mantenimientos/api.ts
+// PATRONES/PRINCIPIOS:
 // - Facade: este mini-módulo “fachadea” las rutas HTTP para la UI.
-// - DRY: centraliza rutas y parseo de tipos (vehiculoId a Number).
+// - DRY: centraliza rutas y parseo de tipos.
 // - KISS: métodos autoexplicativos y de un solo propósito.
 
-import { getJSON, postJSON } from '../../core/http/_http';
+import { getJSON } from '../../core/http/_http';
 import { tokenMemoria } from '../../core/utils/storageMemoria';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 export type EvidenciaDescarga = { url: string; mime: string; blob: Blob };
-export type Tipo = 'PREVENTIVO' | 'CORRECTIVO' | 'LEGAL_ITV' | 'EXTRAS';
 
 export type TerminarCitaPayload = {
   trabajosRealizados: string;
@@ -96,11 +96,13 @@ async function postAuthed<T>(url: string, body?: any, token?: string): Promise<T
 // === US-07: Resumen técnico ===
 export interface ResumenTecnico {
   citaId: number;
-  tipo: Tipo;
+  // ahora viene como texto con el nombre del servicio
+  tipo: string;
   estado: string;
   fechaMantenimiento: string | null;
   cliente: { id: number; nombreCompleto: string } | null;
   mecanico: { id: number; nombreCompleto: string } | null;
+  servicio?: { id: number; nombre: string } | null;
   vehiculo: {
     placa: string | null;
     marca: string | null;
@@ -114,8 +116,9 @@ export interface ResumenTecnico {
 
 // PRINCIPIOS: Facade (rutas), DRY (tipos/payload unificados), KISS
 export const apiCitas = {
+  // Crear cita usando servicioId (catálogo de servicios)
   crear: (payload: {
-    tipo: Tipo;
+    servicioId: number;
     vehiculoId?: number;
     placaPreliminar?: string;
     marcaPreliminar?: string;
@@ -124,14 +127,17 @@ export const apiCitas = {
     colorPreliminar?: string;
     vinPreliminar?: string;
     comentario?: string;
+    // El backend espera "YYYY-MM-DD"
     programadaPara: string;
   }) => postAuthed('/citas-mantenimiento', payload),
 
   // US-21: citas pendientes para ADMIN (solicitadas / en progreso)
-  pendientesAdmin: () => getAuthed<any[]>('/citas-mantenimiento/admin/pendientes'),
+  pendientesAdmin: () =>
+    getAuthed<any[]>('/citas-mantenimiento/admin/pendientes'),
 
   // US-24: citas/mantenimientos vencidos (fecha pasada y no terminadas)
-  vencidasAdmin: () => getAuthed<any[]>('/citas-mantenimiento/admin/vencidas'),
+  vencidasAdmin: () =>
+    getAuthed<any[]>('/citas-mantenimiento/admin/vencidas'),
 
   asignar: (id: number, mecanicoId: number) =>
     postAuthed(`/citas-mantenimiento/${id}/asignar`, { mecanicoId }),
@@ -139,12 +145,14 @@ export const apiCitas = {
   registrarMantenimiento: (id: number, payload: TerminarCitaPayload) =>
     postAuthed(`/citas-mantenimiento/${id}/terminar`, payload),
 
-  terminar: (id: number) => postAuthed(`/citas-mantenimiento/${id}/terminar`, {}),
+  terminar: (id: number) =>
+    postAuthed(`/citas-mantenimiento/${id}/terminar`, {}),
 
   mias: () => getAuthed<any[]>('/citas-mantenimiento/mias'),
   asignadas: () => getAuthed<any[]>('/citas-mantenimiento/asignadas'),
 
-  detalle: (id: number) => getAuthed<CitaDetalle>(`/citas-mantenimiento/${id}`),
+  detalle: (id: number) =>
+    getAuthed<CitaDetalle>(`/citas-mantenimiento/${id}`),
 
   // US-07: obtener resumen técnico de una cita terminada
   resumenTecnico: (id: number) =>
@@ -165,13 +173,16 @@ export async function descargarEvidenciaCita(
   token?: string,
 ): Promise<EvidenciaDescarga> {
   const auth = getAuthToken(token);
-  const r = await fetch(`${API_BASE}/citas-mantenimiento/${citaId}/evidencia`, {
-    method: 'GET',
-    headers: {
-      ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
+  const r = await fetch(
+    `${API_BASE}/citas-mantenimiento/${citaId}/evidencia`,
+    {
+      method: 'GET',
+      headers: {
+        ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
+      },
+      credentials: 'include',
     },
-    credentials: 'include',
-  });
+  );
   if (!r.ok) throw new Error(await r.text().catch(() => r.statusText));
   const blob = await r.blob();
   const mime = r.headers.get('Content-Type') || 'application/octet-stream';

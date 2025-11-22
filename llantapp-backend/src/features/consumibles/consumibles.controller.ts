@@ -14,6 +14,7 @@ import {
   Req,
   UseGuards,
   ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ConsumiblesService } from './consumibles.service';
@@ -27,9 +28,20 @@ export class ConsumiblesController {
 
   private assertAdmin(req: any) {
     const rol = req.user?.rol;
-    if (rol !== 'ADMIN') {
-      throw new ForbiddenException('Solo un administrador puede gestionar consumibles');
+    // Permitimos OWNER como súper admin opcionalmente
+    if (rol !== 'ADMIN' && rol !== 'OWNER') {
+      throw new ForbiddenException(
+        'Solo un administrador puede gestionar consumibles',
+      );
     }
+  }
+
+  private getUserId(req: any): number {
+    const userId = Number(req.user?.id ?? req.user?.sub);
+    if (!Number.isFinite(userId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
+    return userId;
   }
 
   // ============================================
@@ -37,32 +49,40 @@ export class ConsumiblesController {
   // GET /consumibles/activos-lite
   // ============================================
   @Get('activos-lite')
-  async listarActivosLite() {
-    // No pedimos rol de admin aquí: lo usan mecánicos
-    return this.svc.listarActivosLite();
+  async listarActivosLite(@Req() req: any) {
+    const usuarioId = this.getUserId(req);
+    // Puede ser mecánico, admin o owner; se filtra por su taller en el service
+    return this.svc.listarActivosLite(usuarioId);
   }
 
   // ============================================
-  // Rutas de administración (ADMIN)
+  // Rutas de administración (ADMIN / OWNER)
   // ============================================
 
   @Get()
   async listar(@Req() req: any) {
     this.assertAdmin(req);
-    // ⬅️ Aquí usamos `listar()` (no listarTodos)
-    return this.svc.listar();
+    const adminId = this.getUserId(req);
+    return this.svc.listar(adminId);
   }
 
   @Get(':id')
-  async detalle(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  async detalle(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
     this.assertAdmin(req);
-    return this.svc.buscarPorId(id);
+    const adminId = this.getUserId(req);
+    return this.svc.buscarPorId(id, adminId);
   }
 
   @Post()
   async crear(@Body() dto: CrearConsumibleDto, @Req() req: any) {
     this.assertAdmin(req);
-    return this.svc.crear(dto);
+    const adminId = this.getUserId(req);
+    // 🔴 ANTES: this.svc.crear(dto, adminId)
+    // ✅ AHORA:
+    return this.svc.crear(adminId, dto);
   }
 
   @Put(':id')
@@ -72,12 +92,19 @@ export class ConsumiblesController {
     @Req() req: any,
   ) {
     this.assertAdmin(req);
-    return this.svc.actualizar(id, dto);
+    const adminId = this.getUserId(req);
+    // 🔴 ANTES: this.svc.actualizar(id, dto, adminId)
+    // ✅ AHORA:
+    return this.svc.actualizar(id, adminId, dto);
   }
 
   @Delete(':id')
-  async eliminar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  async eliminar(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
     this.assertAdmin(req);
-    return this.svc.eliminar(id);
+    const adminId = this.getUserId(req);
+    return this.svc.eliminar(id, adminId);
   }
 }

@@ -47,6 +47,9 @@ model Taller {
   // relación con usuarios del taller
   usuarios Usuario[]
 
+  // ⭐ CAMBIO: consumibles por taller
+  consumibles Consumible[]   // cada taller tiene su propio stock
+
   // trazabilidad
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
@@ -307,27 +310,15 @@ model CalificacionCita {
 // Bitácora de acciones
 // ===================
 model AccionUsuario {
-  id Int @id @default(autoincrement())
-
-  // QUIÉN realizó la acción (actor)
-  usuarioId Int
-  usuario   Usuario @relation(fields: [usuarioId], references: [id])
-
-  // QUÉ acción fue
-  tipo String // p.ej.: "CREAR_CITA", "ASIGNAR_MECANICO", "TERMINAR_CITA"
-
-  // SOBRE QUÉ cita se hizo la acción (si aplica)
-  citaId Int?
-  cita   CitaMantenimiento? @relation(fields: [citaId], references: [id])
-
-  // MECÁNICO involucrado (si aplica, por ejemplo en la asignación o en el cierre)
+  id         Int      @id @default(autoincrement())
+  usuarioId  Int
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+  tipo       String
+  citaId     Int?
+  cita       CitaMantenimiento? @relation(fields: [citaId], references: [id])
   mecanicoId Int?
-
-  // TEXTO legible para mostrar en la UI
-  descripcion String @db.Text
-
-  // CUÁNDO se registró la acción
-  creadoEn DateTime @default(now())
+  descripcion String  @db.Text
+  creadoEn   DateTime @default(now())
 
   @@index([usuarioId, creadoEn])
   @@index([tipo, creadoEn])
@@ -363,14 +354,21 @@ model IntervencionExterna {
 // ===================
 model Consumible {
   id          Int      @id @default(autoincrement())
-  nombre      String   @unique
-  unidad      String   // ej: "lt", "und", "kg"
+  nombre      String   
+  unidad      String   
   stockActual Int      @default(0)
   stockMinimo Int      @default(0)
   descripcion String?  @db.Text
   activo      Boolean  @default(true)
-  creadoEn    DateTime @default(now())
+
+  tallerId Int
+  taller   Taller @relation(fields: [tallerId], references: [id])
+
+  creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
+
+  @@unique([tallerId, nombre])
+  @@index([tallerId])
 }
 
 // generator erd {

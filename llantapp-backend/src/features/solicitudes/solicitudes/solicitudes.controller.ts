@@ -7,7 +7,7 @@ export class SolicitudesController {
   constructor(private readonly svc: SolicitudesService) {}
 
   @Post()
-  crear(@Body() dto: SolicitudDto) {
+  async crear(@Body() dto: SolicitudDto) {
     return this.svc.registrar(dto);
   }
 }

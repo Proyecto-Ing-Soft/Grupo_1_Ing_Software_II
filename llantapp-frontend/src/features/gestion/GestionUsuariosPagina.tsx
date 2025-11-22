@@ -44,6 +44,7 @@ export default function GestionUsuariosPagina() {
       const datos = await apiUsuarios.listarTaller(usuario.token);
       setItems(datos);
     } catch {
+      // Fallback: intentar por rol (aunque backend ya filtra por taller)
       try {
         const [admins, mecs] = await Promise.all([
           apiUsuarios.listarAdmins(usuario.token),
@@ -97,8 +98,8 @@ export default function GestionUsuariosPagina() {
       const matchNombre = u.nombreCompleto.toLowerCase().includes(s);
       const matchCorreo = u.correo.toLowerCase().includes(s);
       const matchRol = u.rol.toLowerCase().includes(s);
-      const matchTaller = u.empresa?.nombre
-        ? u.empresa.nombre.toLowerCase().includes(s)
+      const matchTaller = u.taller?.nombre
+        ? u.taller.nombre.toLowerCase().includes(s)
         : false;
       return matchNombre || matchCorreo || matchRol || matchTaller;
     });
@@ -387,7 +388,7 @@ export default function GestionUsuariosPagina() {
                     <span className="badge badge--id">#{u.id}</span>
                     <span className="badge badge--rol">
                       {u.rol}
-                      {u.empresa && ` · Taller: ${u.empresa.nombre}`}
+                      {u.taller && ` · Taller: ${u.taller.nombre}`}
                     </span>
                   </div>
                   <div className="usr__cardActions">
@@ -410,9 +411,9 @@ export default function GestionUsuariosPagina() {
                   <div className="usr__nombre">{u.nombreCompleto}</div>
                   <div className="usr__meta">
                     <span className="metaItem">Correo: {u.correo}</span>
-                    {u.empresa && (
+                    {u.taller && (
                       <span className="metaItem">
-                        Taller: {u.empresa.nombre}
+                        Taller: {u.taller.nombre}
                       </span>
                     )}
                     {u.creadoEn && (

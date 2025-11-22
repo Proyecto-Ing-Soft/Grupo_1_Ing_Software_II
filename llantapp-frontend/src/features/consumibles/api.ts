@@ -21,7 +21,8 @@ export type ConsumibleLite = {
   id: number;
   nombre: string;
   unidad: string;
-  stockActual: number;  // <-- NUEVO
+  stockActual: number;
+  stockMinimo: number;  // ⬅️ alineado con backend
   activo?: boolean;
 };
 

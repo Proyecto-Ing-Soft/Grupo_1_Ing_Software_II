@@ -1,3 +1,4 @@
+// llantapp-frontend/src/features/mantenimientos/AgendarCitaPagina.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../core/auth/AuthContext";
@@ -8,7 +9,17 @@ import PreviewCita from "./componentes/PreviewCita";
 import agendarCitaImg from "../../assets/priv/cliente/agendar-cita.png";
 import "./agendarCita.css";
 
-type VehiculoLite = { id: number; placa: string; marca: string; modelo: string };
+// 🔹 Importamos el API de servicios del catálogo
+import { apiServicios, Servicio } from "../catalogo-servicios/api";
+
+type VehiculoLite = {
+  id: number;
+  placa: string;
+  marca: string;
+  modelo: string;
+};
+
+type ServicioLite = Pick<Servicio, "id" | "nombre">;
 
 const OPCION_NUEVO = "__nuevo__";
 
@@ -33,16 +44,19 @@ export default function AgendarCitaPagina() {
 
   const [vehiculos, setVehiculos] = useState<VehiculoLite[]>([]);
   const [loadingVeh, setLoadingVeh] = useState(true);
+
+  const [servicios, setServicios] = useState<ServicioLite[]>([]);
+  const [loadingServicios, setLoadingServicios] = useState(true);
+
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
-  // Si el usuario tiene vehículos, inicialmente ocultamos el formulario.
-  // Si no tiene, lo mostramos.
+  // Si el usuario tiene vehículos, inicialmente ocultamos el formulario nuevo.
   const [mostrarFormNuevo, setMostrarFormNuevo] = useState(false);
 
   const [form, setForm] = useState<CitaForm>({
-    tipo: "PREVENTIVO",
+    servicioId: undefined,
     vehiculoId: undefined,
     placaPreliminar: "",
     marcaPreliminar: "",
@@ -54,6 +68,7 @@ export default function AgendarCitaPagina() {
     programadaPara: yyyymmddLocal(), // default hoy en local
   });
 
+  // 🔹 Cargar vehículos del cliente
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -73,11 +88,43 @@ export default function AgendarCitaPagina() {
         if (alive) setLoadingVeh(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [usuario?.token]);
 
+  // 🔹 Cargar servicios disponibles desde el catálogo (solo ACTIVO)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        setLoadingServicios(true);
+        const data = await apiServicios.listar(); // mismo endpoint que usa el admin
+        if (!alive) return;
+
+        const activos = (data ?? []).filter(
+          (s: Servicio) => s.estado === "ACTIVO"
+        );
+        setServicios(
+          activos
+            .map((s) => ({ id: s.id, nombre: s.nombre }))
+            .sort((a, b) => a.nombre.localeCompare(b.nombre))
+        );
+      } catch (e) {
+        console.error("Error cargando servicios:", e);
+      } finally {
+        if (alive) setLoadingServicios(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const onChangeCampo = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
 
@@ -97,11 +144,21 @@ export default function AgendarCitaPagina() {
       return;
     }
 
+    if (name === "servicioId") {
+      setForm((s) => ({
+        ...s,
+        servicioId: value === "" ? undefined : Number(value),
+      }));
+      return;
+    }
+
     setForm((s) => ({
       ...s,
       [name]:
         name === "anioPreliminar"
-          ? value === "" ? undefined : Number(value)
+          ? value === ""
+            ? undefined
+            : Number(value)
           : value,
     }));
   };
@@ -119,7 +176,7 @@ export default function AgendarCitaPagina() {
     }
 
     const payload: any = {
-      tipo: form.tipo,
+      servicioId: form.servicioId!,
       // El backend exige exactamente "YYYY-MM-DD"
       programadaPara: form.programadaPara,
       comentario: form.comentario || undefined,
@@ -131,8 +188,10 @@ export default function AgendarCitaPagina() {
       payload.placaPreliminar = form.placaPreliminar?.toUpperCase().trim();
       payload.marcaPreliminar = form.marcaPreliminar?.trim();
       payload.modeloPreliminar = form.modeloPreliminar?.trim();
-      if (form.anioPreliminar != null) payload.anioPreliminar = Number(form.anioPreliminar);
-      if (form.colorPreliminar) payload.colorPreliminar = form.colorPreliminar.trim();
+      if (form.anioPreliminar != null)
+        payload.anioPreliminar = Number(form.anioPreliminar);
+      if (form.colorPreliminar)
+        payload.colorPreliminar = form.colorPreliminar.trim();
       if (form.vinPreliminar) payload.vinPreliminar = form.vinPreliminar.trim();
     }
 
@@ -162,22 +221,33 @@ export default function AgendarCitaPagina() {
   };
 
   const puedeEnviar =
-    Boolean(form.vehiculoId) ||
-    Boolean(
-      (form.placaPreliminar ?? "").trim() &&
-      (form.marcaPreliminar ?? "").trim() &&
-      (form.modeloPreliminar ?? "").trim()
-    );
+    Boolean(form.servicioId) &&
+    (Boolean(form.vehiculoId) ||
+      Boolean(
+        (form.placaPreliminar ?? "").trim() &&
+          (form.marcaPreliminar ?? "").trim() &&
+          (form.modeloPreliminar ?? "").trim()
+      ));
 
   const vehiculoSel = useMemo(
     () => vehiculos.find((v) => v.id === Number(form.vehiculoId)),
     [vehiculos, form.vehiculoId]
   );
 
+  const servicioSel = useMemo(
+    () =>
+      form.servicioId
+        ? servicios.find((s) => s.id === form.servicioId)
+        : undefined,
+    [servicios, form.servicioId]
+  );
+
   // Preview con parseo LOCAL del "YYYY-MM-DD"
   const soloFechaBonita = (v?: string) => {
     const d = parseYMDLocal(v);
-    return d ? d.toLocaleDateString("es-PE", { dateStyle: "medium" }) : "—";
+    return d
+      ? d.toLocaleDateString("es-PE", { dateStyle: "medium" })
+      : "—";
   };
 
   // min del date en local
@@ -190,29 +260,51 @@ export default function AgendarCitaPagina() {
           <header className="agendar__head">
             <h1 className="agendar__title">Agendar cita</h1>
             <p className="agendar__sub">
-              Selecciona un vehículo registrado o registra uno nuevo para esta cita.
+              Selecciona un servicio del catálogo y un vehículo registrado, o
+              registra uno nuevo para esta cita.
             </p>
           </header>
 
           <div className="agendar__formScroll">
             <form className="form" onSubmit={enviar} noValidate>
+              {/* 🔹 Servicio desde catálogo */}
               <div className="form-group">
-                <label className="label" htmlFor="tipo">Servicio</label>
+                <label className="label" htmlFor="servicioId">
+                  Servicio
+                </label>
                 <div className="input-wrap" data-ico="service">
-                  <select id="tipo" name="tipo" className="input" value={form.tipo} onChange={onChangeCampo}>
-                    <option value="PREVENTIVO">Mantenimiento preventivo</option>
-                    <option value="CORRECTIVO">Correctivo</option>
-                    <option value="LEGAL_ITV">Legal / ITV</option>
-                    <option value="EXTRAS">Extras</option>
-                  </select>
+                  {loadingServicios ? (
+                    <div className="helper">Cargando servicios…</div>
+                  ) : servicios.length === 0 ? (
+                    <div className="helper">
+                      No hay servicios disponibles. Consulta con tu taller.
+                    </div>
+                  ) : (
+                    <select
+                      id="servicioId"
+                      name="servicioId"
+                      className="input"
+                      value={form.servicioId ?? ""}
+                      onChange={onChangeCampo}
+                    >
+                      <option value="">Selecciona un servicio…</option>
+                      {servicios.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
 
               {loadingVeh ? (
                 <div className="helper">Cargando vehículos…</div>
-              ) : (vehiculos.length > 0) ? (
+              ) : vehiculos.length > 0 ? (
                 <div className="form-group">
-                  <label className="label" htmlFor="vehiculoId">Vehículo</label>
+                  <label className="label" htmlFor="vehiculoId">
+                    Vehículo
+                  </label>
                   <div className="input-wrap" data-ico="vehicle">
                     <select
                       id="vehiculoId"
@@ -221,28 +313,39 @@ export default function AgendarCitaPagina() {
                       value={
                         form.vehiculoId
                           ? String(form.vehiculoId)
-                          : (mostrarFormNuevo ? "__nuevo__" : "")
+                          : mostrarFormNuevo
+                          ? OPCION_NUEVO
+                          : ""
                       }
                       onChange={onChangeCampo}
                     >
-                      <option value="" disabled>Elige uno…</option>
+                      <option value="" disabled>
+                        Elige uno…
+                      </option>
                       {vehiculos.map((v) => (
                         <option key={v.id} value={v.id}>
                           {v.placa} — {v.marca} {v.modelo}
                         </option>
                       ))}
-                      <option value="__nuevo__">Registrar nuevo vehículo…</option>
+                      <option value={OPCION_NUEVO}>
+                        Registrar nuevo vehículo…
+                      </option>
                     </select>
                   </div>
                 </div>
               ) : (
-                <div className="helper">Aún no tienes vehículos registrados. Completa los datos abajo.</div>
+                <div className="helper">
+                  Aún no tienes vehículos registrados. Completa los datos
+                  abajo.
+                </div>
               )}
 
               {(!(vehiculos.length > 0) || mostrarFormNuevo) && (
                 <>
                   <div className="form-group">
-                    <label className="label" htmlFor="placaPreliminar">Placa</label>
+                    <label className="label" htmlFor="placaPreliminar">
+                      Placa
+                    </label>
                     <div className="input-wrap" data-ico="plate">
                       <input
                         id="placaPreliminar"
@@ -257,7 +360,9 @@ export default function AgendarCitaPagina() {
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label className="label" htmlFor="marcaPreliminar">Marca</label>
+                      <label className="label" htmlFor="marcaPreliminar">
+                        Marca
+                      </label>
                       <div className="input-wrap" data-ico="brand">
                         <input
                           id="marcaPreliminar"
@@ -270,7 +375,9 @@ export default function AgendarCitaPagina() {
                       </div>
                     </div>
                     <div className="form-group">
-                      <label className="label" htmlFor="modeloPreliminar">Modelo</label>
+                      <label className="label" htmlFor="modeloPreliminar">
+                        Modelo
+                      </label>
                       <div className="input-wrap" data-ico="model">
                         <input
                           id="modeloPreliminar"
@@ -286,7 +393,9 @@ export default function AgendarCitaPagina() {
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label className="label" htmlFor="anioPreliminar">Año (opcional)</label>
+                      <label className="label" htmlFor="anioPreliminar">
+                        Año (opcional)
+                      </label>
                       <div className="input-wrap" data-ico="year">
                         <input
                           id="anioPreliminar"
@@ -302,7 +411,9 @@ export default function AgendarCitaPagina() {
                       </div>
                     </div>
                     <div className="form-group">
-                      <label className="label" htmlFor="colorPreliminar">Color (opcional)</label>
+                      <label className="label" htmlFor="colorPreliminar">
+                        Color (opcional)
+                      </label>
                       <div className="input-wrap" data-ico="color">
                         <input
                           id="colorPreliminar"
@@ -317,7 +428,9 @@ export default function AgendarCitaPagina() {
                   </div>
 
                   <div className="form-group">
-                    <label className="label" htmlFor="vinPreliminar">VIN (opcional)</label>
+                    <label className="label" htmlFor="vinPreliminar">
+                      VIN (opcional)
+                    </label>
                     <div className="input-wrap" data-ico="vin">
                       <input
                         id="vinPreliminar"
@@ -334,7 +447,9 @@ export default function AgendarCitaPagina() {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label className="label" htmlFor="programadaPara">Fecha programada</label>
+                  <label className="label" htmlFor="programadaPara">
+                    Fecha programada
+                  </label>
                   <div className="input-wrap" data-ico="date">
                     <input
                       id="programadaPara"
@@ -349,7 +464,9 @@ export default function AgendarCitaPagina() {
                 </div>
 
                 <div className="form-group">
-                  <label className="label" htmlFor="comentario">Comentario (opcional)</label>
+                  <label className="label" htmlFor="comentario">
+                    Comentario (opcional)
+                  </label>
                   <div className="input-wrap" data-ico="comment">
                     <input
                       id="comentario"
@@ -363,35 +480,65 @@ export default function AgendarCitaPagina() {
                 </div>
               </div>
 
-              <button type="submit" className="btn btn-primary" disabled={enviando || !puedeEnviar}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={enviando || !puedeEnviar}
+              >
                 {enviando ? "Agendando…" : "Agendar"}
               </button>
 
-              {error && <div className="error-message" role="alert">{error}</div>}
-              {ok && <div className="success-message" role="status">Solicitud enviada.</div>}
+              {error && (
+                <div className="error-message" role="alert">
+                  {error}
+                </div>
+              )}
+              {ok && (
+                <div className="success-message" role="status">
+                  Solicitud enviada.
+                </div>
+              )}
 
               <p className="helper" style={{ marginTop: 8 }}>
                 ¿Quieres salir?{" "}
-                <span className="textlink" onClick={() => navigate("/inicio")}>Volver al inicio</span>
+                <span
+                  className="textlink"
+                  onClick={() => navigate("/inicio")}
+                >
+                  Volver al inicio
+                </span>
               </p>
             </form>
           </div>
         </div>
+
         <div className="agendar__previewCol">
           <div className="agendar__preview">
             <PreviewCita
               form={{
-                tipo: form.tipo,
-                placaPreliminar: form.vehiculoId ? (vehiculoSel?.placa ?? "") : (form.placaPreliminar ?? ""),
-                marcaPreliminar: form.vehiculoId ? (vehiculoSel?.marca ?? "") : (form.marcaPreliminar ?? ""),
-                modeloPreliminar: form.vehiculoId ? (vehiculoSel?.modelo ?? "") : (form.modeloPreliminar ?? ""),
+                // usamos el nombre del servicio como "tipo" en la tarjeta
+                tipo: servicioSel?.nombre ?? "Servicio no seleccionado",
+                placaPreliminar: form.vehiculoId
+                  ? vehiculoSel?.placa ?? ""
+                  : form.placaPreliminar ?? "",
+                marcaPreliminar: form.vehiculoId
+                  ? vehiculoSel?.marca ?? ""
+                  : form.marcaPreliminar ?? "",
+                modeloPreliminar: form.vehiculoId
+                  ? vehiculoSel?.modelo ?? ""
+                  : form.modeloPreliminar ?? "",
                 programadaPara: soloFechaBonita(form.programadaPara),
               }}
             />
           </div>
         </div>
+
         <aside className="agendar__art">
-          <img src={agendarCitaImg} alt="Agendar cita — cliente" className="agendar__img" />
+          <img
+            src={agendarCitaImg}
+            alt="Agendar cita — cliente"
+            className="agendar__img"
+          />
         </aside>
       </section>
     </main>

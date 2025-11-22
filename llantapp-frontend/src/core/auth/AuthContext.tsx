@@ -40,7 +40,9 @@ const Contexto = createContext<{
   tieneRol: () => false,
 });
 
-export const ProveedorAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ProveedorAuth: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [sesion, setSesion] = useState<DatosSesion>({
     accessToken: null,
     cargando: true,
@@ -50,6 +52,7 @@ export const ProveedorAuth: React.FC<{ children: React.ReactNode }> = ({ childre
   const cargarPerfil = async (tokenArg?: string) => {
     const token = tokenArg ?? tokenMemoria.get?.() ?? sesion.accessToken;
     if (!token) throw new Error('No hay token disponible para consultar el perfil');
+
     const perfil = await apiAuth.perfil(token);
     console.log('👤 Perfil cargado:', perfil);
     setSesion((s) => ({ ...s, perfil }));
@@ -68,6 +71,7 @@ export const ProveedorAuth: React.FC<{ children: React.ReactNode }> = ({ childre
         setSesion({ accessToken: null, cargando: false, perfil: null });
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const iniciar = async (correo: string, clave: string) => {
@@ -90,7 +94,8 @@ export const ProveedorAuth: React.FC<{ children: React.ReactNode }> = ({ childre
     await cargarPerfil(accessToken);
   };
 
-  const tieneRol = (roles: Rol[]) => !!sesion.perfil && roles.includes(sesion.perfil.rol);
+  const tieneRol = (roles: Rol[]) =>
+    !!sesion.perfil && roles.includes(sesion.perfil.rol);
 
   const usuario: Usuario | null =
     sesion.accessToken && sesion.perfil
@@ -98,7 +103,9 @@ export const ProveedorAuth: React.FC<{ children: React.ReactNode }> = ({ childre
       : null;
 
   return (
-    <Contexto.Provider value={{ sesion, usuario, iniciar, cerrar, refrescar, tieneRol }}>
+    <Contexto.Provider
+      value={{ sesion, usuario, iniciar, cerrar, refrescar, tieneRol }}
+    >
       {children}
     </Contexto.Provider>
   );

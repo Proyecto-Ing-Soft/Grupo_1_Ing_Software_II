@@ -4,9 +4,10 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
-  import type { Usuario, Rol as PrismaRol } from '@prisma/client';
+import type { Usuario, Rol as PrismaRol } from '@prisma/client';
 import { Rol as AppRol } from '../../../common/enums/rol.enum';
 import { Encriptador } from '../../autenticacion/autenticacion/encriptador';
 
@@ -47,7 +48,7 @@ export class UsuarioService {
     return this.prisma.usuario.findUnique({ where: { correo } });
   }
 
-  // ✅ aquí ya incluimos el taller
+  // ✅ incluye el taller
   async buscarPorId(id: number) {
     return this.prisma.usuario.findUnique({
       where: { id },
@@ -62,6 +63,9 @@ export class UsuarioService {
   // =========================
   // Listados
   // =========================
+
+  // Listado general por rol (sin filtro de taller).
+  // Lo dejamos por si OWNER u otros casos lo usan.
   async listarPorRol(rol: AppRol) {
     return this.prisma.usuario.findMany({
       where: { rol: toPrismaRol(rol) },
@@ -71,7 +75,41 @@ export class UsuarioService {
         correo: true,
         rol: true,
         creadoEn: true,
-        // ⬇ info del taller
+        taller: {
+          select: { id: true, nombre: true },
+        },
+      },
+      orderBy: { nombreCompleto: 'asc' },
+    });
+  }
+
+  // 🔹 NUEVO: listado por rol limitado al taller del actor
+  async listarPorRolEnTaller(rol: AppRol, actorId: number) {
+    const actor = await this.prisma.usuario.findUnique({
+      where: { id: actorId },
+      select: { id: true, rol: true, tallerId: true },
+    });
+
+    if (!actor) {
+      throw new NotFoundException('Usuario autenticado no encontrado');
+    }
+
+    // Si no tiene taller, no debe ver personal de ningún taller
+    if (!actor.tallerId) {
+      return [];
+    }
+
+    return this.prisma.usuario.findMany({
+      where: {
+        rol: toPrismaRol(rol),
+        tallerId: actor.tallerId,
+      },
+      select: {
+        id: true,
+        nombreCompleto: true,
+        correo: true,
+        rol: true,
+        creadoEn: true,
         taller: {
           select: { id: true, nombre: true },
         },
@@ -97,10 +135,27 @@ export class UsuarioService {
     });
   }
 
-  async listarTaller() {
+  // 🔹 NUEVO: lista ADMIN + MECÁNICO del taller del admin autenticado
+  async listarPersonalDeTallerDeAdmin(actorId: number) {
+    const actor = await this.prisma.usuario.findUnique({
+      where: { id: actorId },
+      select: { id: true, rol: true, tallerId: true },
+    });
+
+    if (!actor) {
+      throw new NotFoundException('Usuario autenticado no encontrado');
+    }
+
+    if (!actor.tallerId) {
+      throw new BadRequestException('El usuario no tiene un taller asociado');
+    }
+
     return this.prisma.usuario.findMany({
       where: {
-        rol: { in: [toPrismaRol(AppRol.ADMIN), toPrismaRol(AppRol.MECANICO)] },
+        tallerId: actor.tallerId,
+        rol: {
+          in: [toPrismaRol(AppRol.ADMIN), toPrismaRol(AppRol.MECANICO)],
+        },
       },
       select: {
         id: true,
@@ -123,14 +178,18 @@ export class UsuarioService {
   /**
    * Crear personal del taller (ADMIN o MECANICO) con clave en texto plano.
    * Valida rol permitido y unicidad de correo.
+   *
+   * ⚠️ Para que el mecánico quede asociado al taller:
+   *    Pasa el `tallerId` del admin que lo crea.
    */
   async crearPersonalTaller(input: {
     nombreCompleto: string;
     correo: string;
     clave: string;
     rol: TallerRolLiteral; // ADMIN | MECANICO
+    tallerId?: number | null;
   }) {
-    const { nombreCompleto, correo, clave, rol } = input;
+    const { nombreCompleto, correo, clave, rol, tallerId } = input;
 
     if (rol !== AppRol.ADMIN && rol !== AppRol.MECANICO) {
       throw new BadRequestException('Rol inválido: solo ADMIN o MECANICO');
@@ -151,6 +210,7 @@ export class UsuarioService {
         correo,
         hashClave,
         rol: toPrismaRol(rol),
+        tallerId: tallerId ?? null, // ⬅️ ahora se guarda el taller del admin
       },
       select: {
         id: true,
@@ -169,23 +229,42 @@ export class UsuarioService {
 
   /**
    * Actualizar datos de un usuario del taller (solo ADMIN | MECANICO).
-   * No cambia la clave (para eso expondrías otro caso de uso).
+   * Valida que sea del MISMO taller que el actor.
    */
   async actualizarPersonalTaller(
+    actorId: number,
     id: number,
     dto: { nombreCompleto?: string; correo?: string; rol?: TallerRolLiteral },
   ) {
+    const actor = await this.prisma.usuario.findUnique({
+      where: { id: actorId },
+      select: { id: true, rol: true, tallerId: true },
+    });
+
+    if (!actor) {
+      throw new NotFoundException('Usuario autenticado no encontrado');
+    }
+    if (!actor.tallerId) {
+      throw new ForbiddenException('No tienes un taller asociado');
+    }
+
     const existente = await this.prisma.usuario.findUnique({
       where: { id },
-      select: { id: true, rol: true, correo: true },
+      select: { id: true, rol: true, correo: true, tallerId: true },
     });
     if (!existente) throw new NotFoundException('Usuario no encontrado');
 
     const isTaller =
       existente.rol === toPrismaRol(AppRol.ADMIN) ||
       existente.rol === toPrismaRol(AppRol.MECANICO);
-    if (!isTaller)
+    if (!isTaller) {
       throw new BadRequestException('Solo se puede actualizar personal de taller');
+    }
+
+    // ⬅️ Bloqueo cruzado: no se puede tocar usuarios de otro taller
+    if (existente.tallerId !== actor.tallerId) {
+      throw new ForbiddenException('No puedes modificar usuarios de otro taller');
+    }
 
     if (dto.rol && dto.rol !== AppRol.ADMIN && dto.rol !== AppRol.MECANICO) {
       throw new BadRequestException('Rol inválido: solo ADMIN o MECANICO');
@@ -220,19 +299,36 @@ export class UsuarioService {
 
   /**
    * Eliminar un usuario del taller (solo ADMIN | MECANICO).
+   * Valida que el usuario a borrar sea del MISMO taller que el actor.
    */
-  async eliminarPersonalTaller(id: number) {
+  async eliminarPersonalTaller(actorId: number, id: number) {
+    const actor = await this.prisma.usuario.findUnique({
+      where: { id: actorId },
+      select: { id: true, rol: true, tallerId: true },
+    });
+
+    if (!actor) {
+      throw new NotFoundException('Usuario autenticado no encontrado');
+    }
+    if (!actor.tallerId) {
+      throw new ForbiddenException('No tienes un taller asociado');
+    }
+
     const existente = await this.prisma.usuario.findUnique({
       where: { id },
-      select: { id: true, rol: true },
+      select: { id: true, rol: true, tallerId: true },
     });
     if (!existente) throw new NotFoundException('Usuario no encontrado');
 
-    if (
-      existente.rol !== toPrismaRol(AppRol.ADMIN) &&
-      existente.rol !== toPrismaRol(AppRol.MECANICO)
-    ) {
+    const isTaller =
+      existente.rol === toPrismaRol(AppRol.ADMIN) ||
+      existente.rol === toPrismaRol(AppRol.MECANICO);
+    if (!isTaller) {
       throw new BadRequestException('Solo se puede eliminar personal de taller');
+    }
+
+    if (existente.tallerId !== actor.tallerId) {
+      throw new ForbiddenException('No puedes eliminar usuarios de otro taller');
     }
 
     await this.prisma.usuario.delete({ where: { id } });

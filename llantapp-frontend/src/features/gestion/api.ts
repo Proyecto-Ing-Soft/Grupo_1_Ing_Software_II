@@ -1,5 +1,5 @@
-// src/features/usuarios/api.ts
-import { getJSON, postJSON, putJSON, delJSON, patchJSON } from '../../core/http/_http';
+// src/features/gestion/api.ts
+import { getJSON, postJSON, putJSON, delJSON } from '../../core/http/_http';
 
 // Definimos un tipo local SOLO para taller:
 export type TallerRol = 'ADMIN' | 'MECANICO';
@@ -10,9 +10,9 @@ export type UsuarioTaller = {
   correo: string;
   rol: TallerRol;
   creadoEn?: string;
-  empresa?: {
+  taller?: {
     id: number;
-    nombre: string; // o razonSocial
+    nombre: string;
   } | null;
 };
 
@@ -30,14 +30,24 @@ export type ActualizarUsuarioTallerDto = {
 };
 
 export const apiUsuarios = {
-  listarTaller: (token?: string) => getJSON<UsuarioTaller[]>(`/usuarios/taller`, token),
-  // 🔁 CREATE ahora en AUTH
+  // Lista solo usuarios (ADMIN + MECÁNICO) del taller del admin logueado
+  listarTaller: (token?: string) =>
+    getJSON<UsuarioTaller[]>(`/usuarios/taller`, token),
+
+  // CREATE: endpoint de creación de personal de taller (admin crea mecánico/admin)
   crearTaller: (payload: CrearUsuarioTallerDto, token?: string) =>
     postJSON<UsuarioTaller>(`/auth/taller`, payload, token),
+
   actualizarTaller: (id: number, payload: ActualizarUsuarioTallerDto, token?: string) =>
     putJSON<UsuarioTaller>(`/usuarios/taller/${id}`, payload, token),
+
   eliminarTaller: (id: number, token?: string) =>
     delJSON<{ ok: true }>(`/usuarios/taller/${id}`, token),
-  listarAdmins: (token?: string) => getJSON<UsuarioTaller[]>(`/usuarios?rol=ADMIN`, token),
-  listarMecs:   (token?: string) => getJSON<UsuarioTaller[]>(`/usuarios?rol=MECANICO`, token),
+
+  // Fallbacks (por rol) – ahora backend ya filtra por taller del admin
+  listarAdmins: (token?: string) =>
+    getJSON<UsuarioTaller[]>(`/usuarios?rol=ADMIN`, token),
+
+  listarMecs: (token?: string) =>
+    getJSON<UsuarioTaller[]>(`/usuarios?rol=MECANICO`, token),
 };

@@ -1,10 +1,13 @@
+// llantapp-frontend/src/features/auditoria/AdminBitacoraAccionesPagina.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiAuditoria, AccionBitacora } from "./apiAuditoria";
+import { useAuth } from "../../core/auth/AuthContext";
 import "./adminBitacoraAcciones.css";
 
 export default function AdminBitacoraAccionesPagina() {
   const navigate = useNavigate();
+  const { usuario, tieneRol } = useAuth();
 
   const [acciones, setAcciones] = useState<AccionBitacora[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -12,19 +15,26 @@ export default function AdminBitacoraAccionesPagina() {
   const [citaIdFiltro, setCitaIdFiltro] = useState<string>("");
   const [limit, setLimit] = useState<number>(50);
 
+  // Proteger ruta: solo ADMIN u OWNER
   useEffect(() => {
-    cargarAcciones();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!tieneRol(["ADMIN", "OWNER"])) {
+      navigate("/inicio", { replace: true });
+    }
+  }, [tieneRol, navigate]);
 
   const cargarAcciones = async (opts?: { citaId?: number; limit?: number }) => {
+    if (!usuario?.token) return;
+
     try {
       setCargando(true);
       setError(null);
-      const data = await apiAuditoria.listarAcciones({
-        citaId: opts?.citaId,
-        limit: opts?.limit ?? limit,
-      });
+      const data = await apiAuditoria.listarAcciones(
+        {
+          citaId: opts?.citaId,
+          limit: opts?.limit ?? limit,
+        },
+        usuario.token,
+      );
       setAcciones(data ?? []);
     } catch (e: any) {
       setError(e?.message || "Error cargando la bitácora de acciones");
@@ -32,6 +42,13 @@ export default function AdminBitacoraAccionesPagina() {
       setCargando(false);
     }
   };
+
+  useEffect(() => {
+    if (usuario?.token) {
+      cargarAcciones();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuario?.token]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();

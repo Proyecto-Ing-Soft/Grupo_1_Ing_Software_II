@@ -7,7 +7,14 @@ import { readFileSync, existsSync } from 'fs';
 const BANNER_CID = 'llantapp_banner';
 const BANNER_CANDIDATES = [
   join(__dirname, 'banner-solicitud-mail.png'),
-  join(process.cwd(), 'src', 'features', 'solicitudes', 'solicitudes', 'banner-solicitud-mail.png'),
+  join(
+    process.cwd(),
+    'src',
+    'features',
+    'solicitudes',
+    'solicitudes',
+    'banner-solicitud-mail.png',
+  ),
 ];
 
 function resolveBannerPath(): string | null {
@@ -20,6 +27,7 @@ function resolveBannerPath(): string | null {
 @Injectable()
 export class SolicitudesService {
   constructor(private mailer: MailerService) {}
+
   private esc(v: unknown): string {
     return String(v ?? '-')
       .replace(/&/g, '&amp;')
@@ -28,50 +36,57 @@ export class SolicitudesService {
       .replace(/"/g, '&quot;');
   }
 
-private buildEmailPayload(d: SolicitudDto) {
-  const lines = [
-    'Solicitud de Taller - LlantApp',
-    '',
-    'Servicio disponible SOLO PERÚ',
-    '',
-    `Razón social: ${d.razonSocial}`,
-    `RUC: ${d.ruc}`,
-    `Nombre de contacto: ${d.contactoNombre}`,
-    `Correo de contacto: ${d.contactoCorreo}`,
-    `Teléfono: ${d.telefono}`,
-    `Departamento/Ciudad: ${d.departamento} / ${d.ciudad}`,
-    `Dirección: ${d.direccion}`,
-    `Número de sedes: ${d.numSedes || '-'}`,
-    `País: ${d.pais || 'Perú'}`,
-    `Fuente: ${d.fuente || '-'}`,
-    '',
-    `Mensaje: ${d.mensaje || '-'}`,
-  ];
+  private buildEmailPayload(d: SolicitudDto) {
+    const lines = [
+      'Solicitud de Taller - LlantApp',
+      '',
+      'Servicio disponible SOLO PERÚ',
+      '',
+      `Razón social: ${d.razonSocial}`,
+      `RUC: ${d.ruc}`,
+      `Nombre de contacto: ${d.contactoNombre}`,
+      `Correo de contacto: ${d.contactoCorreo}`,
+      `Teléfono: ${d.telefono}`,
+      `Departamento/Ciudad: ${d.departamento} / ${d.ciudad}`,
+      `Dirección: ${d.direccion}`,
+      `Número de sedes: ${d.numSedes || '-'}`,
+      `País: ${d.pais || 'Perú'}`,
+      `Fuente: ${d.fuente || '-'}`,
+      '',
+      `Mensaje: ${d.mensaje || '-'}`,
+    ];
 
-  const text = lines.join('\n');
+    const text = lines.join('\n');
 
-  const attachments: Array<any> = [];
-  let bannerImgHtml = '';
-  const bannerPath = resolveBannerPath();
+    const attachments: Array<any> = [];
+    let bannerImgHtml = '';
+    const bannerPath = resolveBannerPath();
 
-  if (!bannerPath) {
-    console.warn('[SolicitudesService] Banner PNG no encontrado en ninguno de:', BANNER_CANDIDATES);
-  } else {
-    try {
-      attachments.push({
-        filename: 'banner-solicitud-mail.png',
-        content: readFileSync(bannerPath),
-        contentType: 'image/png',
-        contentDisposition: 'inline',
-        cid: BANNER_CID,
-      });
-      bannerImgHtml = `<img src="cid:${BANNER_CID}" alt="Pedido LlantApp" style="display:block;width:100%;height:auto;border-top:1px solid #e5e7eb;">`;
-    } catch (e) {
-      console.warn('[SolicitudesService] No se pudo leer el banner en:', bannerPath, e);
+    if (!bannerPath) {
+      console.warn(
+        '[SolicitudesService] Banner PNG no encontrado en ninguno de:',
+        BANNER_CANDIDATES,
+      );
+    } else {
+      try {
+        attachments.push({
+          filename: 'banner-solicitud-mail.png',
+          content: readFileSync(bannerPath),
+          contentType: 'image/png',
+          contentDisposition: 'inline',
+          cid: BANNER_CID,
+        });
+        bannerImgHtml = `<img src="cid:${BANNER_CID}" alt="Pedido LlantApp" style="display:block;width:100%;height:auto;border-top:1px solid #e5e7eb;">`;
+      } catch (e) {
+        console.warn(
+          '[SolicitudesService] No se pudo leer el banner en:',
+          bannerPath,
+          e,
+        );
+      }
     }
-  }
 
-  const html = `
+    const html = `
   <div style="background-color:#f8fafc;padding:24px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;">
     <div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
       <div style="padding:18px 24px 8px 24px;">
@@ -111,9 +126,8 @@ private buildEmailPayload(d: SolicitudDto) {
     <div style="text-align:center;color:#64748b;font-size:12px;margin-top:10px;">© ${new Date().getFullYear()} LlantApp</div>
   </div>`;
 
-  return { text, html, attachments };
-}
-
+    return { text, html, attachments };
+  }
 
   async registrar(d: SolicitudDto) {
     const { text, html, attachments } = this.buildEmailPayload(d);
@@ -129,5 +143,4 @@ private buildEmailPayload(d: SolicitudDto) {
 
     return { ok: true };
   }
-
 }

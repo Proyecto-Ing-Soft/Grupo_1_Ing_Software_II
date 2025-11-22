@@ -13,6 +13,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
+  // 👆 ajusta la ruta si tu PrismaService está en otro lugar
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { EstadoCita } from '@prisma/client';
 import { Notificador } from '../../notificaciones/notificaciones/envio/notificador';
@@ -38,6 +39,28 @@ export class CitasService {
   private parseYMDLocal(ymd: string) {
     const [y, m, d] = ymd.split('-').map(Number);
     return new Date(y, m - 1, d);
+  }
+
+  // =====================================
+  // BITÁCORA: registrar acción de usuario
+  // =====================================
+  private async registrarAccion(data: {
+    usuarioId: number;
+    tipo: string;
+    citaId?: number;
+    mecanicoId?: number | null;
+    descripcion: string;
+  }) {
+    // Si en tu schema el campo mecanicoId no existe en AccionUsuario, quítalo del data.
+    await this.prisma.accionUsuario.create({
+      data: {
+        usuarioId: data.usuarioId,
+        tipo: data.tipo,
+        descripcion: data.descripcion,
+        ...(data.citaId ? { citaId: data.citaId } : {}),
+        ...(data.mecanicoId ? { mecanicoId: data.mecanicoId } : {}),
+      },
+    });
   }
 
   // === CREAR CITA (estado inicial: SOLICITADA) ===
@@ -154,7 +177,7 @@ export class CitasService {
 
     const cita = await this.prisma.citaMantenimiento.create({ data });
 
-    // Notificación a administradores
+    // Notificación a administradores (global, aún no hay taller asociado a la cita)
     const admins = await this.prisma.usuario.findMany({
       where: { rol: 'ADMIN' },
     });
@@ -180,26 +203,68 @@ export class CitasService {
         'Recibimos tu solicitud de mantenimiento. Un administrador la revisará y asignará un mecánico pronto.',
     });
 
+    // 🔹 Bitácora: registro de creación
+    await this.registrarAccion({
+      usuarioId: clienteId,
+      tipo: 'CREAR_CITA',
+      citaId: cita.id,
+      descripcion: `Cliente crea cita para servicio "${servicio.nombre}" programada para ${ymd}.`,
+    });
+
     return cita;
   }
 
   // === ASIGNAR MECÁNICO (pasa a EN_PROGRESO) ===
-  async asignarMecanico(citaId: number, mecanicoId: number, _adminId: number) {
+  async asignarMecanico(
+    citaId: number,
+    mecanicoId: number,
+    adminId: number,
+  ) {
+    // Validar admin y obtener su taller
+    const admin = await this.prisma.usuario.findUnique({
+      where: { id: adminId },
+      select: { id: true, rol: true, tallerId: true, nombreCompleto: true },
+    });
+    if (!admin || admin.rol !== 'ADMIN') {
+      throw new ForbiddenException('Solo un administrador puede asignar mecánicos');
+    }
+    if (!admin.tallerId) {
+      throw new BadRequestException(
+        'El administrador no tiene un taller asociado',
+      );
+    }
+
     const cita = await this.prisma.citaMantenimiento.findUnique({
       where: { id: citaId },
+      include: {
+        servicio: { select: { nombre: true } },
+      },
     });
     if (!cita) throw new BadRequestException('Cita no existe');
     if (cita.estado === EstadoCita.TERMINADA) {
       throw new BadRequestException('Cita ya terminada');
     }
 
-    // 🔐 Validar que el usuario existe y realmente es MECÁNICO
+    // 🔐 Validar que el usuario existe, es MECÁNICO y pertenece al mismo taller
     const mecanico = await this.prisma.usuario.findUnique({
       where: { id: mecanicoId },
-      select: { id: true, rol: true, nombreCompleto: true },
+      select: { id: true, rol: true, nombreCompleto: true, tallerId: true },
     });
     if (!mecanico || mecanico.rol !== 'MECANICO') {
       throw new BadRequestException('Mecánico no válido');
+    }
+
+    if (!mecanico.tallerId) {
+      // Esto expone el problema que comentaste: mecánicos sin taller
+      throw new BadRequestException(
+        'El mecánico no tiene taller asignado. Configúralo antes de asignarlo.',
+      );
+    }
+
+    if (mecanico.tallerId !== admin.tallerId) {
+      throw new ForbiddenException(
+        'No puedes asignar mecánicos de otro taller',
+      );
     }
 
     const actualizada = await this.prisma.citaMantenimiento.update({
@@ -229,6 +294,15 @@ export class CitasService {
       mensaje: `Se te asignó la cita #${actualizada.id}`,
     });
 
+    // 🔹 Bitácora: registro de asignación
+    await this.registrarAccion({
+      usuarioId: adminId,
+      tipo: 'ASIGNAR_MECANICO',
+      citaId: actualizada.id,
+      mecanicoId,
+      descripcion: `Admin "${admin.nombreCompleto}" asigna al mecánico "${mecanico.nombreCompleto}" a la cita #${actualizada.id} (servicio: "${cita.servicio?.nombre ?? '—'}").`,
+    });
+
     return actualizada;
   }
 
@@ -250,6 +324,9 @@ export class CitasService {
   ) {
     const cita = await this.prisma.citaMantenimiento.findUnique({
       where: { id: citaId },
+      include: {
+        servicio: { select: { nombre: true } },
+      },
     });
     if (!cita) throw new BadRequestException('Cita no existe');
     if (cita.mecanicoId !== mecanicoId) {
@@ -270,6 +347,8 @@ export class CitasService {
     }
 
     // 0) US-20: consumir stock de los consumibles usados (si se envían)
+    // ⚠️ Aquí asumimos que ConsumiblesService internamente valida el taller
+    // usando el mecánico (o recibe el taller explícito).
     if (dto?.consumos && dto.consumos.length > 0) {
       await this.consumiblesService.consumirEnMantenimiento(dto.consumos);
     }
@@ -304,7 +383,7 @@ export class CitasService {
     // 2) Update con campos existentes en tu schema
     const dataUpdate: any = {
       estado: EstadoCita.TERMINADA,
-      fechaMantenimiento: new Date(), // ← si existe en tu schema
+      fechaMantenimiento: new Date(),
     };
     if (dto?.trabajosRealizados != null) {
       dataUpdate.trabajosRealizados = dto.trabajosRealizados;
@@ -346,6 +425,14 @@ export class CitasService {
       vehiculoId: vehiculoId ?? null,
       titulo: 'Mantenimiento completado',
       mensaje: `El mantenimiento del vehículo con placa ${placaMostrar} ha finalizado. ¡Gracias por confiar en nosotros!`,
+    });
+
+    // 🔹 Bitácora: registro de cierre
+    await this.registrarAccion({
+      usuarioId: mecanicoId,
+      tipo: 'TERMINAR_CITA',
+      citaId: terminada.id,
+      descripcion: `Mecánico termina la cita #${terminada.id} para el servicio "${cita.servicio?.nombre ?? '—'}".`,
     });
 
     return terminada;
@@ -420,11 +507,32 @@ export class CitasService {
     }));
   }
 
-  // ADMIN: citas pendientes por asignar o en progreso
-  async listarPendientes() {
+  // ADMIN: citas pendientes por asignar o en progreso (multi-taller)
+  async listarPendientes(adminId: number) {
+    const admin = await this.prisma.usuario.findUnique({
+      where: { id: adminId },
+      select: { id: true, rol: true, tallerId: true },
+    });
+    if (!admin || admin.rol !== 'ADMIN') {
+      throw new ForbiddenException('Solo admin puede ver estas citas');
+    }
+
+    const whereBase: any = {
+      estado: { not: EstadoCita.TERMINADA },
+    };
+
+    // Si el admin tiene taller, limitamos a:
+    // - citas con mecánico de su taller
+    // - o citas aún sin mecánico (cola global)
+    if (admin.tallerId) {
+      whereBase.OR = [
+        { mecanico: { tallerId: admin.tallerId } },
+        { mecanicoId: null },
+      ];
+    }
+
     const citas = await this.prisma.citaMantenimiento.findMany({
-      // Traer todo lo que NO esté terminado (SOLICITADA y EN_PROGRESO)
-      where: { estado: { not: EstadoCita.TERMINADA } },
+      where: whereBase,
       select: {
         id: true,
         estado: true,
@@ -437,7 +545,7 @@ export class CitasService {
         cliente: { select: { id: true, nombreCompleto: true } },
 
         mecanicoId: true,
-        mecanico: { select: { id: true, nombreCompleto: true } },
+        mecanico: { select: { id: true, nombreCompleto: true, tallerId: true } },
 
         servicio: { select: { id: true, nombre: true } },
       },
@@ -461,17 +569,34 @@ export class CitasService {
     }));
   }
 
-  // ADMIN: citas vencidas (fecha programada pasada y no TERMINADA)
-  async listarVencidas() {
+  // ADMIN: citas vencidas (fecha programada pasada y no TERMINADAS), multi-taller
+  async listarVencidas(adminId: number) {
+    const admin = await this.prisma.usuario.findUnique({
+      where: { id: adminId },
+      select: { id: true, rol: true, tallerId: true },
+    });
+    if (!admin || admin.rol !== 'ADMIN') {
+      throw new ForbiddenException('Solo admin puede ver estas citas');
+    }
+
     // Normalizamos "hoy" a medianoche local para comparación limpia
     const hoyYMD = this.toYMD(new Date());
     const hoyLocal = this.parseYMDLocal(hoyYMD);
 
+    const whereBase: any = {
+      programadaPara: { lt: hoyLocal },
+      estado: { not: EstadoCita.TERMINADA },
+    };
+
+    if (admin.tallerId) {
+      whereBase.OR = [
+        { mecanico: { tallerId: admin.tallerId } },
+        { mecanicoId: null },
+      ];
+    }
+
     const citas = await this.prisma.citaMantenimiento.findMany({
-      where: {
-        programadaPara: { lt: hoyLocal },
-        estado: { not: EstadoCita.TERMINADA },
-      },
+      where: whereBase,
       select: {
         id: true,
         estado: true,
@@ -483,7 +608,7 @@ export class CitasService {
         modeloPreliminar: true,
         cliente: { select: { id: true, nombreCompleto: true } },
         mecanicoId: true,
-        mecanico: { select: { id: true, nombreCompleto: true } },
+        mecanico: { select: { id: true, nombreCompleto: true, tallerId: true } },
         servicio: { select: { id: true, nombre: true } },
       },
       orderBy: [{ programadaPara: 'asc' }, { creadoEn: 'desc' }],

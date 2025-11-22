@@ -1,3 +1,4 @@
+// llantapp-frontend/src/features/auditoria/apiAuditoria.ts
 // PATRONES:
 // - Facade: encapsula el endpoint de auditoría.
 // - KISS: un método simple con filtros básicos.
@@ -23,12 +24,15 @@ export interface AccionBitacora {
 }
 
 export const apiAuditoria = {
-  listarAcciones: (params?: { citaId?: number; limit?: number }) => {
+  listarAcciones: (
+    params?: { citaId?: number; limit?: number },
+    token?: string,
+  ) => {
     const qs = new URLSearchParams();
     if (params?.citaId) qs.set('citaId', String(params.citaId));
     if (params?.limit) qs.set('limit', String(params.limit));
 
     const sufijo = qs.toString() ? `?${qs.toString()}` : '';
-    return getJSON<AccionBitacora[]>(`/auditoria/acciones${sufijo}`);
+    return getJSON<AccionBitacora[]>(`/auditoria/acciones${sufijo}`, token);
   },
 };

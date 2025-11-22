@@ -1,8 +1,21 @@
-import { Controller, Get, Req, UseGuards, NotFoundException, Query, Delete, ParseIntPipe, Param, Put, Body, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Req,
+  UseGuards,
+  NotFoundException,
+  Query,
+  Delete,
+  ParseIntPipe,
+  Param,
+  Put,
+  Body,
+  BadRequestException,
+} from '@nestjs/common';
 import { UsuarioService } from './usuario.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { UsuariosPorRolQueryDto } from './dto/usuarios-por-rol.dto';
-import { Rol as AppRol } from '../../../common/enums/rol.enum'; 
+import { Rol as AppRol } from '../../../common/enums/rol.enum';
 
 type ActualizarUsuarioTallerDto = {
   nombreCompleto?: string;
@@ -21,32 +34,43 @@ export class UsuarioController {
     const uid = req.user?.sub ?? req.user?.id;
     const usuario = await this.usuarios.buscarPorId(uid);
 
-    // KISS + Seguridad del tipo: evitamos pasar null a aPublico.
     if (!usuario) {
-      // YAGNI: no inventamos lógica extra; simplemente 404.
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    return this.usuarios.aPublico(usuario); // ahora es 100% Usuario
+    return this.usuarios.aPublico(usuario);
   }
 
-  // Nuevo endpoint: lista usuarios por rol para el agendamiento de citas
+  // =========================
+  // Listar usuarios por rol (limitado a mi taller)
   //    GET /usuarios?rol=MECANICO  → [{ id, nombreCompleto }]
+  // =========================
   @UseGuards(JwtAuthGuard)
   @Get()
-  async porRol(@Query() q: UsuariosPorRolQueryDto) {
+  async porRol(@Req() req: any, @Query() q: UsuariosPorRolQueryDto) {
     if (!q.rol) return [];
-    return this.usuarios.listarPorRol(q.rol);
+
+    const uid = req.user?.sub ?? req.user?.id;
+    return this.usuarios.listarPorRolEnTaller(q.rol, uid);
   }
 
+  // =========================
+  // Gestión de personal del taller (solo mi taller)
+  // =========================
+
+  // Lista ADMIN + MECÁNICO SOLO de mi taller
   @UseGuards(JwtAuthGuard)
   @Get('taller')
-  async listarTaller() {
-    return this.usuarios.listarTaller();
+  async listarTaller(@Req() req: any) {
+    const uid = req.user?.sub ?? req.user?.id;
+    return this.usuarios.listarPersonalDeTallerDeAdmin(uid);
   }
 
+  // Actualizar personal del taller (solo ADMIN/MECÁNICO de MI taller)
+  @UseGuards(JwtAuthGuard)
   @Put('taller/:id')
   async actualizarPersonalTaller(
+    @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ActualizarUsuarioTallerDto,
   ) {
@@ -54,20 +78,28 @@ export class UsuarioController {
       throw new BadRequestException('Rol inválido: solo ADMIN o MECANICO');
     }
 
-    // Convertimos 'ADMIN' | 'MECANICO' (string) → AppRol enum
-    const rolEnum = dto.rol ? (AppRol[dto.rol as keyof typeof AppRol]) : undefined;
-    // rolEnum ahora está tipado como AppRol ('ADMIN' | 'MECANICO')
+    const actorId = req.user?.sub ?? req.user?.id;
 
-    return this.usuarios.actualizarPersonalTaller(id, {
+    const rolEnum = dto.rol
+      ? (AppRol[dto.rol as keyof typeof AppRol])
+      : undefined;
+
+    return this.usuarios.actualizarPersonalTaller(actorId, id, {
       nombreCompleto: dto.nombreCompleto,
       correo: dto.correo,
-      rol: rolEnum as AppRol.ADMIN | AppRol.MECANICO, // narrow al literal del enum
+      rol: rolEnum as AppRol.ADMIN | AppRol.MECANICO | undefined,
     });
   }
 
+  // Eliminar personal del taller (solo ADMIN/MECÁNICO de MI taller)
+  @UseGuards(JwtAuthGuard)
   @Delete('taller/:id')
-  async eliminarPersonalTaller(@Param('id', ParseIntPipe) id: number) {
-    await this.usuarios.eliminarPersonalTaller(id);
+  async eliminarPersonalTaller(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const actorId = req.user?.sub ?? req.user?.id;
+    await this.usuarios.eliminarPersonalTaller(actorId, id);
     return { ok: true };
   }
 }

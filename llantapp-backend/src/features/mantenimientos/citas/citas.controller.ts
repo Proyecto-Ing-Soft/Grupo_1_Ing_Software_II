@@ -31,7 +31,9 @@ export class CitasController {
   @Post()
   crear(@Body() dto: CrearCitaDto, @Req() req: any) {
     const userId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(userId)) throw new UnauthorizedException('Usuario no válido');
+    if (!Number.isFinite(userId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
     return this.svc.crear(dto, userId);
   }
 
@@ -47,7 +49,9 @@ export class CitasController {
     }
 
     const adminId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(adminId)) throw new UnauthorizedException('Usuario no válido');
+    if (!Number.isFinite(adminId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
 
     return this.svc.asignarMecanico(id, dto.mecanicoId, adminId);
   }
@@ -70,35 +74,53 @@ export class CitasController {
     @Req() req: any,
   ) {
     const mecanicoId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(mecanicoId)) throw new UnauthorizedException('Usuario no válido');
+    if (!Number.isFinite(mecanicoId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
     return this.svc.terminar(id, mecanicoId, dto);
   }
 
   @Get('mias')
   mias(@Req() req: any) {
     const clienteId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(clienteId)) throw new UnauthorizedException('Usuario no válido');
+    if (!Number.isFinite(clienteId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
     return this.svc.listarDelCliente(clienteId);
   }
 
   @Get('asignadas')
   asignadas(@Req() req: any) {
     const mecanicoId = Number(req.user?.id ?? req.user?.sub);
-    if (!Number.isFinite(mecanicoId)) throw new UnauthorizedException('Usuario no válido');
+    if (!Number.isFinite(mecanicoId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
     return this.svc.listarDelMecanico(mecanicoId);
   }
 
   @Get('admin/pendientes')
   pendientes(@Req() req: any) {
-    if (req.user?.rol !== 'ADMIN') throw new ForbiddenException('Solo admin');
-    return this.svc.listarPendientes();
+    if (req.user?.rol !== 'ADMIN') {
+      throw new ForbiddenException('Solo admin');
+    }
+    const adminId = Number(req.user?.id ?? req.user?.sub);
+    if (!Number.isFinite(adminId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
+    return this.svc.listarPendientes(adminId);
   }
 
   // US-24: citas/mantenimientos vencidos (fecha programada ya pasó y no están terminadas)
   @Get('admin/vencidas')
   vencidas(@Req() req: any) {
-    if (req.user?.rol !== 'ADMIN') throw new ForbiddenException('Solo admin');
-    return this.svc.listarVencidas();
+    if (req.user?.rol !== 'ADMIN') {
+      throw new ForbiddenException('Solo admin');
+    }
+    const adminId = Number(req.user?.id ?? req.user?.sub);
+    if (!Number.isFinite(adminId)) {
+      throw new UnauthorizedException('Usuario no válido');
+    }
+    return this.svc.listarVencidas(adminId);
   }
 
   @Get(':id')
@@ -138,7 +160,9 @@ export class CitasController {
   }
 
   @Get(':id/evidencia')
-  async evidencia(@Param('id', ParseIntPipe) id: number): Promise<StreamableFile> {
+  async evidencia(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<StreamableFile> {
     const c = await this.svc.buscarPorIdConVehiculo(id);
     if (!c || !c.evidenciaBytes) throw new NotFoundException('Sin evidencia');
 
@@ -152,7 +176,10 @@ export class CitasController {
   }
 
   @Get(':id/resumen-tecnico')
-  async resumenTecnico(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  async resumenTecnico(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
     const userId = Number(req.user?.id ?? req.user?.sub);
     if (!Number.isFinite(userId)) {
       throw new UnauthorizedException('Usuario no válido');

@@ -1,7 +1,14 @@
 export type Estado = "ACTIVO" | "INACTIVO";
-export type Servicio = { id: number; nombre: string; descripcion: string; estado: Estado };
 
-const API_URL = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:3001";
+export type Servicio = {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  estado: Estado;
+};
+
+const API_URL =
+  (import.meta as any).env?.VITE_API_URL ?? "http://localhost:3001";
 const BASE = `${API_URL}/catalogo-servicios`;
 
 function authHeaders(): HeadersInit {
@@ -9,10 +16,16 @@ function authHeaders(): HeadersInit {
     localStorage.getItem("access_token") ||
     localStorage.getItem("token") ||
     localStorage.getItem("jwt");
+
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-type ServicioBE = { id: number; nombre: string; descripcion: string; activo: boolean };
+type ServicioBE = {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  activo: boolean;
+};
 
 const toFE = (s: ServicioBE): Servicio => ({
   id: s.id,
@@ -31,22 +44,33 @@ export function parseHttpError(raw: string): string {
   try {
     const obj = JSON.parse(raw);
     if (obj?.message) {
-      return Array.isArray(obj.message) ? obj.message.join(", ") : String(obj.message);
+      return Array.isArray(obj.message)
+        ? obj.message.join(", ")
+        : String(obj.message);
     }
   } catch {}
   return raw || "Error en la operación";
 }
 
-async function http<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+async function http<T>(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<T> {
   const res = await fetch(input, {
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...authHeaders(), ...(init?.headers ?? {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+      ...(init?.headers ?? {}),
+    },
     ...init,
   });
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(parseHttpError(text));
   }
+
   if (res.status === 204) return undefined as unknown as T;
   return (await res.json()) as T;
 }
@@ -57,7 +81,11 @@ export const apiCatalogoServicios = {
     return data.map(toFE);
   },
 
-  async crear(payload: { nombre: string; descripcion: string; estado?: Estado }): Promise<Servicio> {
+  async crear(payload: {
+    nombre: string;
+    descripcion: string;
+    estado?: Estado;
+  }): Promise<Servicio> {
     const creado = await http<ServicioBE>(`${BASE}`, {
       method: "POST",
       body: JSON.stringify(toBE(payload)),
@@ -83,3 +111,7 @@ export const apiCatalogoServicios = {
     });
   },
 };
+
+// 🔹 Alias para usar en AgendarCitaPagina y en otros lados
+//    import { apiServicios, Servicio } from "../catalogo-servicios/api";
+export const apiServicios = apiCatalogoServicios;

@@ -17,6 +17,39 @@ export class ConsumiblesService {
   ) {}
 
   // ------------------------
+  // HELPERS USUARIO / TALLER
+  // ------------------------
+  private async getUsuarioConTaller(usuarioId: number) {
+    const u = await this.prisma.usuario.findUnique({
+      where: { id: usuarioId },
+      select: {
+        id: true,
+        rol: true,
+        tallerId: true,
+      },
+    });
+
+    if (!u) {
+      throw new BadRequestException('Usuario no encontrado');
+    }
+
+    return u;
+  }
+
+  /**
+   * Obliga a que el usuario tenga tallerId (ADMIN de taller).
+   * Si es OWNER sin taller, lanza error en las operaciones de inventario.
+   */
+  private ensureTallerId(u: { tallerId: number | null }) {
+    if (u.tallerId == null) {
+      throw new BadRequestException(
+        'El usuario no está asociado a ningún taller.',
+      );
+    }
+    return u.tallerId; // ahora es number
+  }
+
+  // ------------------------
   // HELPER: shape para UI
   // ------------------------
   private toView(c: any) {
@@ -43,12 +76,17 @@ export class ConsumiblesService {
     stockActual: number;
     stockMinimo: number;
     activo: boolean;
+    tallerId: number;
   }) {
     if (!c.activo) return;
     if (c.stockActual > c.stockMinimo) return; // stock OK → nada
 
+    // Notificar a todos los ADMIN de ese taller
     const admins = await this.prisma.usuario.findMany({
-      where: { rol: 'ADMIN' },
+      where: {
+        rol: 'ADMIN',
+        tallerId: c.tallerId,
+      },
       select: { id: true },
     });
 
@@ -60,7 +98,6 @@ export class ConsumiblesService {
       admins.map((a) =>
         this.noti.enviar({
           usuarioId: a.id,
-          // citaId y vehiculoId son opcionales, así que simplemente no los mandamos
           titulo: 'Alerta: stock bajo de consumible',
           mensaje: msg,
         }),
@@ -71,15 +108,24 @@ export class ConsumiblesService {
   // ==============
   // LISTAR (ADMIN)
   // ==============
-  async listar() {
+  async listar(adminId: number) {
+    const admin = await this.getUsuarioConTaller(adminId);
+    const tallerId = this.ensureTallerId(admin);
+
     const filas = await this.prisma.consumible.findMany({
+      where: { tallerId },
       orderBy: { nombre: 'asc' },
     });
     return filas.map((c) => this.toView(c));
   }
 
-  async buscarPorId(id: number) {
-    const c = await this.prisma.consumible.findUnique({ where: { id } });
+  async buscarPorId(id: number, adminId: number) {
+    const admin = await this.getUsuarioConTaller(adminId);
+    const tallerId = this.ensureTallerId(admin);
+
+    const c = await this.prisma.consumible.findFirst({
+      where: { id, tallerId },
+    });
     if (!c) throw new BadRequestException('Consumible no existe');
     return this.toView(c);
   }
@@ -87,14 +133,19 @@ export class ConsumiblesService {
   // ==========
   // CREAR
   // ==========
-  async crear(dto: CrearConsumibleDto) {
+  async crear(adminId: number, dto: CrearConsumibleDto) {
+    const admin = await this.getUsuarioConTaller(adminId);
+    const tallerId = this.ensureTallerId(admin);
+
     const nombreNorm = dto.nombre.trim();
 
-    const existe = await this.prisma.consumible.findUnique({
-      where: { nombre: nombreNorm },
+    const existe = await this.prisma.consumible.findFirst({
+      where: { tallerId, nombre: nombreNorm },
     });
     if (existe) {
-      throw new BadRequestException('Ya existe un consumible con ese nombre');
+      throw new BadRequestException(
+        'Ya existe un consumible con ese nombre en este taller',
+      );
     }
 
     const creado = await this.prisma.consumible.create({
@@ -105,6 +156,7 @@ export class ConsumiblesService {
         stockMinimo: dto.stockMinimo,
         descripcion: dto.descripcion?.trim() || null,
         activo: dto.activo ?? true,
+        tallerId, // ⬅️ ya es number, no puede ser null
       },
     });
 
@@ -117,28 +169,41 @@ export class ConsumiblesService {
   // ==========
   // ACTUALIZAR
   // ==========
-  async actualizar(id: number, dto: ActualizarConsumibleDto) {
-    const actual = await this.prisma.consumible.findUnique({ where: { id } });
-    if (!actual) throw new BadRequestException('Consumible no existe');
+  async actualizar(id: number, adminId: number, dto: ActualizarConsumibleDto) {
+    const admin = await this.getUsuarioConTaller(adminId);
+    const tallerId = this.ensureTallerId(admin);
 
-    // Validar nombre duplicado
+    const actual = await this.prisma.consumible.findFirst({
+      where: { id, tallerId },
+    });
+    if (!actual) {
+      throw new BadRequestException(
+        'Consumible no existe en el taller del administrador',
+      );
+    }
+
+    // Validar nombre duplicado dentro del mismo taller
     if (dto.nombre && dto.nombre.trim() !== actual.nombre) {
-      const duplicado = await this.prisma.consumible.findUnique({
-        where: { nombre: dto.nombre.trim() },
+      const duplicado = await this.prisma.consumible.findFirst({
+        where: { tallerId, nombre: dto.nombre.trim() },
       });
       if (duplicado) {
-        throw new BadRequestException('Ya existe otro consumible con ese nombre');
+        throw new BadRequestException(
+          'Ya existe otro consumible con ese nombre en este taller',
+        );
       }
     }
 
     const actualizado = await this.prisma.consumible.update({
-      where: { id },
+      where: { id: actual.id },
       data: {
         ...(dto.nombre ? { nombre: dto.nombre.trim() } : {}),
         ...(dto.unidad ? { unidad: dto.unidad.trim() } : {}),
         ...(dto.stockActual != null ? { stockActual: dto.stockActual } : {}),
         ...(dto.stockMinimo != null ? { stockMinimo: dto.stockMinimo } : {}),
-        ...(dto.descripcion != null ? { descripcion: dto.descripcion.trim() } : {}),
+        ...(dto.descripcion != null
+          ? { descripcion: dto.descripcion.trim() }
+          : {}),
         ...(dto.activo != null ? { activo: dto.activo } : {}),
       },
     });
@@ -152,23 +217,47 @@ export class ConsumiblesService {
   // ==========
   // ELIMINAR
   // ==========
-  async eliminar(id: number) {
-    await this.prisma.consumible.delete({ where: { id } });
+  async eliminar(id: number, adminId: number) {
+    const admin = await this.getUsuarioConTaller(adminId);
+    const tallerId = this.ensureTallerId(admin);
+
+    const existente = await this.prisma.consumible.findFirst({
+      where: { id, tallerId },
+    });
+    if (!existente) {
+      throw new BadRequestException(
+        'Consumible no existe en el taller del administrador',
+      );
+    }
+
+    await this.prisma.consumible.delete({ where: { id: existente.id } });
     return { ok: true };
   }
 
   // =================================================
   // LISTAR ACTIVOS (LITE) - usado por MECÁNICO (US-20)
   // =================================================
-  async listarActivosLite() {
+  async listarActivosLite(usuarioId: number) {
+    const usuario = await this.getUsuarioConTaller(usuarioId);
+
+    const where: any = { activo: true };
+
+    // Si el usuario pertenece a un taller → filtrar por ese taller.
+    // Si es OWNER sin tallerId → ve todo.
+    if (usuario.tallerId != null) {
+      where.tallerId = usuario.tallerId;
+    }
+
     const filas = await this.prisma.consumible.findMany({
-      where: { activo: true },
+      where,
       select: {
         id: true,
         nombre: true,
         unidad: true,
         stockActual: true,
         stockMinimo: true,
+        activo: true,
+        tallerId: true,
       },
       orderBy: [{ nombre: 'asc' }],
     });
