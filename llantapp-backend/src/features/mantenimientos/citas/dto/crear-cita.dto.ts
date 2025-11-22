@@ -2,17 +2,15 @@
 // - SRP: el DTO solo define contrato/validación de entrada. Nada de lógica.
 // - KISS: tipos simples; validaciones declarativas con class-validator.
 // - OCP: si agregas campos, no tienes que cambiar a los consumidores (controller/service siguen igual).
+
 import {
   IsDateString,
-  IsEnum,
   IsInt,
   IsOptional,
   IsString,
   Min,
   MinLength,
 } from 'class-validator';
-import { TipoMantenimiento } from '@prisma/client';
-import { Type } from 'class-transformer';
 
 export class ConsumoDto {
   @IsInt()
@@ -25,8 +23,10 @@ export class ConsumoDto {
 }
 
 export class CrearCitaDto {
-  @IsEnum(TipoMantenimiento)
-  tipo!: TipoMantenimiento;
+  // 🔹 AHORA usamos el servicio como "tipo" de mantenimiento
+  @IsInt()
+  @Min(1)
+  servicioId!: number;
 
   // si el cliente ya tiene vehículo registrado
   @IsOptional()

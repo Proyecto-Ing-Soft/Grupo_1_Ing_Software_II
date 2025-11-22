@@ -1,18 +1,32 @@
 // src/features/asignaciones/api.ts
 import { getJSON, postJSON } from "../../core/http/_http";
 
-// Tipos compatibles con tu componente
-export type TipoMantenimientoFE = "PREVENTIVO" | "CORRECTIVO" | "LEGAL_ITV" | "EXTRAS";
+// Estado de la cita (se mantiene igual)
 export type EstadoCitaFE = "SOLICITADA" | "EN_PROGRESO" | "TERMINADA";
+
+// Representación liviana del servicio (tipo de mantenimiento)
+export type ServicioLite = {
+  id: number;
+  nombre: string;
+};
 
 export type CitaRow = {
   id: number;
-  tipo: TipoMantenimientoFE;
   estado: EstadoCitaFE;
   programadaPara?: string | null;
+
+  // Vehículo asociado (si está registrado)
   vehiculo?: { placa: string } | null;
+
+  // Snapshot preliminar (si aún no hay vehículo registrado)
+  placaPreliminar?: string | null;
+
   clienteId: number;
   mecanicoId?: number | null;
+
+  // 🔹 Nuevo: referencia al servicio como "tipo de mantenimiento"
+  servicioId?: number | null;
+  servicio?: ServicioLite | null;
 };
 
 export type MecanicoRow = {
@@ -26,4 +40,3 @@ export const apiUsuarios = {
   listarPorRol: (rol: "ADMIN" | "MECANICO" | "CLIENTE") =>
     getJSON<MecanicoRow[]>(`/usuarios?rol=${rol}`),
 };
-

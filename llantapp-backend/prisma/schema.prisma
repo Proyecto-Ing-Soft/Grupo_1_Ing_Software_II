@@ -16,13 +16,6 @@ enum Rol {
   OWNER
 }
 
-enum TipoMantenimiento {
-  PREVENTIVO
-  CORRECTIVO
-  LEGAL_ITV
-  EXTRAS
-}
-
 enum EstadoCita {
   SOLICITADA
   EN_PROGRESO
@@ -201,10 +194,10 @@ model Servicio {
 
 // Relación Servicio <-> Mecánico con habilitación
 model ServicioMecanico {
-  servicioId Int
-  mecanicoId Int
-  habilitado Boolean  @default(true)
-  creadoEn   DateTime @default(now())
+  servicioId  Int
+  mecanicoId  Int
+  habilitado  Boolean  @default(true)
+  creadoEn    DateTime @default(now())
   actualizadoEn DateTime @default(now())
 
   servicio Servicio @relation(fields: [servicioId], references: [id])
@@ -218,10 +211,9 @@ model ServicioMecanico {
 // Cita de mantenimiento
 // ===================
 model CitaMantenimiento {
-  id                 Int               @id @default(autoincrement())
-  tipo               TipoMantenimiento
-  comentario         String            @db.Text
-  estado             EstadoCita        @default(SOLICITADA)
+  id                 Int        @id @default(autoincrement())
+  comentario         String     @db.Text
+  estado             EstadoCita @default(SOLICITADA)
   programadaPara     DateTime?
   fechaMantenimiento DateTime?
 
@@ -237,9 +229,9 @@ model CitaMantenimiento {
   vehiculoId Int?
   vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id])
 
-  // referencia al ítem del catálogo (opcional para compatibilidad)
-  servicioId Int?
-  servicio   Servicio? @relation(fields: [servicioId], references: [id])
+  // referencia al ítem del catálogo (tipo de mantenimiento real)
+  servicioId Int
+  servicio   Servicio @relation(fields: [servicioId], references: [id])
 
   // Snapshot preliminar del vehículo
   placaPreliminar  String
