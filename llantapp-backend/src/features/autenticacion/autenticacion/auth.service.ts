@@ -1,5 +1,9 @@
-// src/features/autenticacion/auth.service.ts
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+// llantapp-backend/src/features/autenticacion/autenticacion/auth.service.ts
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { UsuarioService } from '../../usuarios/usuario/usuario.service';
 import { RegistrarUsuarioDto } from './dto/registrar-usuario.dto';
 import { LoginDto } from './dto/login.dto';
@@ -26,7 +30,10 @@ export class AuthService {
       correo: dto.correo,
       hashClave: hash,
       rol: dto.rol ?? Rol.CLIENTE,
+      // 🔹 taller fijo (opcional, pero si viene se guarda)
+      tallerId: dto.tallerId ?? null,
     });
+
     return this.usuarios.aPublico(nuevo);
   }
 
@@ -35,10 +42,10 @@ export class AuthService {
     const u = await this.usuarios.buscarPorCorreo(dto.correo);
     if (!u) throw new UnauthorizedException('Credenciales inválidas');
 
-    const ok = await this.encriptador.comparar(dto.clave, u.hashClave);
+    const ok = await this.encriptador.comparar(dto.clave, (u as any).hashClave);
     if (!ok) throw new UnauthorizedException('Credenciales inválidas');
 
-    const descriptor = { sub: u.id, correo: u.correo, rol: u.rol };
+    const descriptor = { sub: u.id, correo: u.correo, rol: (u as any).rol };
     const accessToken = this.jwt.emitirAccess(descriptor);
     const refreshToken = this.jwt.emitirRefresh(descriptor);
 

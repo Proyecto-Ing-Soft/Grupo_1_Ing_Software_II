@@ -1,3 +1,4 @@
+// llantapp-backend/src/features/autenticacion/autenticacion/auth.controller.ts
 import {
   BadRequestException,
   Body,
@@ -55,7 +56,6 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // El frontend luego llama /auth/perfil para obtener datos + empresa
     return { accessToken: tokens.accessToken };
   }
 
@@ -63,13 +63,11 @@ export class AuthController {
   async refresh(@Req() req: Request & { cookies?: any; signedCookies?: any }) {
     const rt = (req.cookies?.rt || req.signedCookies?.rt) as string | undefined;
     if (!rt) throw new UnauthorizedException('Sin refresh token');
-
     const dec = this.jwt.verificarRefresh(rt) as unknown as {
       sub: number;
       iat: number;
       exp: number;
     };
-
     const u = await this.usuarios.buscarPorId(Number(dec.sub));
     if (!u) throw new UnauthorizedException('Usuario no encontrado');
 
@@ -89,9 +87,8 @@ export class AuthController {
     const user = req.user as JwtPayloadAcceso;
     const u = await this.usuarios.buscarPorId(Number(user.sub));
     if (!u) throw new UnauthorizedException('Usuario no encontrado');
-
-    // aPublico quita hashClave, pero mantiene empresa si viene del findUnique
-    return this.usuarios.aPublico(u as any);
+    // ⬅️ aquí ahora viene también u.empresa (por el include de buscarPorId)
+    return this.usuarios.aPublico(u);
   }
 
   @Post('logout')

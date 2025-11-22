@@ -30,6 +30,12 @@ function soloDigitos(v: string) {
   return /^[0-9]+$/.test(v);
 }
 
+// 🔹 Por ahora, lista fija de talleres (puedes reemplazar luego por un API)
+const TALLERES_FIJOS = [
+  { id: 1, nombre: "Motor Master" },
+  // { id: 2, nombre: "Otro Taller" },
+];
+
 export default function RegistroPagina() {
   const params = useParams();
   const [q] = useSearchParams();
@@ -70,6 +76,8 @@ function RegistroCliente({
     nombreCompleto: "",
     correo: "",
     clave: "",
+    // 🔹 guardamos el id del taller como string para el <select>
+    tallerId: "",
   });
   const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
@@ -84,10 +92,12 @@ function RegistroCliente({
     () => () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     },
-    [],
+    []
   );
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (fieldErr[e.target.name]) {
       const copy = { ...fieldErr };
@@ -101,27 +111,58 @@ function RegistroCliente({
     setFormErr(null);
     setFieldErr({});
 
-    // Validación con zod (incluye rol)
-    const parsed = esquemaRegistro.safeParse({ ...form, rol: rolApi });
+    // 🔹 Parseamos el tallerId como número (o undefined)
+    const tallerIdNum = form.tallerId
+      ? Number.isNaN(Number(form.tallerId))
+        ? undefined
+        : Number(form.tallerId)
+      : undefined;
+
+    // 1) Validación con zod SOLO de los campos del esquema (sin rol ni taller)
+    const parsed = esquemaRegistro.safeParse({
+      nombreCompleto: form.nombreCompleto,
+      correo: form.correo,
+      clave: form.clave,
+    });
+
+    const fe: Record<string, string> = {};
+
     if (!parsed.success) {
-      const fe: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
         const k = String(issue.path?.[0] ?? "");
-        if (k) fe[k] = issue.message;
+        if (k && !fe[k]) fe[k] = issue.message;
       }
+    }
+
+    // 2) Validación extra del select de taller
+    if (!tallerIdNum) {
+      fe["tallerId"] = "Selecciona el taller donde te atienden.";
+    }
+
+    if (Object.keys(fe).length) {
       setFieldErr(fe);
       setFormErr(Object.values(fe)[0] ?? "Datos inválidos.");
       return;
     }
 
+    // En este punto parsed.success es true
+    const datos = parsed.data;
+
     try {
-      await apiAuth.registrar({ ...parsed.data, rol: rolApi });
+      await apiAuth.registrar({
+        nombreCompleto: datos.nombreCompleto,
+        correo: datos.correo,
+        clave: datos.clave,
+        rol: rolApi,          // 🔹 rol se manda aquí
+        tallerId: tallerIdNum // 🔹 y el taller fijo aquí
+      });
+
       setOk(true);
 
       // redirige al login del rol correspondiente
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = window.setTimeout(() => {
-        navigate(`/login/${rolUi}`);
+        navigate(LOGIN_PATH);
       }, REDIRECT_DELAY);
     } catch (err: any) {
       const msg =
@@ -261,6 +302,46 @@ function RegistroCliente({
               )}
             </div>
 
+            {/* 🔹 Select de Taller */}
+            <div className="form-group">
+              <label className="label" htmlFor="tallerId">
+                Taller donde te atienden
+              </label>
+              <div
+                className={`input-wrap ${
+                  fieldErr["tallerId"] ? "has-error" : ""
+                }`}
+              >
+                <span
+                  className="iconbox fa-solid fa-warehouse"
+                  aria-hidden="true"
+                />
+                <select
+                  id="tallerId"
+                  name="tallerId"
+                  className="input"
+                  value={form.tallerId}
+                  onChange={onChange}
+                  aria-invalid={!!fieldErr["tallerId"]}
+                  aria-describedby={
+                    fieldErr["tallerId"] ? "err-tallerId" : undefined
+                  }
+                >
+                  <option value="">Selecciona tu taller…</option>
+                  {TALLERES_FIJOS.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {fieldErr["tallerId"] && (
+                <div id="err-tallerId" className="error-message" role="alert">
+                  {fieldErr["tallerId"]}
+                </div>
+              )}
+            </div>
+
             <button type="submit" className="btn btn-cta">
               Registrarme
             </button>
@@ -365,7 +446,7 @@ function SolicitudTaller({ fondo }: { fondo: string }) {
   const onChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => {
     const { name, value } = e.target;
     setData((prev) => ({ ...prev, [name]: value }));
@@ -442,7 +523,7 @@ function SolicitudTaller({ fondo }: { fondo: string }) {
       console.log("✅ Solicitud de taller creada:", resp);
 
       setOkMsg(
-        "¡Solicitud enviada! Te responderemos en 24–48 h hábiles para completar la activación de tu taller en LlantApp.",
+        "¡Solicitud enviada! Te responderemos en 24–48 h hábiles para completar la activación de tu taller en LlantApp."
       );
 
       // limpia
@@ -464,7 +545,7 @@ function SolicitudTaller({ fondo }: { fondo: string }) {
       setFailMsg(
         error?.message
           ? String(error.message)
-          : "No se pudo enviar la solicitud. Intenta de nuevo en unos minutos.",
+          : "No se pudo enviar la solicitud. Intenta de nuevo en unos minutos."
       );
     } finally {
       setEnviando(false);
@@ -592,7 +673,7 @@ function SolicitudTaller({ fondo }: { fondo: string }) {
                 </div>
                 <span aria-hidden="true"></span>
                 <div className="price-note">
-                  🤑 Oferta válida solo por HOY!!!!
+                  🤑 Oferta válida solo por HOY!!!! 
                 </div>
               </div>
 

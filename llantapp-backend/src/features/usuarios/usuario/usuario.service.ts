@@ -1,3 +1,4 @@
+// llantapp-backend/src/features/usuarios/usuario/usuario.service.ts
 import {
   BadRequestException,
   ConflictException,
@@ -5,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
-import type { Usuario, Rol as PrismaRol } from '@prisma/client';
+  import type { Usuario, Rol as PrismaRol } from '@prisma/client';
 import { Rol as AppRol } from '../../../common/enums/rol.enum';
 import { Encriptador } from '../../autenticacion/autenticacion/encriptador';
 
@@ -28,10 +29,17 @@ export class UsuarioService {
     correo: string;
     hashClave: string;
     rol?: AppRol;
+    tallerId?: number | null;
   }): Promise<Usuario> {
     const rol = toPrismaRol(datos.rol ?? AppRol.CLIENTE);
     return this.prisma.usuario.create({
-      data: { ...datos, rol },
+      data: {
+        nombreCompleto: datos.nombreCompleto,
+        correo: datos.correo,
+        hashClave: datos.hashClave,
+        rol,
+        tallerId: datos.tallerId ?? null,
+      },
     });
   }
 
@@ -39,12 +47,14 @@ export class UsuarioService {
     return this.prisma.usuario.findUnique({ where: { correo } });
   }
 
+  // ✅ aquí ya incluimos el taller
   async buscarPorId(id: number) {
-    // Incluimos la relación empresa para poder saber de qué taller es
     return this.prisma.usuario.findUnique({
       where: { id },
       include: {
-        empresa: true, // si quieres solo algunos campos, cámbialo por select: { id: true, nombre: true }
+        taller: {
+          select: { id: true, nombre: true },
+        },
       },
     });
   }
@@ -61,8 +71,10 @@ export class UsuarioService {
         correo: true,
         rol: true,
         creadoEn: true,
-        // ahora también trae el taller (empresa)
-        empresa: true,
+        // ⬇ info del taller
+        taller: {
+          select: { id: true, nombre: true },
+        },
       },
       orderBy: { nombreCompleto: 'asc' },
     });
@@ -77,8 +89,9 @@ export class UsuarioService {
         correo: true,
         rol: true,
         creadoEn: true,
-        // ahora también trae el taller (empresa)
-        empresa: true,
+        taller: {
+          select: { id: true, nombre: true },
+        },
       },
       orderBy: { nombreCompleto: 'asc' },
     });
@@ -95,8 +108,9 @@ export class UsuarioService {
         correo: true,
         rol: true,
         creadoEn: true,
-        // ahora también trae el taller (empresa)
-        empresa: true,
+        taller: {
+          select: { id: true, nombre: true },
+        },
       },
       orderBy: { nombreCompleto: 'asc' },
     });
@@ -122,7 +136,9 @@ export class UsuarioService {
       throw new BadRequestException('Rol inválido: solo ADMIN o MECANICO');
     }
 
-    const existente = await this.prisma.usuario.findUnique({ where: { correo } });
+    const existente = await this.prisma.usuario.findUnique({
+      where: { correo },
+    });
     if (existente) {
       throw new ConflictException('El correo ya está registrado');
     }
@@ -142,6 +158,9 @@ export class UsuarioService {
         correo: true,
         rol: true,
         creadoEn: true,
+        taller: {
+          select: { id: true, nombre: true },
+        },
       },
     });
 
@@ -165,14 +184,17 @@ export class UsuarioService {
     const isTaller =
       existente.rol === toPrismaRol(AppRol.ADMIN) ||
       existente.rol === toPrismaRol(AppRol.MECANICO);
-    if (!isTaller) throw new BadRequestException('Solo se puede actualizar personal de taller');
+    if (!isTaller)
+      throw new BadRequestException('Solo se puede actualizar personal de taller');
 
     if (dto.rol && dto.rol !== AppRol.ADMIN && dto.rol !== AppRol.MECANICO) {
       throw new BadRequestException('Rol inválido: solo ADMIN o MECANICO');
     }
 
     if (dto.correo && dto.correo !== existente.correo) {
-      const dupe = await this.prisma.usuario.findUnique({ where: { correo: dto.correo } });
+      const dupe = await this.prisma.usuario.findUnique({
+        where: { correo: dto.correo },
+      });
       if (dupe) throw new ConflictException('El correo ya está registrado');
     }
 
@@ -183,7 +205,16 @@ export class UsuarioService {
         correo: dto.correo,
         rol: dto.rol ? toPrismaRol(dto.rol) : undefined,
       },
-      select: { id: true, nombreCompleto: true, correo: true, rol: true, creadoEn: true },
+      select: {
+        id: true,
+        nombreCompleto: true,
+        correo: true,
+        rol: true,
+        creadoEn: true,
+        taller: {
+          select: { id: true, nombre: true },
+        },
+      },
     });
   }
 
@@ -211,9 +242,8 @@ export class UsuarioService {
   // =========================
   // Mapper público
   // =========================
-  aPublico(u: Usuario) {
-    const { hashClave, ...resto } = u as any;
-    // resto incluirá empresa si vino en el findUnique
+  aPublico(u: any) {
+    const { hashClave, ...resto } = u;
     return resto;
   }
 }

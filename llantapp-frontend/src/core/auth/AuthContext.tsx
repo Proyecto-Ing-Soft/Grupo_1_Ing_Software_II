@@ -1,22 +1,19 @@
-// SRP: manejar sesión (token) + perfil (incluye rol + taller)
-// OCP: si mañana cambias origen del perfil (decode JWT o endpoint), consumidores no cambian.
+// llantapp-frontend/src/core/auth/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiAuth } from '../../features/autenticacion/api';
 import { tokenMemoria } from '../utils/storageMemoria';
 
 type Rol = 'ADMIN' | 'MECANICO' | 'CLIENTE' | 'OWNER';
 
-// Mini-modelo del taller asociado al usuario
-type TallerMini = {
-  id: number;
-  nombre: string; // o razonSocial según lo que devuelva el backend
-};
-
 type Perfil = {
   id: number;
   nombreCompleto: string;
+  correo: string;
   rol: Rol;
-  empresa?: TallerMini | null;
+  taller?: {
+    id: number;
+    nombre: string;
+  } | null;
 };
 
 type Usuario = Perfil & { token: string };
@@ -50,19 +47,15 @@ export const ProveedorAuth: React.FC<{ children: React.ReactNode }> = ({ childre
     perfil: null,
   });
 
-  // KISS/SRP: cargar perfil cuando hay token.
   const cargarPerfil = async (tokenArg?: string) => {
     const token = tokenArg ?? tokenMemoria.get?.() ?? sesion.accessToken;
     if (!token) throw new Error('No hay token disponible para consultar el perfil');
-
-    // El backend debe devolver ahora también empresa: { id, nombre } | null
     const perfil = await apiAuth.perfil(token);
     console.log('👤 Perfil cargado:', perfil);
     setSesion((s) => ({ ...s, perfil }));
     return perfil;
   };
 
-  // Al montar: intenta refresh y luego perfil.
   useEffect(() => {
     (async () => {
       try {

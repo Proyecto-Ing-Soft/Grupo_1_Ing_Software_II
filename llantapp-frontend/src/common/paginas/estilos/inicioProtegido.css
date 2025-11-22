@@ -86,6 +86,12 @@
   box-shadow: 0 8px 22px rgba(2,6,23,.08);
   color: var(--ink);
 }
+
+.role-chip__taller {
+  color: var(--primary-700); 
+  font-weight: 600;
+}
+
 .inicio-container .hero-title{
   margin: 0;
   font-size: clamp(26px, 3.4vw, 42px);

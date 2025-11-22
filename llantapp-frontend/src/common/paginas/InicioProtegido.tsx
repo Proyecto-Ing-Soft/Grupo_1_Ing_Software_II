@@ -11,13 +11,8 @@ export default function InicioProtegido() {
   const rol = sesion?.perfil?.rol ?? "";
   const rolClase = rol ? `role-${rol.toLowerCase()}` : "";
 
-  // 👇 Intentamos obtener el nombre del taller desde el perfil
-  const tallerActual: string | null =
-    // según cómo estés enviando el DTO desde el backend,
-    // ajusta estos campos; están en modo "defensivo"
-    ((sesion as any)?.perfil?.tallerNombre as string | undefined) ??
-    ((sesion as any)?.perfil?.taller?.nombre as string | undefined) ??
-    null;
+  // ✅ Nombre del taller que viene desde el backend como perfil.taller.nombre
+  const tallerActual: string | null = sesion?.perfil?.taller?.nombre ?? null;
 
   const esTaller = tieneRol(["ADMIN", "MECANICO"]);
   const tituloHero = esTaller
@@ -103,19 +98,16 @@ export default function InicioProtegido() {
                     {sesion.perfil.nombreCompleto}
                   </span>
 
-                  {/* 👇 Solo mostramos el taller si existe */}
-                  {tallerActual && (
-                    <>
-                      <span className="separator">•</span>
-                      <span className="taller-chip">
-                        Taller: <strong>{tallerActual}</strong>
-                      </span>
-                    </>
-                  )}
-
                   <span className="separator">•</span>
+                  {/* Rol + taller al costado */}
                   <span className={`role-chip ${rolClase}`} tabIndex={-1}>
                     {sesion.perfil.rol}
+                    {tallerActual && (
+                      <span className="role-chip__taller">
+                        {" "}
+                        · Taller: {tallerActual}
+                      </span>
+                    )}
                   </span>
                 </div>
               </div>
@@ -254,38 +246,6 @@ export default function InicioProtegido() {
                 <div className="btn-title">Asignar mecánico</div>
                 <div className="btn-sub">
                   Gestiona las citas nuevas y pendientes del taller
-                </div>
-              </div>
-            </Link>
-          )}
-
-          {tieneRol(["ADMIN"]) && (
-            <Link
-              to="/admin/mantenimientos-vencidos"
-              className="btn-card btn-secondary reveal"
-              data-delay="700"
-            >
-              <div className="btn-icon">⏰</div>
-              <div className="btn-text">
-                <div className="btn-title">Mantenimientos vencidos</div>
-                <div className="btn-sub">
-                  Identifica vehículos con mantenimiento vencido
-                </div>
-              </div>
-            </Link>
-          )}
-
-          {tieneRol(["ADMIN"]) && (
-            <Link
-              to="/admin/mantenimientos-vencidos"
-              className="btn-card btn-secondary reveal"
-              data-delay="700"
-            >
-              <div className="btn-icon">⏰</div>
-              <div className="btn-text">
-                <div className="btn-title">Mantenimientos vencidos</div>
-                <div className="btn-sub">
-                  Identifica vehículos con mantenimiento vencido
                 </div>
               </div>
             </Link>
