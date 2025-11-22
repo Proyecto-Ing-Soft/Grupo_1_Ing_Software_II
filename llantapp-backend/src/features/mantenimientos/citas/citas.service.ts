@@ -7,7 +7,11 @@
 // - Observer-like: cambios relevantes disparan notificaciones vía la fachada Notificador.
 // - Facade: Notificador oculta cómo se persisten/emiten las notificaciones.
 
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { EstadoCita } from '@prisma/client';
@@ -39,13 +43,27 @@ export class CitasService {
   // === CREAR CITA (estado inicial: SOLICITADA) ===
   async crear(dto: CrearCitaDto, clienteId: number) {
     // Validación de fecha (AAAA-MM-DD) y que no sea pasada
-    if (!dto.programadaPara || !/^\d{4}-\d{2}-\d{2}$/.test(dto.programadaPara)) {
+    if (
+      !dto.programadaPara ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(dto.programadaPara)
+    ) {
       throw new BadRequestException('Fecha inválida (usa AAAA-MM-DD)');
     }
     const hoyYMD = this.toYMD(new Date()); // ← hoy local
     const ymd = dto.programadaPara.slice(0, 10); // normalizamos a YYYY-MM-DD
     if (ymd < hoyYMD) {
-      throw new BadRequestException('La fecha programada debe ser hoy o una fecha futura');
+      throw new BadRequestException(
+        'La fecha programada debe ser hoy o una fecha futura',
+      );
+    }
+
+    // Validar que el servicio exista y esté activo
+    const servicio = await this.prisma.servicio.findUnique({
+      where: { id: dto.servicioId },
+      select: { id: true, nombre: true, activo: true },
+    });
+    if (!servicio || !servicio.activo) {
+      throw new BadRequestException('Servicio no válido');
     }
 
     // Si viene vehiculoId: validar pertenencia y tomar snapshot del vehículo.
@@ -75,11 +93,15 @@ export class CitasService {
           vin: true,
         },
       });
-      if (!vehiculo) throw new BadRequestException('Vehículo no válido para este usuario');
+      if (!vehiculo) {
+        throw new BadRequestException('Vehículo no válido para este usuario');
+      }
 
       vehiculoId = vehiculo.id;
       snapshot = {
-        ...(vehiculo.placa ? { placaPreliminar: vehiculo.placa.toUpperCase() } : {}),
+        ...(vehiculo.placa
+          ? { placaPreliminar: vehiculo.placa.toUpperCase() }
+          : {}),
         ...(vehiculo.marca ? { marcaPreliminar: vehiculo.marca } : {}),
         ...(vehiculo.modelo ? { modeloPreliminar: vehiculo.modelo } : {}),
         ...(vehiculo.anio != null ? { anioPreliminar: vehiculo.anio } : {}),
@@ -87,23 +109,40 @@ export class CitasService {
         ...(vehiculo.vin ? { vinPreliminar: vehiculo.vin } : {}),
       };
     } else {
-      if (!dto.placaPreliminar || !dto.marcaPreliminar || !dto.modeloPreliminar) {
-        throw new BadRequestException('Selecciona un vehículo o completa placa, marca y modelo');
+      if (
+        !dto.placaPreliminar ||
+        !dto.marcaPreliminar ||
+        !dto.modeloPreliminar
+      ) {
+        throw new BadRequestException(
+          'Selecciona un vehículo o completa placa, marca y modelo',
+        );
       }
       snapshot = {
         ...(dto.placaPreliminar
           ? { placaPreliminar: dto.placaPreliminar.trim().toUpperCase() }
           : {}),
-        ...(dto.marcaPreliminar ? { marcaPreliminar: dto.marcaPreliminar.trim() } : {}),
-        ...(dto.modeloPreliminar ? { modeloPreliminar: dto.modeloPreliminar.trim() } : {}),
-        ...(dto.anioPreliminar != null ? { anioPreliminar: dto.anioPreliminar } : {}),
-        ...(dto.colorPreliminar ? { colorPreliminar: dto.colorPreliminar.trim() } : {}),
-        ...(dto.vinPreliminar ? { vinPreliminar: dto.vinPreliminar.trim() } : {}),
+        ...(dto.marcaPreliminar
+          ? { marcaPreliminar: dto.marcaPreliminar.trim() }
+          : {}),
+        ...(dto.modeloPreliminar
+          ? { modeloPreliminar: dto.modeloPreliminar.trim() }
+          : {}),
+        ...(dto.anioPreliminar != null
+          ? { anioPreliminar: dto.anioPreliminar }
+          : {}),
+        ...(dto.colorPreliminar
+          ? { colorPreliminar: dto.colorPreliminar.trim() }
+          : {}),
+        ...(dto.vinPreliminar
+          ? { vinPreliminar: dto.vinPreliminar.trim() }
+          : {}),
       };
     }
 
     const data: any = {
-      tipo: dto.tipo,
+      // 👇 ya NO usamos `tipo`, ahora referenciamos el catálogo de servicios
+      servicioId: dto.servicioId,
       comentario: dto.comentario ?? '',
       // Guardar como Date LOCAL (no UTC-Z)
       programadaPara: this.parseYMDLocal(ymd),
@@ -116,7 +155,9 @@ export class CitasService {
     const cita = await this.prisma.citaMantenimiento.create({ data });
 
     // Notificación a administradores
-    const admins = await this.prisma.usuario.findMany({ where: { rol: 'ADMIN' } });
+    const admins = await this.prisma.usuario.findMany({
+      where: { rol: 'ADMIN' },
+    });
     await Promise.all(
       admins.map((a) =>
         this.noti.enviar({
@@ -144,7 +185,9 @@ export class CitasService {
 
   // === ASIGNAR MECÁNICO (pasa a EN_PROGRESO) ===
   async asignarMecanico(citaId: number, mecanicoId: number, _adminId: number) {
-    const cita = await this.prisma.citaMantenimiento.findUnique({ where: { id: citaId } });
+    const cita = await this.prisma.citaMantenimiento.findUnique({
+      where: { id: citaId },
+    });
     if (!cita) throw new BadRequestException('Cita no existe');
     if (cita.estado === EstadoCita.TERMINADA) {
       throw new BadRequestException('Cita ya terminada');
@@ -205,7 +248,9 @@ export class CitasService {
       }[];
     },
   ) {
-    const cita = await this.prisma.citaMantenimiento.findUnique({ where: { id: citaId } });
+    const cita = await this.prisma.citaMantenimiento.findUnique({
+      where: { id: citaId },
+    });
     if (!cita) throw new BadRequestException('Cita no existe');
     if (cita.mecanicoId !== mecanicoId) {
       throw new ForbiddenException('No eres el mecánico asignado');
@@ -310,11 +355,10 @@ export class CitasService {
 
   // CLIENTE/EMPRESA: sus citas
   async listarDelCliente(clienteId: number) {
-    return this.prisma.citaMantenimiento.findMany({
+    const citas = await this.prisma.citaMantenimiento.findMany({
       where: { clienteId },
       select: {
         id: true,
-        tipo: true,
         estado: true,
         comentario: true,
         programadaPara: true,
@@ -322,18 +366,32 @@ export class CitasService {
         placaPreliminar: true,
         marcaPreliminar: true,
         modeloPreliminar: true,
+        servicio: { select: { id: true, nombre: true } },
       },
       orderBy: { creadoEn: 'desc' },
     });
+
+    return citas.map((c) => ({
+      id: c.id,
+      // compat con front: campo "tipo" ahora es el nombre del servicio
+      tipo: c.servicio?.nombre ?? '—',
+      estado: c.estado,
+      comentario: c.comentario,
+      programadaPara: c.programadaPara,
+      vehiculo: c.vehiculo,
+      placaPreliminar: c.placaPreliminar,
+      marcaPreliminar: c.marcaPreliminar,
+      modeloPreliminar: c.modeloPreliminar,
+      servicio: c.servicio ?? null,
+    }));
   }
 
   // MECÁNICO: sus citas asignadas
   async listarDelMecanico(mecanicoId: number) {
-    return this.prisma.citaMantenimiento.findMany({
+    const citas = await this.prisma.citaMantenimiento.findMany({
       where: { mecanicoId },
       select: {
         id: true,
-        tipo: true,
         estado: true,
         comentario: true,
         programadaPara: true,
@@ -342,19 +400,33 @@ export class CitasService {
         placaPreliminar: true,
         marcaPreliminar: true,
         modeloPreliminar: true,
+        servicio: { select: { id: true, nombre: true } },
       },
       orderBy: [{ programadaPara: 'asc' }, { creadoEn: 'desc' }],
     });
+
+    return citas.map((c) => ({
+      id: c.id,
+      tipo: c.servicio?.nombre ?? '—',
+      estado: c.estado,
+      comentario: c.comentario,
+      programadaPara: c.programadaPara,
+      vehiculo: c.vehiculo,
+      cliente: c.cliente,
+      placaPreliminar: c.placaPreliminar,
+      marcaPreliminar: c.marcaPreliminar,
+      modeloPreliminar: c.modeloPreliminar,
+      servicio: c.servicio ?? null,
+    }));
   }
 
   // ADMIN: citas pendientes por asignar o en progreso
   async listarPendientes() {
-    return this.prisma.citaMantenimiento.findMany({
+    const citas = await this.prisma.citaMantenimiento.findMany({
       // Traer todo lo que NO esté terminado (SOLICITADA y EN_PROGRESO)
       where: { estado: { not: EstadoCita.TERMINADA } },
       select: {
         id: true,
-        tipo: true,
         estado: true,
         comentario: true,
         programadaPara: true,
@@ -364,12 +436,29 @@ export class CitasService {
         modeloPreliminar: true,
         cliente: { select: { id: true, nombreCompleto: true } },
 
-        // Info del mecánico asignado para que no desaparezca al recargar
         mecanicoId: true,
         mecanico: { select: { id: true, nombreCompleto: true } },
+
+        servicio: { select: { id: true, nombre: true } },
       },
       orderBy: [{ creadoEn: 'desc' }],
     });
+
+    return citas.map((c) => ({
+      id: c.id,
+      tipo: c.servicio?.nombre ?? '—',
+      estado: c.estado,
+      comentario: c.comentario,
+      programadaPara: c.programadaPara,
+      vehiculo: c.vehiculo,
+      placaPreliminar: c.placaPreliminar,
+      marcaPreliminar: c.marcaPreliminar,
+      modeloPreliminar: c.modeloPreliminar,
+      cliente: c.cliente,
+      mecanicoId: c.mecanicoId,
+      mecanico: c.mecanico ?? null,
+      servicio: c.servicio ?? null,
+    }));
   }
 
   // ADMIN: citas vencidas (fecha programada pasada y no TERMINADA)
@@ -378,14 +467,13 @@ export class CitasService {
     const hoyYMD = this.toYMD(new Date());
     const hoyLocal = this.parseYMDLocal(hoyYMD);
 
-    return this.prisma.citaMantenimiento.findMany({
+    const citas = await this.prisma.citaMantenimiento.findMany({
       where: {
         programadaPara: { lt: hoyLocal },
         estado: { not: EstadoCita.TERMINADA },
       },
       select: {
         id: true,
-        tipo: true,
         estado: true,
         comentario: true,
         programadaPara: true,
@@ -396,15 +484,32 @@ export class CitasService {
         cliente: { select: { id: true, nombreCompleto: true } },
         mecanicoId: true,
         mecanico: { select: { id: true, nombreCompleto: true } },
+        servicio: { select: { id: true, nombre: true } },
       },
       orderBy: [{ programadaPara: 'asc' }, { creadoEn: 'desc' }],
     });
+
+    return citas.map((c) => ({
+      id: c.id,
+      tipo: c.servicio?.nombre ?? '—',
+      estado: c.estado,
+      comentario: c.comentario,
+      programadaPara: c.programadaPara,
+      vehiculo: c.vehiculo,
+      placaPreliminar: c.placaPreliminar,
+      marcaPreliminar: c.marcaPreliminar,
+      modeloPreliminar: c.modeloPreliminar,
+      cliente: c.cliente,
+      mecanicoId: c.mecanicoId,
+      mecanico: c.mecanico ?? null,
+      servicio: c.servicio ?? null,
+    }));
   }
 
   async buscarPorIdConVehiculo(id: number) {
     return this.prisma.citaMantenimiento.findUnique({
       where: { id },
-      include: { vehiculo: true },
+      include: { vehiculo: true, servicio: true },
     });
   }
 
@@ -422,6 +527,7 @@ export class CitasService {
         vehiculo: true,
         cliente: { select: { id: true, nombreCompleto: true } },
         mecanico: { select: { id: true, nombreCompleto: true } },
+        servicio: { select: { id: true, nombre: true } },
       },
     });
 
@@ -445,7 +551,9 @@ export class CitasService {
     // Info de vehículo: preferir vehiculo real, luego snapshot
     const placa =
       cita.vehiculo?.placa ??
-      (cita.placaPreliminar ? cita.placaPreliminar.toUpperCase() : null);
+      (cita.placaPreliminar
+        ? cita.placaPreliminar.toUpperCase()
+        : null);
     const marca = cita.vehiculo?.marca ?? cita.marcaPreliminar ?? null;
     const modelo = cita.vehiculo?.modelo ?? cita.modeloPreliminar ?? null;
     const anio = cita.vehiculo?.anio ?? cita.anioPreliminar ?? null;
@@ -467,13 +575,16 @@ export class CitasService {
         })
       : 'Sin fecha registrada';
 
+    const tipoTexto = cita.servicio?.nombre ?? '—';
+
     // Texto “bonito” para compartir/copiar
     const resumenTexto = [
       `Resumen técnico – Cita #${cita.id}`,
       `Fecha de mantenimiento: ${fechaMantenimientoTexto}`,
-      `Tipo de mantenimiento: ${cita.tipo}`,
+      `Tipo de mantenimiento: ${tipoTexto}`,
       '',
-      `Vehículo: ${marca ?? '-'} ${modelo ?? ''}`.trim() + (anio ? ` (${anio})` : ''),
+      `Vehículo: ${marca ?? '-'} ${modelo ?? ''}`.trim() +
+        (anio ? ` (${anio})` : ''),
       `Placa: ${placa ?? '-'}`,
       '',
       `Cliente: ${cita.cliente?.nombreCompleto ?? '-'}`,
@@ -488,11 +599,13 @@ export class CitasService {
 
     return {
       citaId: cita.id,
-      tipo: cita.tipo,
+      // compat: devolvemos "tipo" como texto del servicio
+      tipo: tipoTexto,
       estado: cita.estado,
       fechaMantenimiento: fechaMantenimientoISO,
       cliente: cita.cliente ?? null,
       mecanico: cita.mecanico ?? null,
+      servicio: cita.servicio ?? null,
       vehiculo: {
         placa,
         marca,

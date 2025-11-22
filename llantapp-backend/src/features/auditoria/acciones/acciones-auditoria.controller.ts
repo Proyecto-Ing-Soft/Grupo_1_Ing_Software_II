@@ -30,17 +30,31 @@ export class AccionesAuditoriaController {
       take,
       include: {
         usuario: { select: { id: true, nombreCompleto: true } },
-        cita: { select: { id: true, tipo: true, estado: true } },
+        cita: {
+          select: {
+            id: true,
+            estado: true,
+            servicio: { select: { id: true, nombre: true } },
+          },
+        },
       },
     });
 
     return filas.map((f) => ({
       id: f.id,
-      tipo: f.tipo,
+      tipo: f.tipo, // tipo de ACCIÓN (CREAR_CITA, ASIGNAR_MECANICO, etc.)
       descripcion: f.descripcion,
       creadoEn: f.creadoEn.toISOString(),
-      usuario: f.usuario,
-      cita: f.cita,
+      usuario: f.usuario, // viene del include
+      cita: f.cita
+        ? {
+            id: f.cita.id,
+            estado: f.cita.estado,
+            servicio: f.cita.servicio,
+            // compat: antes la cita tenía "tipo", ahora derivamos del servicio
+            tipo: f.cita.servicio?.nombre ?? '—',
+          }
+        : null,
       mecanicoId: f.mecanicoId ?? null,
     }));
   }

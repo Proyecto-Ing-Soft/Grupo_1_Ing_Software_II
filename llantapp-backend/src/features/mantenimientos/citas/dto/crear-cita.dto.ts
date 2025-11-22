@@ -23,7 +23,7 @@ export class ConsumoDto {
 }
 
 export class CrearCitaDto {
-  // 🔹 AHORA usamos el servicio como "tipo" de mantenimiento
+  // Ahora usamos el servicio como "tipo" de mantenimiento
   @IsInt()
   @Min(1)
   servicioId!: number;
