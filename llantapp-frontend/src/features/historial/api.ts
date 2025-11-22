@@ -11,7 +11,7 @@ export interface TrabajoRealizado {
   trabajosRealizados: string | null;
   mecanico: { id?: number; nombreCompleto: string } | null;
 
-  // ✅ Flag opcional para saber si hay evidencia
+  // Flag opcional para saber si hay evidencia
   evidenciaDisponible?: boolean;
 }
 
@@ -39,7 +39,7 @@ type RawNuevo = {
     fechaMantenimiento: string | null;
     trabajosRealizados: string | null;
     mecanico: { id?: number; nombreCompleto: string } | null;
-    evidenciaDisponible?: boolean; // ✅ puede venir del backend
+    evidenciaDisponible?: boolean; //  puede venir del backend
   }>;
   proximosServicios: Array<{
     id: number;
@@ -85,7 +85,7 @@ export const apiHistorial = {
           fechaMantenimiento: t.fechaMantenimiento ?? null,
           trabajosRealizados: t.trabajosRealizados ?? null,
           mecanico: t.mecanico ?? { nombreCompleto: '—' },
-          evidenciaDisponible: t.evidenciaDisponible ?? false, // ✅ mapeo
+          evidenciaDisponible: t.evidenciaDisponible ?? false, //  mapeo
         })),
         proximosServicios: raw.proximosServicios.map((s) => ({
           id: s.id,
@@ -120,7 +120,7 @@ export const apiHistorial = {
         fechaMantenimiento: i.fechaMantenimiento ?? i.programadaPara ?? null,
         trabajosRealizados: i.trabajosRealizados ?? null,
         mecanico: i.mecanico ?? { nombreCompleto: '—' },
-        evidenciaDisponible: i.evidenciaDisponible ?? false, // ✅ aunque el backend viejo no lo mande, default false
+        evidenciaDisponible: i.evidenciaDisponible ?? false, //  aunque el backend viejo no lo mande, default false
       }));
 
     return {

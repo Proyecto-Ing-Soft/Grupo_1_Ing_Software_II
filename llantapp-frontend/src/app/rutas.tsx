@@ -45,7 +45,7 @@ import AdminConsumiblesPagina from '../features/consumibles/AdminConsumiblesPagi
 import MantenimientosVencidosPagina from "../features/mantenimientos/MantenimientosVencidosPagina";
 import { SolicitudesTallerOwnerPagina } from "../features/solicitudes-taller/SolicitudesTallerOwnerPagina";
 
-// 🔹 Auditoría / Bitácora
+// Auditoría / Bitácora
 import AdminBitacoraAccionesPagina from '../features/auditoria/AdminBitacoraAccionesPagina';
 
 // GUARDS / LAYOUT
@@ -131,7 +131,7 @@ const router = createBrowserRouter(
           ),
         },
 
-        // 🔹 Admin: Promociones
+        // Admin: Promociones
         {
           path: 'admin/promociones',
           element: (
@@ -325,7 +325,7 @@ const router = createBrowserRouter(
           ),
         },
 
-        // 🔹 ADMIN + OWNER: bitácora de acciones
+        // ADMIN + OWNER: bitácora de acciones
         {
           path: 'admin/bitacora-acciones',
           element: (

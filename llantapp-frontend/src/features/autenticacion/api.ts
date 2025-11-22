@@ -26,7 +26,7 @@ export interface RefreshResponse {
   accessToken: string;
 }
 
-// ✅ payload de registro (incluye tallerId opcional)
+// payload de registro (incluye tallerId opcional)
 export interface RegistrarPayload {
   nombreCompleto: string;
   correo: string;

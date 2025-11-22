@@ -118,7 +118,7 @@ export class AuthController {
       throw new BadRequestException('Rol inválido: debe ser ADMIN o MECANICO');
     }
 
-    // 📌 Admin autenticado
+    // Admin autenticado
     const actorId = req.user?.sub ?? req.user?.id;
     const actor = await this.usuarios.buscarPorId(Number(actorId));
     if (!actor) {
@@ -131,7 +131,7 @@ export class AuthController {
       );
     }
 
-    // 📌 Crear ADMIN/MECÁNICO heredando el mismo tallerId
+    // Crear ADMIN/MECÁNICO heredando el mismo tallerId
     return this.usuarios.crearPersonalTaller({
       nombreCompleto: dto.nombreCompleto,
       correo: dto.correo,

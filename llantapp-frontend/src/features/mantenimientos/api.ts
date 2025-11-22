@@ -11,6 +11,9 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 export type EvidenciaDescarga = { url: string; mime: string; blob: Blob };
 
+// 🔹 Nuevo: tipo "Tipo" que usarás en varias pantallas
+export type Tipo = string;
+
 export type TerminarCitaPayload = {
   trabajosRealizados: string;
   repuestos?: string[];
@@ -97,7 +100,7 @@ async function postAuthed<T>(url: string, body?: any, token?: string): Promise<T
 export interface ResumenTecnico {
   citaId: number;
   // ahora viene como texto con el nombre del servicio
-  tipo: string;
+  tipo: Tipo; // 🔹 antes era string
   estado: string;
   fechaMantenimiento: string | null;
   cliente: { id: number; nombreCompleto: string } | null;

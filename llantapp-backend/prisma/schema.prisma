@@ -91,6 +91,9 @@ model Usuario {
   correo         String   @unique
   hashClave      String
   rol            Rol      @default(CLIENTE)
+
+  activo         Boolean  @default(true)
+
   creadoEn       DateTime @default(now())
   actualizadoEn  DateTime @updatedAt
 

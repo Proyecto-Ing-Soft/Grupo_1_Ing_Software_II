@@ -23,6 +23,10 @@ type ActualizarUsuarioTallerDto = {
   rol?: 'ADMIN' | 'MECANICO';
 };
 
+type CambiarClaveTallerDto = {
+  nuevaClave: string;
+};
+
 @Controller('usuarios')
 export class UsuarioController {
   constructor(private usuarios: UsuarioService) {}
@@ -43,15 +47,16 @@ export class UsuarioController {
 
   // =========================
   // Listar usuarios por rol (limitado a mi taller)
-  //    GET /usuarios?rol=MECANICO  → [{ id, nombreCompleto }]
+  //    GET /usuarios?rol=MECANICO&soloActivos=true
   // =========================
   @UseGuards(JwtAuthGuard)
   @Get()
-  async porRol(@Req() req: any, @Query() q: UsuariosPorRolQueryDto) {
+  async porRol(@Req() req: any, @Query() q: UsuariosPorRolQueryDto & { soloActivos?: string }) {
     if (!q.rol) return [];
 
     const uid = req.user?.sub ?? req.user?.id;
-    return this.usuarios.listarPorRolEnTaller(q.rol, uid);
+    const soloActivos = q.soloActivos === 'true';
+    return this.usuarios.listarPorRolEnTaller(q.rol, uid, soloActivos);
   }
 
   // =========================
@@ -91,15 +96,50 @@ export class UsuarioController {
     });
   }
 
-  // Eliminar personal del taller (solo ADMIN/MECÁNICO de MI taller)
+  // Desactivar personal del taller (soft delete)
   @UseGuards(JwtAuthGuard)
   @Delete('taller/:id')
-  async eliminarPersonalTaller(
+  async desactivarPersonalTaller(
     @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
   ) {
     const actorId = req.user?.sub ?? req.user?.id;
-    await this.usuarios.eliminarPersonalTaller(actorId, id);
-    return { ok: true };
+    const usuario = await this.usuarios.desactivarPersonalTaller(actorId, id);
+    return { ok: true, usuario };
+  }
+
+  // Activar personal del taller
+  @UseGuards(JwtAuthGuard)
+  @Put('taller/:id/activar')
+  async activarPersonalTaller(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const actorId = req.user?.sub ?? req.user?.id;
+    const usuario = await this.usuarios.activarPersonalTaller(actorId, id);
+    return { ok: true, usuario };
+  }
+
+  // Cambiar contraseña de un usuario del taller
+  @UseGuards(JwtAuthGuard)
+  @Put('taller/:id/clave')
+  async cambiarClaveTaller(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: CambiarClaveTallerDto,
+  ) {
+    if (!body.nuevaClave || body.nuevaClave.trim().length < 6) {
+      throw new BadRequestException(
+        'La nueva contraseña debe tener al menos 6 caracteres',
+      );
+    }
+
+    const actorId = req.user?.sub ?? req.user?.id;
+    const usuario = await this.usuarios.cambiarClavePersonalTaller(
+      actorId,
+      id,
+      body.nuevaClave.trim(),
+    );
+    return { ok: true, usuario };
   }
 }

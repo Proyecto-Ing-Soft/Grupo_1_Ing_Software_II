@@ -23,11 +23,14 @@ export default function GestionUsuariosPagina() {
   const [q, setQ] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
   const [formCrear, setFormCrear] = useState<CrearUsuarioTallerDto | null>(null);
-  const [formEditar, setFormEditar] = useState<ActualizarUsuarioTallerDto | null>(null);
+  const [formEditar, setFormEditar] =
+    useState<ActualizarUsuarioTallerDto | null>(null);
+  const [nuevaClave, setNuevaClave] = useState<string>("");
+
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 
-  // Confirmación de eliminación (sin window.confirm)
+  // Confirmación de desactivación (antes: eliminación)
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
@@ -44,7 +47,6 @@ export default function GestionUsuariosPagina() {
       const datos = await apiUsuarios.listarTaller(usuario.token);
       setItems(datos);
     } catch {
-      // Fallback: intentar por rol (aunque backend ya filtra por taller)
       try {
         const [admins, mecs] = await Promise.all([
           apiUsuarios.listarAdmins(usuario.token),
@@ -69,7 +71,9 @@ export default function GestionUsuariosPagina() {
 
   // Animación reveal segura (visible por defecto)
   useEffect(() => {
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    const nodes = Array.from(
+      document.querySelectorAll<HTMLElement>(".reveal")
+    );
     if (!nodes.length) return;
     const obs = new IntersectionObserver(
       (entries) => {
@@ -101,14 +105,21 @@ export default function GestionUsuariosPagina() {
       const matchTaller = u.taller?.nombre
         ? u.taller.nombre.toLowerCase().includes(s)
         : false;
-      return matchNombre || matchCorreo || matchRol || matchTaller;
+      const matchEstado = (u.activo ? "activo" : "inactivo").includes(s);
+      return matchNombre || matchCorreo || matchRol || matchTaller || matchEstado;
     });
   }, [q, items]);
 
   const startCrear = () => {
     setEditId(null);
     setFormEditar(null);
-    setFormCrear({ nombreCompleto: "", correo: "", clave: "", rol: "MECANICO" });
+    setNuevaClave("");
+    setFormCrear({
+      nombreCompleto: "",
+      correo: "",
+      clave: "",
+      rol: "MECANICO",
+    });
     setErr(null);
     setOk(null);
   };
@@ -121,6 +132,7 @@ export default function GestionUsuariosPagina() {
       correo: u.correo,
       rol: u.rol as TallerRol,
     });
+    setNuevaClave("");
     setErr(null);
     setOk(null);
   };
@@ -129,6 +141,7 @@ export default function GestionUsuariosPagina() {
     setEditId(null);
     setFormCrear(null);
     setFormEditar(null);
+    setNuevaClave("");
     setErr(null);
     setOk(null);
   };
@@ -138,7 +151,8 @@ export default function GestionUsuariosPagina() {
     setErr(null);
     setOk(null);
     const val = esquemaUsuarioTallerCrear.safeParse(formCrear);
-    if (!val.success) return setErr(val.error.issues?.[0]?.message || "Datos inválidos");
+    if (!val.success)
+      return setErr(val.error.issues?.[0]?.message || "Datos inválidos");
     try {
       const nuevo = await apiUsuarios.crearTaller(val.data, usuario.token);
       setItems((prev) => [nuevo, ...prev]);
@@ -154,41 +168,73 @@ export default function GestionUsuariosPagina() {
     setErr(null);
     setOk(null);
     const val = esquemaUsuarioTallerEditar.safeParse(formEditar);
-    if (!val.success) return setErr(val.error.issues?.[0]?.message || "Datos inválidos");
+    if (!val.success)
+      return setErr(val.error.issues?.[0]?.message || "Datos inválidos");
+
     try {
-      const upd = await apiUsuarios.actualizarTaller(editId, val.data, usuario.token);
+      let upd = await apiUsuarios.actualizarTaller(
+        editId,
+        val.data,
+        usuario.token
+      );
+
+      if (nuevaClave.trim().length > 0) {
+        upd = await apiUsuarios.cambiarClaveTaller(
+          editId,
+          { nuevaClave: nuevaClave.trim() },
+          usuario.token
+        );
+      }
+
       setItems((prev) => prev.map((u) => (u.id === upd.id ? upd : u)));
-      setOk("Usuario actualizado.");
+      setOk(
+        nuevaClave.trim().length > 0
+          ? "Usuario actualizado y contraseña cambiada."
+          : "Usuario actualizado."
+      );
       cancelar();
     } catch (e: any) {
       setErr(e?.message || "No se pudo actualizar el usuario");
     }
   };
 
-  const pedirConfirmacionEliminar = (id: number) => {
+  const pedirConfirmacionDesactivar = (id: number) => {
     setDeleteErr(null);
     setDeleteId(id);
     setOk(null);
     setErr(null);
   };
 
-  const confirmarEliminar = async () => {
+  const confirmarDesactivar = async () => {
     if (!usuario?.token || !deleteId) return;
     setDeleteErr(null);
     setDeleting(true);
     try {
-      await apiUsuarios.eliminarTaller(deleteId, usuario.token);
-      setItems((prev) => prev.filter((x) => x.id !== deleteId));
-      setOk("Usuario eliminado.");
+      const upd = await apiUsuarios.desactivarTaller(deleteId, usuario.token);
+      setItems((prev) => prev.map((u) => (u.id === upd.id ? upd : u)));
+      setOk("Usuario desactivado.");
       setDeleteId(null);
     } catch (e: any) {
-      setDeleteErr(e?.message || "No se pudo eliminar");
+      setDeleteErr(e?.message || "No se pudo desactivar");
     } finally {
       setDeleting(false);
     }
   };
 
-  const cancelarEliminar = () => setDeleteId(null);
+  const cancelarDesactivar = () => setDeleteId(null);
+
+  const activarUsuario = async (id: number) => {
+    if (!usuario?.token) return;
+    setErr(null);
+    setOk(null);
+    try {
+      const upd = await apiUsuarios.activarTaller(id, usuario.token);
+      setItems((prev) => prev.map((u) => (u.id === upd.id ? upd : u)));
+      setOk("Usuario activado.");
+    } catch (e: any) {
+      setErr(e?.message || "No se pudo activar el usuario");
+    }
+  };
 
   return (
     <main className="usr">
@@ -196,7 +242,8 @@ export default function GestionUsuariosPagina() {
         <div className="usr__titleWrap reveal" data-reveal="1">
           <h1 className="usr__title">Gestionar usuarios del taller</h1>
           <p className="usr__sub">
-            Crea, edita y elimina usuarios administradores o mecánicos.
+            Crea, edita, desactiva y cambia contraseñas de administradores o
+            mecánicos.
           </p>
         </div>
 
@@ -213,7 +260,11 @@ export default function GestionUsuariosPagina() {
               </span>
               <span className="mc-btn__text">Volver al inicio</span>
             </button>
-            <button type="button" className="mc-btn mc-btn--ghost" onClick={startCrear}>
+            <button
+              type="button"
+              className="mc-btn mc-btn--ghost"
+              onClick={startCrear}
+            >
               ➕ Nuevo usuario
             </button>
           </div>
@@ -225,7 +276,7 @@ export default function GestionUsuariosPagina() {
           <div className="input-wrap">
             <input
               className="input"
-              placeholder="Buscar por nombre, correo, rol o taller…"
+              placeholder="Buscar por nombre, correo, rol, taller o estado…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -233,7 +284,11 @@ export default function GestionUsuariosPagina() {
         </div>
 
         {(formCrear || formEditar) && (
-          <section className="usr__panel reveal" data-reveal="3" aria-live="polite">
+          <section
+            className="usr__panel reveal"
+            data-reveal="3"
+            aria-live="polite"
+          >
             <div className="usr__panelHeader">
               <div className="usr__panelTitle">
                 {formCrear ? "Nuevo usuario" : "Editar usuario"}
@@ -315,6 +370,24 @@ export default function GestionUsuariosPagina() {
                 </div>
               )}
 
+              {formEditar && (
+                <div className="form-group">
+                  <label className="label" htmlFor="nuevaClave">
+                    Nueva contraseña (opcional)
+                  </label>
+                  <div className="input-wrap">
+                    <input
+                      id="nuevaClave"
+                      className="input"
+                      type="password"
+                      value={nuevaClave}
+                      onChange={(e) => setNuevaClave(e.target.value)}
+                      placeholder="Dejar vacío para no cambiar"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="form-group">
                 <label className="label" htmlFor="rol">
                   Rol
@@ -380,7 +453,9 @@ export default function GestionUsuariosPagina() {
               <article
                 key={u.id}
                 role="listitem"
-                className="usr__card is-toned"
+                className={`usr__card is-toned ${
+                  u.activo ? "" : "usr__card--inactive"
+                }`}
                 data-reveal={String((idx % 5) + 1)}
               >
                 <header className="usr__cardHeader">
@@ -389,6 +464,7 @@ export default function GestionUsuariosPagina() {
                     <span className="badge badge--rol">
                       {u.rol}
                       {u.taller && ` · Taller: ${u.taller.nombre}`}
+                      {!u.activo && " · INACTIVO"}
                     </span>
                   </div>
                   <div className="usr__cardActions">
@@ -398,12 +474,21 @@ export default function GestionUsuariosPagina() {
                     >
                       ✏️ Editar
                     </button>
-                    <button
-                      className="btnGhost"
-                      onClick={() => pedirConfirmacionEliminar(u.id)}
-                    >
-                      🗑️ Eliminar
-                    </button>
+                    {u.activo ? (
+                      <button
+                        className="btnGhost"
+                        onClick={() => pedirConfirmacionDesactivar(u.id)}
+                      >
+                        🚫 Desactivar
+                      </button>
+                    ) : (
+                      <button
+                        className="btnGhost"
+                        onClick={() => activarUsuario(u.id)}
+                      >
+                        ✅ Activar
+                      </button>
+                    )}
                   </div>
                 </header>
 
@@ -422,6 +507,9 @@ export default function GestionUsuariosPagina() {
                         {new Date(u.creadoEn).toLocaleDateString("es-PE")}
                       </span>
                     )}
+                    <span className="metaItem">
+                      Estado: {u.activo ? "Activo" : "Inactivo"}
+                    </span>
                   </div>
                 </div>
               </article>
@@ -437,18 +525,18 @@ export default function GestionUsuariosPagina() {
       {deleteId !== null && (
         <div className="confirmBar" role="alert" aria-live="assertive">
           <div className="confirmBar__text">
-            ¿Seguro que quieres eliminar este usuario?
+            ¿Seguro que quieres desactivar este usuario?
           </div>
           <div className="confirmBar__actions">
             <button
-              onClick={confirmarEliminar}
+              onClick={confirmarDesactivar}
               disabled={deleting}
               className="confirmBar__btn confirmBar__btn--danger"
             >
-              {deleting ? "Eliminando…" : "Sí, eliminar"}
+              {deleting ? "Desactivando…" : "Sí, desactivar"}
             </button>
             <button
-              onClick={cancelarEliminar}
+              onClick={cancelarDesactivar}
               disabled={deleting}
               className="confirmBar__btn confirmBar__btn--ghost"
             >

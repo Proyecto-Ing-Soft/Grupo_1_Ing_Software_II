@@ -1,32 +1,35 @@
 // src/features/gestion/api.ts
-import { getJSON, postJSON, putJSON, delJSON } from '../../core/http/_http';
+import { getJSON, postJSON, putJSON, delJSON } from "../../core/http/_http";
 
 // Definimos un tipo local SOLO para taller:
-export type TallerRol = 'ADMIN' | 'MECANICO';
+export type TallerRol = "ADMIN" | "MECANICO";
 
 export type UsuarioTaller = {
   id: number;
   nombreCompleto: string;
   correo: string;
   rol: TallerRol;
+  activo: boolean;
   creadoEn?: string;
-  taller?: {
-    id: number;
-    nombre: string;
-  } | null;
+  taller?:
+    | {
+        id: number;
+        nombre: string;
+      }
+    | null;
 };
 
 export type CrearUsuarioTallerDto = {
   nombreCompleto: string;
   correo: string;
   clave: string;
-  rol: TallerRol;      // ← sólo ADMIN | MECANICO
+  rol: TallerRol; // ← sólo ADMIN | MECANICO
 };
 
 export type ActualizarUsuarioTallerDto = {
   nombreCompleto?: string;
   correo?: string;
-  rol?: TallerRol;     // ← sólo ADMIN | MECANICO
+  rol?: TallerRol; // ← sólo ADMIN | MECANICO
 };
 
 export const apiUsuarios = {
@@ -38,13 +41,46 @@ export const apiUsuarios = {
   crearTaller: (payload: CrearUsuarioTallerDto, token?: string) =>
     postJSON<UsuarioTaller>(`/auth/taller`, payload, token),
 
-  actualizarTaller: (id: number, payload: ActualizarUsuarioTallerDto, token?: string) =>
-    putJSON<UsuarioTaller>(`/usuarios/taller/${id}`, payload, token),
+  actualizarTaller: (
+    id: number,
+    payload: ActualizarUsuarioTallerDto,
+    token?: string
+  ) => putJSON<UsuarioTaller>(`/usuarios/taller/${id}`, payload, token),
 
-  eliminarTaller: (id: number, token?: string) =>
-    delJSON<{ ok: true }>(`/usuarios/taller/${id}`, token),
+  // DESACTIVAR (soft delete)
+  desactivarTaller: async (id: number, token?: string) => {
+    const res = await delJSON<{ ok: true; usuario: UsuarioTaller }>(
+      `/usuarios/taller/${id}`,
+      token
+    );
+    return res.usuario;
+  },
 
-  // Fallbacks (por rol) – ahora backend ya filtra por taller del admin
+  // ACTIVAR de nuevo
+  activarTaller: async (id: number, token?: string) => {
+    const res = await putJSON<{ ok: true; usuario: UsuarioTaller }>(
+      `/usuarios/taller/${id}/activar`,
+      {},
+      token
+    );
+    return res.usuario;
+  },
+
+  // Cambiar contraseña
+  cambiarClaveTaller: async (
+    id: number,
+    payload: { nuevaClave: string },
+    token?: string
+  ) => {
+    const res = await putJSON<{ ok: true; usuario: UsuarioTaller }>(
+      `/usuarios/taller/${id}/clave`,
+      payload,
+      token
+    );
+    return res.usuario;
+  },
+
+  // Fallbacks (por rol) – backend filtrará por taller del admin
   listarAdmins: (token?: string) =>
     getJSON<UsuarioTaller[]>(`/usuarios?rol=ADMIN`, token),
 

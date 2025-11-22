@@ -11,7 +11,7 @@ export default function InicioProtegido() {
   const rol = sesion?.perfil?.rol ?? "";
   const rolClase = rol ? `role-${rol.toLowerCase()}` : "";
 
-  // ✅ Nombre del taller que viene desde el backend como perfil.taller.nombre
+  // Nombre del taller que viene desde el backend como perfil.taller.nombre
   const tallerActual: string | null = sesion?.perfil?.taller?.nombre ?? null;
 
   const esTaller = tieneRol(["ADMIN", "MECANICO"]);

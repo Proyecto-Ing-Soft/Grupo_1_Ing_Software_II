@@ -7,7 +7,6 @@ import { CitasController } from './citas.controller';
 import { NotificacionesModule } from '../../notificaciones/notificaciones/notificaciones.module';
 import { AccionesAuditoriaModule } from '../../auditoria/acciones/acciones-auditoria.module';
 
-// 🔹 IMPORTANTE: importar el módulo que exporta ConsumiblesService
 import { ConsumiblesModule } from '../../consumibles/consumibles.module';
 
 @Module({

@@ -13,7 +13,6 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
-  // 👆 ajusta la ruta si tu PrismaService está en otro lugar
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { EstadoCita } from '@prisma/client';
 import { Notificador } from '../../notificaciones/notificaciones/envio/notificador';
@@ -347,7 +346,7 @@ export class CitasService {
     }
 
     // 0) US-20: consumir stock de los consumibles usados (si se envían)
-    // ⚠️ Aquí asumimos que ConsumiblesService internamente valida el taller
+    // Aquí asumimos que ConsumiblesService internamente valida el taller
     // usando el mecánico (o recibe el taller explícito).
     if (dto?.consumos && dto.consumos.length > 0) {
       await this.consumiblesService.consumirEnMantenimiento(dto.consumos);

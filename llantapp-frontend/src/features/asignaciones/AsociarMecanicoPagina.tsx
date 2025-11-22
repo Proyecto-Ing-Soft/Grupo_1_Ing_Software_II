@@ -51,7 +51,9 @@ export default function AdminCitasPendientes() {
   const [citas, setCitas] = useState<CitaRow[]>([]);
   const [mecanicos, setMecanicos] = useState<MecanicoRow[]>([]);
   // permitimos undefined en el valor (sin problema)
-  const [seleccion, setSeleccion] = useState<Record<number, number | undefined>>({});
+  const [seleccion, setSeleccion] = useState<
+    Record<number, number | undefined>
+  >({});
   const [q, setQ] = useState("");
   const [okMsg, setOkMsg] = useState<string | null>(null);
   const [editandoId, setEditandoId] = useState<number | null>(null);
@@ -74,7 +76,9 @@ export default function AdminCitasPendientes() {
 
   // Animaciones de entrada (reveal)
   useEffect(() => {
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    const nodes = Array.from(
+      document.querySelectorAll<HTMLElement>(".reveal")
+    );
     const t = window.setTimeout(
       () => nodes.forEach((n) => n.classList.add("will-animate")),
       0
@@ -113,7 +117,11 @@ export default function AdminCitasPendientes() {
 
     return activas.filter((c) => {
       const nombreServicio = (c.servicio?.nombre ?? "").toLowerCase();
-      const placa = (c.vehiculo?.placa ?? c.placaPreliminar ?? "").toLowerCase();
+      const placa = (
+        c.vehiculo?.placa ??
+        c.placaPreliminar ??
+        ""
+      ).toLowerCase();
 
       return (
         String(c.id).includes(s) ||
@@ -130,9 +138,7 @@ export default function AdminCitasPendientes() {
 
     // idFinal: garantizamos que sea un number
     const idFinal =
-      mecIdSeleccionado ??
-      citaActual?.mecanicoId ??
-      citaActual?.mecanico?.id;
+      mecIdSeleccionado ?? citaActual?.mecanicoId ?? citaActual?.mecanico?.id;
 
     if (!idFinal) {
       alert("Selecciona un mecánico");
@@ -141,7 +147,6 @@ export default function AdminCitasPendientes() {
 
     setOkMsg(null);
 
-    // 👇 aquí usamos SIEMPRE un number (idFinal), no number | undefined
     await apiCitas.asignar(citaId, idFinal);
 
     setCitas((prev) =>

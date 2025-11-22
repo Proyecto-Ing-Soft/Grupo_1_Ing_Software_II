@@ -80,7 +80,11 @@ export default function MantenimientosVencidosPagina() {
         </div>
       </header>
 
-      {cargando && <p className="mant-vencidos__info">Cargando mantenimientos vencidos…</p>}
+      {cargando && (
+        <p className="mant-vencidos__info">
+          Cargando mantenimientos vencidos…
+        </p>
+      )}
 
       {error && (
         <div className="error-message" role="alert">

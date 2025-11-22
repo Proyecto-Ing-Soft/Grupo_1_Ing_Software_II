@@ -40,7 +40,11 @@ export class AuthService {
   // Login: valida credenciales y emite tokens
   async login(dto: LoginDto) {
     const u = await this.usuarios.buscarPorCorreo(dto.correo);
-    if (!u) throw new UnauthorizedException('Credenciales inválidas');
+
+    // ⬅️ Si no existe o está desactivado, no puede loguear
+    if (!u || (u as any).activo === false) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
 
     const ok = await this.encriptador.comparar(dto.clave, (u as any).hashClave);
     if (!ok) throw new UnauthorizedException('Credenciales inválidas');

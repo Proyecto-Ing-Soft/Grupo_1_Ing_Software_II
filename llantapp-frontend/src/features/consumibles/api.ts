@@ -22,7 +22,7 @@ export type ConsumibleLite = {
   nombre: string;
   unidad: string;
   stockActual: number;
-  stockMinimo: number;  // ⬅️ alineado con backend
+  stockMinimo: number;  // alineado con backend
   activo?: boolean;
 };
 

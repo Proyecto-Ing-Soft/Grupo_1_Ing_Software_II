@@ -80,8 +80,6 @@ export class ConsumiblesController {
   async crear(@Body() dto: CrearConsumibleDto, @Req() req: any) {
     this.assertAdmin(req);
     const adminId = this.getUserId(req);
-    // 🔴 ANTES: this.svc.crear(dto, adminId)
-    // ✅ AHORA:
     return this.svc.crear(adminId, dto);
   }
 
@@ -93,8 +91,6 @@ export class ConsumiblesController {
   ) {
     this.assertAdmin(req);
     const adminId = this.getUserId(req);
-    // 🔴 ANTES: this.svc.actualizar(id, dto, adminId)
-    // ✅ AHORA:
     return this.svc.actualizar(id, adminId, dto);
   }
 

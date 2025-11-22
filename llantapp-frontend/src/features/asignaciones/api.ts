@@ -42,9 +42,13 @@ export type MecanicoRow = {
 
 // === API USUARIOS (solo lo que pide el componente) ===
 export const apiUsuarios = {
-  // GET /usuarios?rol=MECANICO | ADMIN | CLIENTE
+  // GET /usuarios?rol=MECANICO&soloActivos=true
   listarPorRol: (
     rol: "ADMIN" | "MECANICO" | "CLIENTE",
-    token?: string,
-  ) => getJSON<MecanicoRow[]>(`/usuarios?rol=${rol}`, token),
+    token?: string
+  ) =>
+    getJSON<MecanicoRow[]>(
+      `/usuarios?rol=${rol}&soloActivos=true`,
+      token
+    ),
 };
