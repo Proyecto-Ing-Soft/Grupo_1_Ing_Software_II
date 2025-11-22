@@ -4,7 +4,8 @@
   "scripts": {
     "start:dev": "nest start --watch",
     "prisma:dev": "prisma migrate dev",
-    "prisma:gen": "prisma generate"
+    "prisma:gen": "prisma generate",
+    "test": "jest"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.20",
@@ -36,11 +37,31 @@
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.9",
     "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.7.0",
     "@types/nodemailer": "^7.0.2",
+    "jest": "^29.7.0",
     "prisma": "^6.17.1",
     "prisma-erd-generator": "^2.1.0",
+    "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
   }
 }

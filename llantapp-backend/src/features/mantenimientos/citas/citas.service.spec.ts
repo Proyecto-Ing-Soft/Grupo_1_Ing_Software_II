@@ -101,8 +101,9 @@ describe('CitasService', () => {
       
       // 3. Simular la creación de la cita en BD
       prisma.citaMantenimiento.create.mockResolvedValue({
-        ...dto
+        
         id: 500,
+        ...dto,
         programadaPara: new Date(ymd),
         estado: EstadoCita.SOLICITADA,
         clienteId,

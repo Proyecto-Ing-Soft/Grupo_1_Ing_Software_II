@@ -11,7 +11,8 @@
     "dev:back": "npm run start:dev -w llantapp-backend",
     "dev:front": "npm run dev -w llantapp-frontend",
     "open:front": "powershell -NoProfile -Command \"Start-Sleep -Seconds 2; Start-Process http://localhost:5173\"",
-    "dev": "npm run db:prepare && concurrently -n FRONT,BACK,BROWSER -c auto \"npm run dev:front\" \"npm run dev:back\" \"npm run open:front\""
+    "dev": "npm run db:prepare && concurrently -n FRONT,BACK,BROWSER -c auto \"npm run dev:front\" \"npm run dev:back\" \"npm run open:front\"",
+    "test:backend": "npm run test -w llantapp-backend"
   },
   "devDependencies": {
     "@types/nodemailer": "^7.0.2",
