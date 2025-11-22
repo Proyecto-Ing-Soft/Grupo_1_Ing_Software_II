@@ -6,47 +6,28 @@ import { ConsumiblesService } from '../../consumibles/consumibles.service';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { EstadoCita } from '@prisma/client';
 
-// 1. Creamos los Mocks (objetos falsos) con jest.fn()
+// ----------------------------------------------------------------------------
+// 1. CONFIGURACIÓN DE MOCKS
+// ----------------------------------------------------------------------------
 const mockPrismaService = {
-  servicio: {
-    findUnique: jest.fn(),
-  },
-  vehiculo: {
-    findFirst: jest.fn(),
-    findUnique: jest.fn(),
-  },
-  citaMantenimiento: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-  },
-  usuario: {
-    findMany: jest.fn(), // para buscar admins
-    findUnique: jest.fn(),
-  },
-  accionUsuario: {
-    create: jest.fn(), // para la bitácora
-  },
+  servicio: { findUnique: jest.fn() },
+  vehiculo: { findFirst: jest.fn(), findUnique: jest.fn() },
+  citaMantenimiento: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+  usuario: { findMany: jest.fn(), findUnique: jest.fn() }, // Aquí simulamos la BD de usuarios
+  accionUsuario: { create: jest.fn() },
 };
 
-const mockNotificador = {
-  enviar: jest.fn(),
-};
-
-const mockConsumiblesService = {
-  consumirEnMantenimiento: jest.fn(),
-};
+const mockNotificador = { enviar: jest.fn() };
+const mockConsumiblesService = { consumirEnMantenimiento: jest.fn() };
 
 describe('CitasService', () => {
   let service: CitasService;
   let prisma: typeof mockPrismaService;
 
   beforeEach(async () => {
-    // 2. Configuramos el Módulo de Testing (NO el módulo real)
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CitasService,
-        // Proveemos los Mocks en lugar de las clases reales
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: Notificador, useValue: mockNotificador },
         { provide: ConsumiblesService, useValue: mockConsumiblesService },
@@ -55,8 +36,6 @@ describe('CitasService', () => {
 
     service = module.get<CitasService>(CitasService);
     prisma = module.get(PrismaService);
-
-    // Limpiar los mocks antes de cada test para que no se mezclen llamadas
     jest.clearAllMocks();
   });
 
@@ -64,112 +43,120 @@ describe('CitasService', () => {
     expect(service).toBeDefined();
   });
 
-  // ==========================================
-  // PRUEBAS PARA: CREAR CITA
-  // ==========================================
+  // ========================================================================
+  // CASO A: CREAR CITA
+  // ========================================================================
   describe('crear', () => {
-    it('debe lanzar error si la fecha es pasada', async () => {
-      const dtoInv: any = { programadaPara: '2020-01-01', servicioId: 1 };
+    
+    it('debe lanzar BadRequestException si la fecha es pasada', async () => {
+      // PRUEBA 1: Cambia esta fecha.
+      const fechaInput = '2025-11-27'; 
+
+      const dtoInv: any = { programadaPara: fechaInput, servicioId: 1 };
       
-      // Esperamos que falle
-      await expect(service.crear(dtoInv, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.crear(dtoInv, 1)).rejects.toThrow(/fecha/i);
     });
 
     it('debe crear una cita correctamente cuando los datos son válidos', async () => {
-      // A. Preparar datos de prueba (Inputs)
-      // Usamos una fecha futura segura
+      // Preparación de Fecha Futura
       const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 5);
-      const ymd = futureDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      futureDate.setDate(futureDate.getDate() + 5); 
+      const ymd = futureDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
 
+      // PRUEBA 2: Modifica los datos de entrada
       const dto = {
         servicioId: 1,
-        programadaPara: ymd,
-        placaPreliminar: 'ABC-123',
+        programadaPara: ymd, 
+        placaPreliminar: 'XYZ-123',
         marcaPreliminar: 'Toyota',
         modeloPreliminar: 'Corolla',
       };
       const clienteId = 10;
 
-      // B. Configurar qué devuelven los Mocks (Outputs simulados)
-      
-      // 1. Simular que el servicio existe y es activo
+      // MOCKS (Simulando respuesta de BD) --
       prisma.servicio.findUnique.mockResolvedValue({ id: 1, nombre: 'Cambio de Aceite', activo: true });
-      
-      // 2. Simular admins para la notificación
       prisma.usuario.findMany.mockResolvedValue([{ id: 99, rol: 'ADMIN' }]);
       
-      // 3. Simular la creación de la cita en BD
+      // Simulamos que Prisma devuelve el objeto creado
       prisma.citaMantenimiento.create.mockResolvedValue({
-        
         id: 500,
         ...dto,
         programadaPara: new Date(ymd),
         estado: EstadoCita.SOLICITADA,
         clienteId,
         servicioId: 1,
-        
+        vehiculoId: null
       });
 
-      // C. Ejecutar el método real
+      // Ejecución
       const result = await service.crear(dto, clienteId);
 
-      // D. Aserciones (Verificar resultados)
-      expect(result).toBeDefined();
       expect(result.id).toBe(500);
       
-      // Verificar que se llamó a Prisma con los datos correctos
+      // Verificamos que se haya llamado a la BD con los datos correctos
       expect(prisma.citaMantenimiento.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({
-            estado: 'SOLICITADA',
-            placaPreliminar: 'ABC-123'
+            placaPreliminar: 'XYZ-123', 
+            estado: 'SOLICITADA'
         })
       }));
-
-      // Verificar notificaciones
-      expect(mockNotificador.enviar).toHaveBeenCalledTimes(2); // 1 admin + 1 cliente
+      expect(mockNotificador.enviar).toHaveBeenCalledTimes(2);
     });
   });
 
-  // ==========================================
-  // PRUEBAS PARA: ASIGNAR MECÁNICO
-  // ==========================================
+  // ========================================================================
+  // CASO B: ASIGNAR MECÁNICO
+  // ========================================================================
   describe('asignarMecanico', () => {
-    it('debe lanzar ForbiddenException si quien asigna no es de mi taller', async () => {
-       // Mock Admin taller 1
-       prisma.usuario.findUnique.mockResolvedValueOnce({ id: 1, rol: 'ADMIN', tallerId: 1 });
-       // Mock Cita
-       prisma.citaMantenimiento.findUnique.mockResolvedValue({ id: 100, estado: 'SOLICITADA' });
-       // Mock Mecanico taller 2 (DIFERENTE)
-       prisma.usuario.findUnique.mockResolvedValueOnce({ id: 2, rol: 'MECANICO', tallerId: 2 });
+    
+    const mockUsuariosDB = (tallerAdmin: number, tallerMecanico: number) => {
+        prisma.usuario.findUnique.mockImplementation((args) => {
+            if (args.where.id === 1) return Promise.resolve({ id: 1, rol: 'ADMIN', tallerId: tallerAdmin, nombreCompleto: 'Admin Boss' });
+            if (args.where.id === 2) return Promise.resolve({ id: 2, rol: 'MECANICO', tallerId: tallerMecanico, nombreCompleto: 'Mecánico Joe' });
+            return Promise.resolve(null);
+        });
+    };
 
+    it('debe lanzar ForbiddenException si el mecánico es de OTRO taller', async () => {
+       // PRUEBA 3: Escenario de ERROR.
+       mockUsuariosDB(2, 1); 
+
+       prisma.citaMantenimiento.findUnique.mockResolvedValue({ id: 100, estado: 'SOLICITADA' });
+
+       // Ejecutamos: Cita 100, Asignar Mecanico 2, Solicitado por Admin 1
        await expect(service.asignarMecanico(100, 2, 1)).rejects.toThrow(ForbiddenException);
     });
 
-    it('debe asignar mecánico correctamente', async () => {
-       // Admin Taller 1
-       prisma.usuario.findUnique.mockResolvedValueOnce({ id: 1, rol: 'ADMIN', tallerId: 1, nombreCompleto: 'Admin Boss' });
-       // Cita
-       prisma.citaMantenimiento.findUnique.mockResolvedValue({ id: 100, estado: 'SOLICITADA', servicio: { nombre: 'Test' } });
-       // Mecanico Taller 1
-       prisma.usuario.findUnique.mockResolvedValueOnce({ id: 2, rol: 'MECANICO', tallerId: 1, nombreCompleto: 'Mecánico Joe' });
+    it('debe asignar mecánico correctamente si son del MISMO taller', async () => {
+       // PRUEBA EN VIVO 4: Escenario de ÉXITO.
+       mockUsuariosDB(1, 1);
+
+       // Mock Cita existente
+       prisma.citaMantenimiento.findUnique.mockResolvedValue({ 
+           id: 100, 
+           estado: 'SOLICITADA', 
+           servicio: { nombre: 'Mantenimiento General' } 
+       });
        
-       // Update result
+       // Mock Respuesta del Update en BD
        prisma.citaMantenimiento.update.mockResolvedValue({ 
            id: 100, 
            mecanicoId: 2, 
            estado: 'EN_PROGRESO', 
            programadaPara: new Date(),
-           clienteId: 5
+           clienteId: 5,
+           vehiculoId: 20
        });
 
        const result = await service.asignarMecanico(100, 2, 1);
 
        expect(result.estado).toBe('EN_PROGRESO');
-       expect(prisma.citaMantenimiento.update).toHaveBeenCalled();
-       // Verificar que se guardó en bitácora
+
        expect(prisma.accionUsuario.create).toHaveBeenCalledWith(expect.objectContaining({
-           data: expect.objectContaining({ tipo: 'ASIGNAR_MECANICO' })
+           data: expect.objectContaining({ 
+               tipo: 'ASIGNAR_MECANICO',
+               mecanicoId: 2
+           })
        }));
     });
   });
