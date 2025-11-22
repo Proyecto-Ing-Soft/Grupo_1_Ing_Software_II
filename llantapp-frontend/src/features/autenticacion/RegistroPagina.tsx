@@ -7,6 +7,7 @@ import { Rol as RolApi } from "./api";
 import HeaderPublico from "../../paginas/inicio-publico/HeaderPublico";
 
 import { apiSolicitudesTaller } from "../solicitudes-taller/api";
+import { apiTalleres, TallerLite } from "../talleres/api";
 
 import "../../features/autenticacion/authRegister.css";
 import "./authAuth.css";
@@ -29,12 +30,6 @@ function validarEmail(v: string) {
 function soloDigitos(v: string) {
   return /^[0-9]+$/.test(v);
 }
-
-// 🔹 Por ahora, lista fija de talleres (puedes reemplazar luego por un API)
-const TALLERES_FIJOS = [
-  { id: 1, nombre: "Motor Master" },
-  // { id: 2, nombre: "Otro Taller" },
-];
 
 export default function RegistroPagina() {
   const params = useParams();
@@ -79,6 +74,9 @@ function RegistroCliente({
     // 🔹 guardamos el id del taller como string para el <select>
     tallerId: "",
   });
+  const [talleres, setTalleres] = useState<TallerLite[]>([]);
+  const [cargandoTalleres, setCargandoTalleres] = useState(false);
+
   const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
@@ -88,12 +86,31 @@ function RegistroCliente({
   const REDIRECT_DELAY = 1200;
   const timeoutRef = useRef<number | null>(null);
 
+  // limpiar timeout al desmontar
   useEffect(
     () => () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     },
     []
   );
+
+  // cargar talleres desde backend
+  useEffect(() => {
+    if (rolUi !== "cliente") return;
+
+    setCargandoTalleres(true);
+    apiTalleres
+      .listarLite()
+      .then((data) => {
+        setTalleres(data || []);
+      })
+      .catch(() => {
+        setFormErr("No se pudieron cargar los talleres. Intenta de nuevo.");
+      })
+      .finally(() => {
+        setCargandoTalleres(false);
+      });
+  }, [rolUi]);
 
   const onChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -110,6 +127,7 @@ function RegistroCliente({
     e.preventDefault();
     setFormErr(null);
     setFieldErr({});
+    setOk(false);
 
     // 🔹 Parseamos el tallerId como número (o undefined)
     const tallerIdNum = form.tallerId
@@ -139,13 +157,14 @@ function RegistroCliente({
       fe["tallerId"] = "Selecciona el taller donde te atienden.";
     }
 
-    if (Object.keys(fe).length) {
+    // ⬇️ importante: también chequeamos parsed.success
+    if (!parsed.success || Object.keys(fe).length) {
       setFieldErr(fe);
       setFormErr(Object.values(fe)[0] ?? "Datos inválidos.");
       return;
     }
 
-    // En este punto parsed.success es true
+    // En este punto parsed.success === true, por lo tanto parsed.data NO es undefined
     const datos = parsed.data;
 
     try {
@@ -153,8 +172,8 @@ function RegistroCliente({
         nombreCompleto: datos.nombreCompleto,
         correo: datos.correo,
         clave: datos.clave,
-        rol: rolApi,          // 🔹 rol se manda aquí
-        tallerId: tallerIdNum // 🔹 y el taller fijo aquí
+        rol: rolApi, // 🔹 rol se manda aquí
+        tallerId: tallerIdNum, // 🔹 y el taller elegido aquí
       });
 
       setOk(true);
@@ -326,9 +345,16 @@ function RegistroCliente({
                   aria-describedby={
                     fieldErr["tallerId"] ? "err-tallerId" : undefined
                   }
+                  disabled={cargandoTalleres || talleres.length === 0}
                 >
-                  <option value="">Selecciona tu taller…</option>
-                  {TALLERES_FIJOS.map((t) => (
+                  <option value="">
+                    {cargandoTalleres
+                      ? "Cargando talleres…"
+                      : talleres.length === 0
+                      ? "No hay talleres disponibles"
+                      : "Selecciona tu taller…"}
+                  </option>
+                  {talleres.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.nombre}
                     </option>

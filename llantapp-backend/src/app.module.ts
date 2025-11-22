@@ -21,6 +21,7 @@ import { SolicitudesModule } from './features/solicitudes/solicitudes/solicitude
 import { IntervencionesExternasModule } from './features/intervenciones-externas/intervenciones-externas.module';
 import { ConsumiblesModule } from './features/consumibles/consumibles.module';
 import { SolicitudesTallerModule } from './features/solicitudes-taller/solicitudes-taller.module';
+import { TalleresModule } from './features/talleres/talleres.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SolicitudesTallerModule } from './features/solicitudes-taller/solicitud
     IntervencionesExternasModule, // Intervenciones externas sprint 2
     ConsumiblesModule, // SPRINT 2 DE CONSUMIBLES
      SolicitudesTallerModule,       // Solicitudes de registro de nuevos talleres (US-29)
+     TalleresModule,
 
     CatalogoServiciosModule, // Catálogo + habilitación de mecánicos (US-06)
     MailerModule,         // Envío de correos
