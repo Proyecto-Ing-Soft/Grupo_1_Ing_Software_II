@@ -93,12 +93,15 @@ export default function GestionUsuariosPagina() {
   const filtrados = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return items;
-    return items.filter(
-      (u) =>
-        u.nombreCompleto.toLowerCase().includes(s) ||
-        u.correo.toLowerCase().includes(s) ||
-        u.rol.toLowerCase().includes(s)
-    );
+    return items.filter((u) => {
+      const matchNombre = u.nombreCompleto.toLowerCase().includes(s);
+      const matchCorreo = u.correo.toLowerCase().includes(s);
+      const matchRol = u.rol.toLowerCase().includes(s);
+      const matchTaller = u.empresa?.nombre
+        ? u.empresa.nombre.toLowerCase().includes(s)
+        : false;
+      return matchNombre || matchCorreo || matchRol || matchTaller;
+    });
   }, [q, items]);
 
   const startCrear = () => {
@@ -131,7 +134,8 @@ export default function GestionUsuariosPagina() {
 
   const guardarCrear = async () => {
     if (!formCrear || !usuario?.token) return;
-    setErr(null); setOk(null);
+    setErr(null);
+    setOk(null);
     const val = esquemaUsuarioTallerCrear.safeParse(formCrear);
     if (!val.success) return setErr(val.error.issues?.[0]?.message || "Datos inválidos");
     try {
@@ -146,7 +150,8 @@ export default function GestionUsuariosPagina() {
 
   const guardarEditar = async () => {
     if (!formEditar || !usuario?.token || !editId) return;
-    setErr(null); setOk(null);
+    setErr(null);
+    setOk(null);
     const val = esquemaUsuarioTallerEditar.safeParse(formEditar);
     if (!val.success) return setErr(val.error.issues?.[0]?.message || "Datos inválidos");
     try {
@@ -189,7 +194,9 @@ export default function GestionUsuariosPagina() {
       <header className="usr__header usr__stack-lg">
         <div className="usr__titleWrap reveal" data-reveal="1">
           <h1 className="usr__title">Gestionar usuarios del taller</h1>
-          <p className="usr__sub">Crea, edita y elimina usuarios administradores o mecánicos.</p>
+          <p className="usr__sub">
+            Crea, edita y elimina usuarios administradores o mecánicos.
+          </p>
         </div>
 
         <div className="usr__toolbar reveal" data-reveal="2">
@@ -200,7 +207,9 @@ export default function GestionUsuariosPagina() {
               onClick={() => navigate("/inicio")}
               title="Volver al inicio"
             >
-              <span className="mc-icon" aria-hidden>⬅️</span>
+              <span className="mc-icon" aria-hidden>
+                ⬅️
+              </span>
               <span className="mc-btn__text">Volver al inicio</span>
             </button>
             <button type="button" className="mc-btn mc-btn--ghost" onClick={startCrear}>
@@ -215,7 +224,7 @@ export default function GestionUsuariosPagina() {
           <div className="input-wrap">
             <input
               className="input"
-              placeholder="Buscar por nombre, correo o rol…"
+              placeholder="Buscar por nombre, correo, rol o taller…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -225,7 +234,9 @@ export default function GestionUsuariosPagina() {
         {(formCrear || formEditar) && (
           <section className="usr__panel reveal" data-reveal="3" aria-live="polite">
             <div className="usr__panelHeader">
-              <div className="usr__panelTitle">{formCrear ? "Nuevo usuario" : "Editar usuario"}</div>
+              <div className="usr__panelTitle">
+                {formCrear ? "Nuevo usuario" : "Editar usuario"}
+              </div>
               <button type="button" className="btnGhost" onClick={cancelar}>
                 Cancelar
               </button>
@@ -233,7 +244,9 @@ export default function GestionUsuariosPagina() {
 
             <div className="usr__form">
               <div className="form-group">
-                <label className="label" htmlFor="nombreCompleto">Nombre</label>
+                <label className="label" htmlFor="nombreCompleto">
+                  Nombre
+                </label>
                 <div className="input-wrap">
                   <input
                     id="nombreCompleto"
@@ -241,15 +254,23 @@ export default function GestionUsuariosPagina() {
                     value={(formCrear ?? formEditar)?.nombreCompleto ?? ""}
                     onChange={(e) =>
                       formCrear
-                        ? setFormCrear((f) => ({ ...(f as CrearUsuarioTallerDto), nombreCompleto: e.target.value }))
-                        : setFormEditar((f) => ({ ...(f as ActualizarUsuarioTallerDto), nombreCompleto: e.target.value }))
+                        ? setFormCrear((f) => ({
+                            ...(f as CrearUsuarioTallerDto),
+                            nombreCompleto: e.target.value,
+                          }))
+                        : setFormEditar((f) => ({
+                            ...(f as ActualizarUsuarioTallerDto),
+                            nombreCompleto: e.target.value,
+                          }))
                     }
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label className="label" htmlFor="correo">Correo</label>
+                <label className="label" htmlFor="correo">
+                  Correo
+                </label>
                 <div className="input-wrap">
                   <input
                     id="correo"
@@ -258,8 +279,14 @@ export default function GestionUsuariosPagina() {
                     value={(formCrear ?? formEditar)?.correo ?? ""}
                     onChange={(e) =>
                       formCrear
-                        ? setFormCrear((f) => ({ ...(f as CrearUsuarioTallerDto), correo: e.target.value }))
-                        : setFormEditar((f) => ({ ...(f as ActualizarUsuarioTallerDto), correo: e.target.value }))
+                        ? setFormCrear((f) => ({
+                            ...(f as CrearUsuarioTallerDto),
+                            correo: e.target.value,
+                          }))
+                        : setFormEditar((f) => ({
+                            ...(f as ActualizarUsuarioTallerDto),
+                            correo: e.target.value,
+                          }))
                     }
                   />
                 </div>
@@ -267,7 +294,9 @@ export default function GestionUsuariosPagina() {
 
               {formCrear && (
                 <div className="form-group">
-                  <label className="label" htmlFor="clave">Contraseña inicial</label>
+                  <label className="label" htmlFor="clave">
+                    Contraseña inicial
+                  </label>
                   <div className="input-wrap">
                     <input
                       id="clave"
@@ -275,7 +304,10 @@ export default function GestionUsuariosPagina() {
                       type="password"
                       value={(formCrear as CrearUsuarioTallerDto).clave}
                       onChange={(e) =>
-                        setFormCrear((f) => ({ ...(f as CrearUsuarioTallerDto), clave: e.target.value }))
+                        setFormCrear((f) => ({
+                          ...(f as CrearUsuarioTallerDto),
+                          clave: e.target.value,
+                        }))
                       }
                     />
                   </div>
@@ -283,7 +315,9 @@ export default function GestionUsuariosPagina() {
               )}
 
               <div className="form-group">
-                <label className="label" htmlFor="rol">Rol</label>
+                <label className="label" htmlFor="rol">
+                  Rol
+                </label>
                 <div className="input-wrap">
                   <select
                     id="rol"
@@ -291,8 +325,14 @@ export default function GestionUsuariosPagina() {
                     value={(formCrear ?? formEditar)?.rol ?? "MECANICO"}
                     onChange={(e) =>
                       formCrear
-                        ? setFormCrear((f) => ({ ...(f as CrearUsuarioTallerDto), rol: e.target.value as TallerRol }))
-                        : setFormEditar((f) => ({ ...(f as ActualizarUsuarioTallerDto), rol: e.target.value as TallerRol }))
+                        ? setFormCrear((f) => ({
+                            ...(f as CrearUsuarioTallerDto),
+                            rol: e.target.value as TallerRol,
+                          }))
+                        : setFormEditar((f) => ({
+                            ...(f as ActualizarUsuarioTallerDto),
+                            rol: e.target.value as TallerRol,
+                          }))
                     }
                   >
                     <option value="ADMIN">ADMIN</option>
@@ -303,9 +343,21 @@ export default function GestionUsuariosPagina() {
 
               <div className="usr__formActions">
                 {formCrear ? (
-                  <button type="button" className="mc-btn mc-btn--gradient" onClick={guardarCrear}>💾 Crear</button>
+                  <button
+                    type="button"
+                    className="mc-btn mc-btn--gradient"
+                    onClick={guardarCrear}
+                  >
+                    💾 Crear
+                  </button>
                 ) : (
-                  <button type="button" className="mc-btn mc-btn--gradient" onClick={guardarEditar}>💾 Guardar</button>
+                  <button
+                    type="button"
+                    className="mc-btn mc-btn--gradient"
+                    onClick={guardarEditar}
+                  >
+                    💾 Guardar
+                  </button>
                 )}
               </div>
 
@@ -315,7 +367,12 @@ export default function GestionUsuariosPagina() {
           </section>
         )}
 
-        <div className="usr__grid reveal" data-reveal="4" role="list" aria-busy={cargando}>
+        <div
+          className="usr__grid reveal"
+          data-reveal="4"
+          role="list"
+          aria-busy={cargando}
+        >
           {cargando && <div className="usr__sub">Cargando…</div>}
           {!cargando &&
             filtrados.map((u, idx) => (
@@ -328,11 +385,24 @@ export default function GestionUsuariosPagina() {
                 <header className="usr__cardHeader">
                   <div className="badges">
                     <span className="badge badge--id">#{u.id}</span>
-                    <span className="badge badge--rol">{u.rol}</span>
+                    <span className="badge badge--rol">
+                      {u.rol}
+                      {u.empresa && ` · Taller: ${u.empresa.nombre}`}
+                    </span>
                   </div>
                   <div className="usr__cardActions">
-                    <button className="btnActionDark" onClick={() => startEditar(u)}>✏️ Editar</button>
-                    <button className="btnGhost" onClick={() => pedirConfirmacionEliminar(u.id)}>🗑️ Eliminar</button>
+                    <button
+                      className="btnActionDark"
+                      onClick={() => startEditar(u)}
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button
+                      className="btnGhost"
+                      onClick={() => pedirConfirmacionEliminar(u.id)}
+                    >
+                      🗑️ Eliminar
+                    </button>
                   </div>
                 </header>
 
@@ -340,9 +410,15 @@ export default function GestionUsuariosPagina() {
                   <div className="usr__nombre">{u.nombreCompleto}</div>
                   <div className="usr__meta">
                     <span className="metaItem">Correo: {u.correo}</span>
+                    {u.empresa && (
+                      <span className="metaItem">
+                        Taller: {u.empresa.nombre}
+                      </span>
+                    )}
                     {u.creadoEn && (
                       <span className="metaItem">
-                        Creado: {new Date(u.creadoEn).toLocaleDateString("es-PE")}
+                        Creado:{" "}
+                        {new Date(u.creadoEn).toLocaleDateString("es-PE")}
                       </span>
                     )}
                   </div>
@@ -350,19 +426,31 @@ export default function GestionUsuariosPagina() {
               </article>
             ))}
           {!cargando && filtrados.length === 0 && (
-            <div className="usr__sub">No hay usuarios que coincidan con la búsqueda.</div>
+            <div className="usr__sub">
+              No hay usuarios que coincidan con la búsqueda.
+            </div>
           )}
         </div>
       </section>
 
       {deleteId !== null && (
         <div className="confirmBar" role="alert" aria-live="assertive">
-          <div className="confirmBar__text">¿Seguro que quieres eliminar este usuario?</div>
+          <div className="confirmBar__text">
+            ¿Seguro que quieres eliminar este usuario?
+          </div>
           <div className="confirmBar__actions">
-            <button onClick={confirmarEliminar} disabled={deleting} className="confirmBar__btn confirmBar__btn--danger">
+            <button
+              onClick={confirmarEliminar}
+              disabled={deleting}
+              className="confirmBar__btn confirmBar__btn--danger"
+            >
               {deleting ? "Eliminando…" : "Sí, eliminar"}
             </button>
-            <button onClick={cancelarEliminar} disabled={deleting} className="confirmBar__btn confirmBar__btn--ghost">
+            <button
+              onClick={cancelarEliminar}
+              disabled={deleting}
+              className="confirmBar__btn confirmBar__btn--ghost"
+            >
               Cancelar
             </button>
           </div>

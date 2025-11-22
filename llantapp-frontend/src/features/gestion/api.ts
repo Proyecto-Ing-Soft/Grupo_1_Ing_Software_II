@@ -8,8 +8,12 @@ export type UsuarioTaller = {
   id: number;
   nombreCompleto: string;
   correo: string;
-  rol: TallerRol;      // ← sólo ADMIN | MECANICO
+  rol: TallerRol;
   creadoEn?: string;
+  empresa?: {
+    id: number;
+    nombre: string; // o razonSocial
+  } | null;
 };
 
 export type CrearUsuarioTallerDto = {

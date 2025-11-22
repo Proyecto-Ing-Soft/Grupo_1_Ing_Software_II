@@ -1,4 +1,14 @@
-import { BadRequestException, Body, Controller, Get, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { Response, Request } from 'express';
 
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -31,8 +41,11 @@ export class AuthController {
     @Body() body: { correo: string; clave: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const tokens = await this.auth.login({ correo: body.correo, clave: body.clave } as any)
-      .catch(() => { throw new UnauthorizedException('Credenciales inválidas'); });
+    const tokens = await this.auth
+      .login({ correo: body.correo, clave: body.clave } as any)
+      .catch(() => {
+        throw new UnauthorizedException('Credenciales inválidas');
+      });
 
     res.cookie('rt', tokens.refreshToken, {
       httpOnly: true,
@@ -42,6 +55,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    // El frontend luego llama /auth/perfil para obtener datos + empresa
     return { accessToken: tokens.accessToken };
   }
 
@@ -49,12 +63,21 @@ export class AuthController {
   async refresh(@Req() req: Request & { cookies?: any; signedCookies?: any }) {
     const rt = (req.cookies?.rt || req.signedCookies?.rt) as string | undefined;
     if (!rt) throw new UnauthorizedException('Sin refresh token');
-    const dec = this.jwt.verificarRefresh(rt) as unknown as { sub: number; iat: number; exp: number };
+
+    const dec = this.jwt.verificarRefresh(rt) as unknown as {
+      sub: number;
+      iat: number;
+      exp: number;
+    };
+
     const u = await this.usuarios.buscarPorId(Number(dec.sub));
     if (!u) throw new UnauthorizedException('Usuario no encontrado');
 
     const payload: JwtPayloadAcceso = {
-      sub: u.id, rol: u.rol as any, nombreCompleto: u.nombreCompleto, correo: u.correo,
+      sub: u.id,
+      rol: u.rol as any,
+      nombreCompleto: u.nombreCompleto,
+      correo: u.correo,
     };
     const accessToken = this.jwt.emitirAccess(payload);
     return { accessToken };
@@ -66,7 +89,9 @@ export class AuthController {
     const user = req.user as JwtPayloadAcceso;
     const u = await this.usuarios.buscarPorId(Number(user.sub));
     if (!u) throw new UnauthorizedException('Usuario no encontrado');
-    return this.usuarios.aPublico(u);
+
+    // aPublico quita hashClave, pero mantiene empresa si viene del findUnique
+    return this.usuarios.aPublico(u as any);
   }
 
   @Post('logout')

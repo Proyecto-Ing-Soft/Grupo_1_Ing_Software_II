@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException,} from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma/prisma.service';
 import type { Usuario, Rol as PrismaRol } from '@prisma/client';
 import { Rol as AppRol } from '../../../common/enums/rol.enum';
@@ -35,7 +40,13 @@ export class UsuarioService {
   }
 
   async buscarPorId(id: number) {
-    return this.prisma.usuario.findUnique({ where: { id } });
+    // Incluimos la relación empresa para poder saber de qué taller es
+    return this.prisma.usuario.findUnique({
+      where: { id },
+      include: {
+        empresa: true, // si quieres solo algunos campos, cámbialo por select: { id: true, nombre: true }
+      },
+    });
   }
 
   // =========================
@@ -50,6 +61,8 @@ export class UsuarioService {
         correo: true,
         rol: true,
         creadoEn: true,
+        // ahora también trae el taller (empresa)
+        empresa: true,
       },
       orderBy: { nombreCompleto: 'asc' },
     });
@@ -64,6 +77,8 @@ export class UsuarioService {
         correo: true,
         rol: true,
         creadoEn: true,
+        // ahora también trae el taller (empresa)
+        empresa: true,
       },
       orderBy: { nombreCompleto: 'asc' },
     });
@@ -80,6 +95,8 @@ export class UsuarioService {
         correo: true,
         rol: true,
         creadoEn: true,
+        // ahora también trae el taller (empresa)
+        empresa: true,
       },
       orderBy: { nombreCompleto: 'asc' },
     });
@@ -180,8 +197,10 @@ export class UsuarioService {
     });
     if (!existente) throw new NotFoundException('Usuario no encontrado');
 
-    if (existente.rol !== toPrismaRol(AppRol.ADMIN) &&
-        existente.rol !== toPrismaRol(AppRol.MECANICO)) {
+    if (
+      existente.rol !== toPrismaRol(AppRol.ADMIN) &&
+      existente.rol !== toPrismaRol(AppRol.MECANICO)
+    ) {
       throw new BadRequestException('Solo se puede eliminar personal de taller');
     }
 
@@ -193,7 +212,8 @@ export class UsuarioService {
   // Mapper público
   // =========================
   aPublico(u: Usuario) {
-    const { hashClave, ...resto } = u;
+    const { hashClave, ...resto } = u as any;
+    // resto incluirá empresa si vino en el findUnique
     return resto;
   }
 }

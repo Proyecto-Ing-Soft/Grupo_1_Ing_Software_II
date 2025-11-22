@@ -1,6 +1,6 @@
 export interface JwtPayloadAcceso {
   sub: number;
-  rol: 'ADMIN' | 'MECANICO' | 'CLIENTE';
+  rol: 'ADMIN' | 'MECANICO' | 'CLIENTE' | 'OWNER';
   nombreCompleto: string;
   correo: string;
   iat?: number;

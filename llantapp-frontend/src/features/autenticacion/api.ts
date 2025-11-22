@@ -7,11 +7,16 @@ export interface Perfil {
   nombreCompleto: string;
   correo: string;
   rol: Rol;
+  // Taller asociado (empresa). Puede ser null si todavía no tiene taller.
+  empresa?: {
+    id: number;
+    nombre: string; // ajusta si en tu modelo se llama razonSocial
+  } | null;
 }
 
+// El login solo devuelve el accessToken; el perfil se obtiene con /auth/perfil
 export interface LoginResponse {
   accessToken: string;
-  perfil: Perfil;
 }
 
 export interface RefreshResponse {
