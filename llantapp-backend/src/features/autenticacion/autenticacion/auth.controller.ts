@@ -34,6 +34,7 @@ export class AuthController {
 
   @Post('registrar')
   registrar(@Body() dto: RegistrarUsuarioDto) {
+    // Registro “genérico”: clientes, owner, etc.
     return this.auth.registrar(dto);
   }
 
@@ -87,7 +88,7 @@ export class AuthController {
     const user = req.user as JwtPayloadAcceso;
     const u = await this.usuarios.buscarPorId(Number(user.sub));
     if (!u) throw new UnauthorizedException('Usuario no encontrado');
-    // ⬅️ aquí ahora viene también u.empresa (por el include de buscarPorId)
+    // ⬅️ aquí ya viene también u.taller por el include de buscarPorId
     return this.usuarios.aPublico(u);
   }
 
@@ -102,19 +103,41 @@ export class AuthController {
     return { ok: true };
   }
 
+  // ============================
+  // Crear personal de TALLER
+  // ============================
   @UseGuards(JwtAuthGuard, RolesGuard)
   @RolRequerido(Rol.ADMIN)
   @Post('taller')
-  async crearPersonalTaller(@Body() dto: RegistrarUsuarioDto) {
+  async crearPersonalTaller(
+    @Req() req: any,
+    @Body() dto: RegistrarUsuarioDto,
+  ) {
     const rol = dto.rol ?? Rol.MECANICO;
     if (rol !== Rol.ADMIN && rol !== Rol.MECANICO) {
       throw new BadRequestException('Rol inválido: debe ser ADMIN o MECANICO');
     }
-    return this.auth.registrar({
+
+    // 📌 Admin autenticado
+    const actorId = req.user?.sub ?? req.user?.id;
+    const actor = await this.usuarios.buscarPorId(Number(actorId));
+    if (!actor) {
+      throw new UnauthorizedException('Usuario autenticado no encontrado');
+    }
+
+    if (!actor.tallerId) {
+      throw new BadRequestException(
+        'El usuario autenticado no tiene un taller asociado',
+      );
+    }
+
+    // 📌 Crear ADMIN/MECÁNICO heredando el mismo tallerId
+    return this.usuarios.crearPersonalTaller({
       nombreCompleto: dto.nombreCompleto,
       correo: dto.correo,
       clave: dto.clave,
-      rol,
+      rol: rol as any, // ADMIN | MECANICO
+      tallerId: actor.tallerId,
     });
   }
 }
