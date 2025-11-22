@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../core/auth/AuthContext';
 
-type Rol = 'ADMIN' | 'MECANICO' | 'CLIENTE';
+type Rol = 'ADMIN' | 'MECANICO' | 'CLIENTE' | 'OWNER';
 
 export const RutaProtegidaPorRol: React.FC<{
   rolesPermitidos: Rol[];

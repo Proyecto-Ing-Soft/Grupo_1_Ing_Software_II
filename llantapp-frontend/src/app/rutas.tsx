@@ -42,6 +42,7 @@ import ResumenTecnicoPagina from '../features/mantenimientos/ResumenTecnicoPagin
 import RegistrarIntervencionExternaPagina from "../features/intervenciones-externas/RegistrarIntervencionExternaPagina";
 import AdminConsumiblesPagina from '../features/consumibles/AdminConsumiblesPagina';
 import MantenimientosVencidosPagina from "../features/mantenimientos/MantenimientosVencidosPagina";
+import { SolicitudesTallerOwnerPagina } from "../features/solicitudes-taller/SolicitudesTallerOwnerPagina";
 
 // GUARDS / LAYOUT
 import RedirigirSiAutenticado from '../common/componentes/RedirigirSiAutenticado';
@@ -306,6 +307,16 @@ const router = createBrowserRouter(
           element: (
             <RutaProtegidaPorRol rolesPermitidos={['ADMIN']}>
               <AdminCalificacionesPagina />
+            </RutaProtegidaPorRol>
+          ),
+        },
+
+        // OWNER: solicitudes de talleres
+        {
+          path: 'owner/solicitudes-taller',
+          element: (
+            <RutaProtegidaPorRol rolesPermitidos={['OWNER' as any]}>
+              <SolicitudesTallerOwnerPagina />
             </RutaProtegidaPorRol>
           ),
         },

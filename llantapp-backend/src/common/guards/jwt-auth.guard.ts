@@ -7,7 +7,7 @@ import * as jwt from 'jsonwebtoken';
 
 type JwtPayloadAcceso = {
   sub: number | string; // id del usuario
-  rol: 'ADMIN' | 'MECANICO' | 'CLIENTE';
+  rol: 'ADMIN' | 'MECANICO' | 'CLIENTE' | 'OWNER';
   nombreCompleto: string;
   correo: string;
   // agrega aquí audience/issuer si los usas

@@ -13,6 +13,7 @@ enum Rol {
   ADMIN
   MECANICO
   CLIENTE
+  OWNER
 }
 
 enum TipoMantenimiento {
@@ -33,6 +34,61 @@ enum EstadoNotificacion {
   LEIDA
 }
 
+enum EstadoSolicitudTaller {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+}
+
+// ===================
+// Multi-taller lógico
+// ===================
+model Taller {
+  id            Int       @id @default(autoincrement())
+  nombre        String
+  ruc           String?
+  direccion     String?
+  telefono      String?
+  emailContacto String?
+
+  // relación con usuarios del taller
+  usuarios Usuario[]
+
+  // trazabilidad
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  // opcional: solicitudes que dieron origen al taller
+  solicitudes SolicitudTaller[]
+}
+
+model SolicitudTaller {
+  id             Int      @id @default(autoincrement())
+  razonSocial    String
+  ruc            String
+  direccion      String?
+  telefono       String?
+  emailContacto  String
+  nombreContacto String
+
+  // datos propuestos para el admin inicial
+  adminNombre String
+  adminEmail  String
+
+  estado        EstadoSolicitudTaller @default(PENDIENTE)
+  motivoRechazo String?
+
+  // si ya fue aprobada y se creó el taller:
+  tallerId Int?
+  taller   Taller? @relation(fields: [tallerId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+}
+
+// ===================
+// Usuario / Empresa
+// ===================
 model Usuario {
   id             Int      @id @default(autoincrement())
   nombreCompleto String
@@ -41,6 +97,10 @@ model Usuario {
   rol            Rol      @default(CLIENTE)
   creadoEn       DateTime @default(now())
   actualizadoEn  DateTime @updatedAt
+
+  // Pertenencia a taller (multi-tenant lógico)
+  tallerId Int?
+  taller   Taller? @relation(fields: [tallerId], references: [id])
 
   // Si pertenece a una empresa
   empresaId Int?
@@ -66,22 +126,25 @@ model Usuario {
   // Intervenciones externas registradas por este usuario (cliente)
   intervencionesExternas IntervencionExterna[]
 
-  //acciones de auditoría donde participa este usuario (actor)
+  // Acciones de auditoría donde participa este usuario (actor)
   acciones AccionUsuario[]
 }
 
 model Empresa {
-  id          Int        @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   razonSocial String
-  ruc         String     @unique
-  creadoEn    DateTime   @default(now())
+  ruc         String   @unique
+  creadoEn    DateTime @default(now())
   usuarios    Usuario[]
   vehiculos   Vehiculo[]
 }
 
+// ===================
+// Vehículos
+// ===================
 model Vehiculo {
-  id     Int     @id @default(autoincrement())
-  placa  String  @unique
+  id     Int    @id @default(autoincrement())
+  placa  String @unique
   marca  String
   modelo String
   anio   Int
@@ -115,14 +178,16 @@ model Vehiculo {
   @@index([empresaId])
 }
 
-// === Catálogo de servicios ===
+// ===================
+// Catálogo de servicios
+// ===================
 model Servicio {
   id              Int      @id @default(autoincrement())
   nombre          String   @unique
   descripcion     String   @db.Text
   activo          Boolean  @default(true)
   precioSugerido  Decimal? @db.Decimal(10, 2) // opcional
-  duracionMinutos Int? // opcional
+  duracionMinutos Int?                      // opcional
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
@@ -130,16 +195,16 @@ model Servicio {
   // Mecánicos habilitados (muchos-a-muchos explícito)
   mecanicosHabilitados ServicioMecanico[]
 
-  // Citas que referencian este servicio (opcional en citas para compatibilidad)
+  // Citas que referencian este servicio
   citas CitaMantenimiento[]
 }
 
-// === Relación Servicio <-> Mecánico con habilitación ===
+// Relación Servicio <-> Mecánico con habilitación
 model ServicioMecanico {
-  servicioId    Int
-  mecanicoId    Int
-  habilitado    Boolean  @default(true)
-  creadoEn      DateTime @default(now())
+  servicioId Int
+  mecanicoId Int
+  habilitado Boolean  @default(true)
+  creadoEn   DateTime @default(now())
   actualizadoEn DateTime @default(now())
 
   servicio Servicio @relation(fields: [servicioId], references: [id])
@@ -149,7 +214,9 @@ model ServicioMecanico {
   @@index([mecanicoId])
 }
 
-// Cita de mantenimiento con snapshot de vehículo
+// ===================
+// Cita de mantenimiento
+// ===================
 model CitaMantenimiento {
   id                 Int               @id @default(autoincrement())
   tipo               TipoMantenimiento
@@ -203,6 +270,9 @@ model CitaMantenimiento {
   @@index([servicioId])
 }
 
+// ===================
+// Notificaciones
+// ===================
 model Notificacion {
   id        Int     @id @default(autoincrement())
   usuarioId Int
@@ -223,6 +293,9 @@ model Notificacion {
   @@index([citaId])
 }
 
+// ===================
+// Calificación de cita
+// ===================
 model CalificacionCita {
   id         Int      @id @default(autoincrement())
   citaId     Int      @unique
@@ -238,7 +311,9 @@ model CalificacionCita {
   @@index([clienteId])
 }
 
-// === Bitácora de acciones de usuario sobre citas ===
+// ===================
+// Bitácora de acciones
+// ===================
 model AccionUsuario {
   id Int @id @default(autoincrement())
 
@@ -267,6 +342,9 @@ model AccionUsuario {
   @@index([citaId])
 }
 
+// ===================
+// Intervenciones externas
+// ===================
 model IntervencionExterna {
   id Int @id @default(autoincrement())
 
@@ -288,18 +366,20 @@ model IntervencionExterna {
   @@index([clienteId, fecha])
 }
 
+// ===================
+// Consumibles
+// ===================
 model Consumible {
-  id            Int      @id @default(autoincrement())
-  nombre        String   @unique
-  unidad        String   // ej: "lt", "und", "kg"
-  stockActual   Int      @default(0)
-  stockMinimo   Int      @default(0)
-  descripcion   String?  @db.Text
-  activo        Boolean  @default(true)
-  creadoEn      DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  nombre      String   @unique
+  unidad      String   // ej: "lt", "und", "kg"
+  stockActual Int      @default(0)
+  stockMinimo Int      @default(0)
+  descripcion String?  @db.Text
+  activo      Boolean  @default(true)
+  creadoEn    DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 }
-
 
 // generator erd {
 //   provider = "prisma-erd-generator"

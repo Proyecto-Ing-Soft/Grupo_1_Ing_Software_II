@@ -5,7 +5,7 @@ import { apiCitas } from "../mantenimientos/api";
 import { apiVehiculos, VehiculoMin } from "./api";
 import "./registrarVehiculo.css";
 
-type Rol = "ADMIN" | "MECANICO" | "CLIENTE";
+type Rol = "ADMIN" | "MECANICO" | "CLIENTE" | "OWNER";
 type UsuarioRolLite = { id: number; nombreCompleto: string };
 
 type FormVehiculo = {

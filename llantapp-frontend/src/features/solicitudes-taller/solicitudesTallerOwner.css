@@ -1,0 +1,609 @@
+/* src/features/solicitudes-taller/solicitudesTallerOwner.css */
+
+.page--solicitudes-taller {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 32px 40px;
+}
+
+/* CABECERA */
+
+.page--solicitudes-taller .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 12px 16px 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #eef2ff, #ecfeff);
+  border: 1px solid #e2e8f0;
+}
+
+.page--solicitudes-taller .page-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.page--solicitudes-taller .page-header h1 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.page--solicitudes-taller .page-subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  max-width: 640px;
+}
+
+.page--solicitudes-taller .page-header-badge {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.page--solicitudes-taller .badge-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #e5e7eb;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* CONTENIDO PRINCIPAL */
+
+.page--solicitudes-taller .page-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ALERTAS */
+
+.page--solicitudes-taller .alert {
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+}
+
+.page--solicitudes-taller .alert-error {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.page--solicitudes-taller .alert-success {
+  background: #ecfdf3;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.page--solicitudes-taller .alert-success h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+/* alerta grande cuando se aprueba */
+
+.page--solicitudes-taller .alert-success--big {
+  padding: 16px 18px 18px;
+}
+
+.page--solicitudes-taller .alert-success-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.page--solicitudes-taller .alert-success-sub {
+  margin-top: 2px;
+  font-size: 0.9rem;
+  color: #166534;
+  opacity: 0.9;
+}
+
+/* GRID INFO ADMIN + PASSWORD */
+
+.page--solicitudes-taller .admin-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.page--solicitudes-taller .admin-info-block {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.page--solicitudes-taller .admin-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #15803d;
+  margin-bottom: 4px;
+}
+
+.page--solicitudes-taller .admin-value {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #14532d;
+}
+
+.page--solicitudes-taller .admin-link {
+  text-decoration: none;
+}
+
+.page--solicitudes-taller .admin-link:hover {
+  text-decoration: underline;
+}
+
+/* PASSWORD BOX */
+
+.page--solicitudes-taller .password-box {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+.page--solicitudes-taller .password-box-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.page--solicitudes-taller .password-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #a5b4fc;
+}
+
+.page--solicitudes-taller .password-hint {
+  font-size: 0.78rem;
+  color: #cbd5f5;
+}
+
+.page--solicitudes-taller .password-box-body {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.page--solicitudes-taller .password-code {
+  font-size: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #020617;
+  border: 1px solid #1e293b;
+  color: #e5e7eb;
+}
+
+.page--solicitudes-taller .password-warning {
+  font-size: 0.78rem;
+  color: #cbd5f5;
+}
+
+/* TOOLBAR (BUSCADOR + BOTÓN) */
+
+.page--solicitudes-taller .toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.page--solicitudes-taller .toolbar input[type="search"] {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #cbd5f1;
+  font-size: 0.9rem;
+  outline: none;
+  background: #f8fafc;
+}
+
+.page--solicitudes-taller .toolbar input[type="search"]::placeholder {
+  color: #9ca3af;
+}
+
+.page--solicitudes-taller .toolbar input[type="search"]:focus {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.15);
+  background: #ffffff;
+}
+
+/* BOTONES */
+
+.page--solicitudes-taller .btn {
+  border-radius: 999px;
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: #0f172a;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s ease, transform 0.05s ease,
+    box-shadow 0.15s ease;
+  opacity: 1; /* forzar sobre otros .btn globales */
+  pointer-events: auto;
+}
+
+.page--solicitudes-taller .btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.page--solicitudes-taller .btn:hover:not(:disabled) {
+  background: #020617;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
+}
+
+.page--solicitudes-taller .btn-approve {
+  background: #16a34a;
+}
+
+.page--solicitudes-taller .btn-approve:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.page--solicitudes-taller .btn-reject {
+  background: #ef4444;
+}
+
+.page--solicitudes-taller .btn-reject:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.page--solicitudes-taller .btn-outline {
+  background: transparent;
+  color: #0f172a !important;
+  border: 1px solid #cbd5f1;
+  box-shadow: none;
+}
+
+.page--solicitudes-taller .btn-outline:hover:not(:disabled) {
+  background: #e5f0ff;
+}
+
+.page--solicitudes-taller .btn-secondary {
+  background: #4b5563;
+}
+
+.page--solicitudes-taller .btn-secondary:hover:not(:disabled) {
+  background: #374151;
+}
+
+/* TABLA */
+
+.page--solicitudes-taller .table-wrapper {
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.page--solicitudes-taller .table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.page--solicitudes-taller .table thead {
+  background: #f8fafc;
+}
+
+.page--solicitudes-taller .table th,
+.page--solicitudes-taller .table td {
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+  color: #111827;
+}
+
+.page--solicitudes-taller .table th {
+  font-weight: 600;
+  color: #64748b;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.page--solicitudes-taller .table-striped tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
+
+.page--solicitudes-taller .badge-owner {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #ffffff !important;
+    color: #e5e7eb;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.page--solicitudes-taller .btn-approve {
+    background: #16a34a !important;
+}
+
+.page--solicitudes-taller .btn-reject {
+    background: #ef4444 !important;
+}
+
+.page--solicitudes-taller .li .small .label .span {
+    color: rgb(0, 0, 0) !important;
+}
+
+.page--solicitudes-taller .h1 .h2 .h3 .h4 .h5 .strong {
+    color: rgb(255, 0, 0) !important;
+}
+
+.page--solicitudes-taller .password-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #f2f4ff !important;
+}
+
+.page--solicitudes-taller .password-hint {
+    font-size: 0.78rem;
+    color: #cbd5f5 !important;
+}
+
+.page--solicitudes-taller .table-striped tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+.page--solicitudes-taller .table tbody tr:hover {
+  background: #eef2ff;
+}
+
+.page--solicitudes-taller .table td a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.page--solicitudes-taller .table td a:hover {
+  text-decoration: underline;
+}
+
+/* COLUMNAS ESPECÍFICAS */
+
+.page--solicitudes-taller .col-id {
+  width: 60px;
+}
+
+.page--solicitudes-taller .id-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.page--solicitudes-taller .col-razon {
+  min-width: 220px;
+}
+
+.page--solicitudes-taller .razon-nombre {
+  margin-bottom: 4px;
+  color: #0f172a !important;
+}
+
+.page--solicitudes-taller .razon-ruc {
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+}
+
+.page--solicitudes-taller .razon-dir {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.page--solicitudes-taller .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.page--solicitudes-taller .pill-soft {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.page--solicitudes-taller .pill-label {
+  font-weight: 500;
+}
+
+.page--solicitudes-taller .col-contacto,
+.page--solicitudes-taller .col-admin {
+  min-width: 200px;
+}
+
+.page--solicitudes-taller .contacto-nombre,
+.page--solicitudes-taller .admin-nombre {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.page--solicitudes-taller .contacto-mail,
+.page--solicitudes-taller .admin-mail {
+  font-size: 0.82rem;
+  margin-bottom: 4px;
+}
+
+.page--solicitudes-taller .contacto-tel {
+  margin-top: 2px;
+}
+
+.page--solicitudes-taller .col-creado {
+  min-width: 160px;
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+.page--solicitudes-taller .col-acciones {
+  width: 150px;
+}
+
+/* ACCIONES EN CELDA */
+
+.page--solicitudes-taller .actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ESTADO VACÍO */
+
+.page--solicitudes-taller .empty-state {
+  padding: 32px 24px;
+  border-radius: 16px;
+  border: 1px dashed #cbd5f1;
+  background: #f8fafc;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.page--solicitudes-taller .empty-hint {
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: #9ca3af;
+}
+
+/* MODAL */
+
+.page--solicitudes-taller .modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+}
+
+.page--solicitudes-taller .modal {
+  width: 100%;
+  max-width: 480px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 20px 22px 18px;
+  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.35);
+}
+
+.page--solicitudes-taller .modal h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #0f172a;
+}
+
+.page--solicitudes-taller .modal label {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.page--solicitudes-taller .modal textarea {
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5f1;
+  resize: vertical;
+  font-size: 0.9rem;
+  min-height: 96px;
+}
+
+.page--solicitudes-taller .modal textarea:focus {
+  outline: none;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.12);
+}
+
+.page--solicitudes-taller .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+  .page--solicitudes-taller {
+    padding-inline: 16px;
+  }
+
+  .page--solicitudes-taller .page-header {
+    flex-direction: column;
+  }
+
+  .page--solicitudes-taller .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page--solicitudes-taller .actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .page--solicitudes-taller .table-wrapper {
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+
+  .page--solicitudes-taller .password-box-body {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

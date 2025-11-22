@@ -1,3 +1,4 @@
+// llantapp-frontend/src/common/paginas/InicioProtegido.tsx
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "../../core/auth/AuthContext";
@@ -10,6 +11,14 @@ export default function InicioProtegido() {
   const rol = sesion?.perfil?.rol ?? "";
   const rolClase = rol ? `role-${rol.toLowerCase()}` : "";
 
+  // 👇 Intentamos obtener el nombre del taller desde el perfil
+  const tallerActual: string | null =
+    // según cómo estés enviando el DTO desde el backend,
+    // ajusta estos campos; están en modo "defensivo"
+    ((sesion as any)?.perfil?.tallerNombre as string | undefined) ??
+    ((sesion as any)?.perfil?.taller?.nombre as string | undefined) ??
+    null;
+
   const esTaller = tieneRol(["ADMIN", "MECANICO"]);
   const tituloHero = esTaller
     ? "Gestiona tu taller desde un solo lugar"
@@ -17,7 +26,8 @@ export default function InicioProtegido() {
 
   // Animación reveal robusta: visible por defecto y se aplica también a nodos insertados tras login
   useEffect(() => {
-    const scope = document.querySelector<HTMLElement>(".inicio-container") ?? document;
+    const scope =
+      document.querySelector<HTMLElement>(".inicio-container") ?? document;
 
     const applyReveal = (els: HTMLElement[]) => {
       els.forEach((el, i) => {
@@ -39,13 +49,15 @@ export default function InicioProtegido() {
     applyReveal(Array.from(scope.querySelectorAll<HTMLElement>(".reveal")));
 
     // 2) Observa inserciones (cuando llegan tarjetas por rol)
-    const mo = new MutationObserver(muts => {
+    const mo = new MutationObserver((muts) => {
       const added: HTMLElement[] = [];
-      muts.forEach(m => {
-        m.addedNodes.forEach(n => {
+      muts.forEach((m) => {
+        m.addedNodes.forEach((n) => {
           if (!(n instanceof HTMLElement)) return;
           if (n.matches(".reveal")) added.push(n);
-          added.push(...Array.from(n.querySelectorAll<HTMLElement>(".reveal")));
+          added.push(
+            ...Array.from(n.querySelectorAll<HTMLElement>(".reveal")),
+          );
         });
       });
       if (added.length) applyReveal(added);
@@ -54,7 +66,7 @@ export default function InicioProtegido() {
 
     return () => {
       mo.disconnect();
-      scope.querySelectorAll<HTMLElement>(".reveal").forEach(el => {
+      scope.querySelectorAll<HTMLElement>(".reveal").forEach((el) => {
         const rid = (el as any)._rid;
         if (rid) clearTimeout(rid);
         el.classList.remove("will-animate", "animate-in");
@@ -64,7 +76,11 @@ export default function InicioProtegido() {
 
   return (
     <div className="inicio-container">
-      <section className="hero reveal" aria-labelledby="tit-hero" data-delay="0">
+      <section
+        className="hero reveal"
+        aria-labelledby="tit-hero"
+        data-delay="0"
+      >
         <div className="hero-bg" aria-hidden />
         <div className="hero-content">
           <div className="hero-left">
@@ -80,8 +96,23 @@ export default function InicioProtegido() {
             {sesion?.perfil && (
               <div className="user-row">
                 <div className="user-pill" aria-label="usuario y rol">
-                  <span className="user-emoji" aria-hidden>🚗</span>
-                  <span className="user-name">{sesion.perfil.nombreCompleto}</span>
+                  <span className="user-emoji" aria-hidden>
+                    🚗
+                  </span>
+                  <span className="user-name">
+                    {sesion.perfil.nombreCompleto}
+                  </span>
+
+                  {/* 👇 Solo mostramos el taller si existe */}
+                  {tallerActual && (
+                    <>
+                      <span className="separator">•</span>
+                      <span className="taller-chip">
+                        Taller: <strong>{tallerActual}</strong>
+                      </span>
+                    </>
+                  )}
+
                   <span className="separator">•</span>
                   <span className={`role-chip ${rolClase}`} tabIndex={-1}>
                     {sesion.perfil.rol}
@@ -92,7 +123,12 @@ export default function InicioProtegido() {
           </div>
 
           <div className="hero-media" aria-hidden="true">
-            <img className="hero-media__img" src={heroImg} alt="" loading="lazy" />
+            <img
+              className="hero-media__img"
+              src={heroImg}
+              alt=""
+              loading="lazy"
+            />
             <div className="hero-media__overlay" />
           </div>
         </div>
@@ -106,27 +142,43 @@ export default function InicioProtegido() {
 
         <div className="acciones">
           {tieneRol(["CLIENTE"]) && (
-            <Link to="/vehiculos/mios" className="btn-card btn-primary reveal" data-delay="160">
+            <Link
+              to="/vehiculos/mios"
+              className="btn-card btn-primary reveal"
+              data-delay="160"
+            >
               <div className="btn-icon">📋</div>
               <div className="btn-text">
                 <div className="btn-title">Mis Vehículos</div>
-                <div className="btn-sub">Consulta el historial de tus unidades</div>
+                <div className="btn-sub">
+                  Consulta el historial de tus unidades
+                </div>
               </div>
             </Link>
           )}
 
           {tieneRol(["MECANICO"]) && (
-            <Link to="/vehiculos/registrar" className="btn-card btn-primary reveal" data-delay="120">
+            <Link
+              to="/vehiculos/registrar"
+              className="btn-card btn-primary reveal"
+              data-delay="120"
+            >
               <div className="btn-icon">🚘</div>
               <div className="btn-text">
                 <div className="btn-title">Registrar vehículo</div>
-                <div className="btn-sub">Alta rápida de unidades del taller</div>
+                <div className="btn-sub">
+                  Alta rápida de unidades del taller
+                </div>
               </div>
             </Link>
           )}
 
           {tieneRol(["CLIENTE"]) && (
-            <Link to="/citas/agendar" className="btn-card btn-accent reveal" data-delay="200">
+            <Link
+              to="/citas/agendar"
+              className="btn-card btn-accent reveal"
+              data-delay="200"
+            >
               <div className="btn-icon">📅</div>
               <div className="btn-text">
                 <div className="btn-title">Agendar cita</div>
@@ -136,7 +188,11 @@ export default function InicioProtegido() {
           )}
 
           {tieneRol(["CLIENTE"]) && (
-            <Link to="/citas/mias" className="btn-card btn-secondary reveal" data-delay="280">
+            <Link
+              to="/citas/mias"
+              className="btn-card btn-secondary reveal"
+              data-delay="280"
+            >
               <div className="btn-icon">🗂️</div>
               <div className="btn-text">
                 <div className="btn-title">Mis citas</div>
@@ -146,7 +202,11 @@ export default function InicioProtegido() {
           )}
 
           {tieneRol(["MECANICO"]) && (
-            <Link to="/citas/asignadas" className="btn-card btn-secondary reveal" data-delay="360">
+            <Link
+              to="/citas/asignadas"
+              className="btn-card btn-secondary reveal"
+              data-delay="360"
+            >
               <div className="btn-icon">🛠️</div>
               <div className="btn-text">
                 <div className="btn-title">Citas asignadas</div>
@@ -156,7 +216,11 @@ export default function InicioProtegido() {
           )}
 
           {tieneRol(["CLIENTE", "MECANICO"]) && (
-            <Link to="/notificaciones" className="btn-card btn-secondary reveal" data-delay="440">
+            <Link
+              to="/notificaciones"
+              className="btn-card btn-secondary reveal"
+              data-delay="440"
+            >
               <div className="btn-icon">🔔</div>
               <div className="btn-text">
                 <div className="btn-title">Mis notificaciones</div>
@@ -166,7 +230,11 @@ export default function InicioProtegido() {
           )}
 
           {tieneRol(["ADMIN"]) && (
-            <Link to="/admin/servicios" className="btn-card btn-secondary reveal" data-delay="600">
+            <Link
+              to="/admin/servicios"
+              className="btn-card btn-secondary reveal"
+              data-delay="600"
+            >
               <div className="btn-icon">📑</div>
               <div className="btn-text">
                 <div className="btn-title">Catálogo de servicios</div>
@@ -176,11 +244,17 @@ export default function InicioProtegido() {
           )}
 
           {tieneRol(["ADMIN"]) && (
-            <Link to="/admin/citas-pendientes" className="btn-card btn-secondary reveal" data-delay="680">
+            <Link
+              to="/admin/citas-pendientes"
+              className="btn-card btn-secondary reveal"
+              data-delay="680"
+            >
               <div className="btn-icon">👷</div>
               <div className="btn-text">
                 <div className="btn-title">Asignar mecánico</div>
-                <div className="btn-sub">Gestiona las citas nuevas y pendientes del taller</div>
+                <div className="btn-sub">
+                  Gestiona las citas nuevas y pendientes del taller
+                </div>
               </div>
             </Link>
           )}
@@ -202,7 +276,43 @@ export default function InicioProtegido() {
           )}
 
           {tieneRol(["ADMIN"]) && (
-            <Link to="/admin/usuarios" className="btn-card btn-secondary reveal" data-delay="760">
+            <Link
+              to="/admin/mantenimientos-vencidos"
+              className="btn-card btn-secondary reveal"
+              data-delay="700"
+            >
+              <div className="btn-icon">⏰</div>
+              <div className="btn-text">
+                <div className="btn-title">Mantenimientos vencidos</div>
+                <div className="btn-sub">
+                  Identifica vehículos con mantenimiento vencido
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {tieneRol(["ADMIN"]) && (
+            <Link
+              to="/admin/mantenimientos-vencidos"
+              className="btn-card btn-secondary reveal"
+              data-delay="700"
+            >
+              <div className="btn-icon">⏰</div>
+              <div className="btn-text">
+                <div className="btn-title">Mantenimientos vencidos</div>
+                <div className="btn-sub">
+                  Identifica vehículos con mantenimiento vencido
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {tieneRol(["ADMIN"]) && (
+            <Link
+              to="/admin/usuarios"
+              className="btn-card btn-secondary reveal"
+              data-delay="760"
+            >
               <div className="btn-icon">👥</div>
               <div className="btn-text">
                 <div className="btn-title">Usuarios del taller</div>
@@ -211,9 +321,13 @@ export default function InicioProtegido() {
             </Link>
           )}
 
-          {/* NUEVO: botón para US-04 - Enviar promociones */}
+          {/* US-04 - Enviar promociones */}
           {tieneRol(["ADMIN"]) && (
-            <Link to="/admin/promociones" className="btn-card btn-highlight reveal" data-delay="800">
+            <Link
+              to="/admin/promociones"
+              className="btn-card btn-highlight reveal"
+              data-delay="800"
+            >
               <div className="btn-icon">💌</div>
               <div className="btn-text">
                 <div className="btn-title">Promociones</div>
@@ -223,17 +337,27 @@ export default function InicioProtegido() {
           )}
 
           {tieneRol(["CLIENTE"]) && (
-            <Link to="/calificaciones/mias" className="btn-card btn-highlight reveal" data-delay="820">
+            <Link
+              to="/calificaciones/mias"
+              className="btn-card btn-highlight reveal"
+              data-delay="820"
+            >
               <div className="btn-icon">⭐</div>
               <div className="btn-text">
                 <div className="btn-title">Mis calificaciones</div>
-                <div className="btn-sub">Revisa o evalúa tus servicios</div>
+                <div className="btn-sub">
+                  Revisa o evalúa tus servicios
+                </div>
               </div>
             </Link>
           )}
 
           {tieneRol(["MECANICO"]) && (
-            <Link to="/calificaciones/recibidas" className="btn-card btn-highlight reveal" data-delay="840">
+            <Link
+              to="/calificaciones/recibidas"
+              className="btn-card btn-highlight reveal"
+              data-delay="840"
+            >
               <div className="btn-icon">🌟</div>
               <div className="btn-text">
                 <div className="btn-title">Calificaciones recibidas</div>
@@ -243,21 +367,50 @@ export default function InicioProtegido() {
           )}
 
           {tieneRol(["ADMIN"]) && (
-            <Link to="/admin/calificaciones" className="btn-card btn-highlight reveal" data-delay="860">
+            <Link
+              to="/admin/calificaciones"
+              className="btn-card btn-highlight reveal"
+              data-delay="860"
+            >
               <div className="btn-icon">📊</div>
               <div className="btn-text">
                 <div className="btn-title">Revisar calificaciones</div>
-                <div className="btn-sub">Analiza desempeño y calidad del servicio</div>
+                <div className="btn-sub">
+                  Analiza desempeño y calidad del servicio
+                </div>
               </div>
             </Link>
           )}
 
           {tieneRol(["ADMIN"]) && (
-            <Link to="/admin/consumibles" className="btn-card btn-secondary reveal" data-delay="720">
+            <Link
+              to="/admin/consumibles"
+              className="btn-card btn-secondary reveal"
+              data-delay="720"
+            >
               <div className="btn-icon">🧴</div>
               <div className="btn-text">
                 <div className="btn-title">Inventario de consumibles</div>
-                <div className="btn-sub">Gestiona stock de aceites, filtros y más</div>
+                <div className="btn-sub">
+                  Gestiona stock de aceites, filtros y más
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {/* OWNER - Solicitudes de taller */}
+          {tieneRol(["OWNER"] as any) && (
+            <Link
+              to="/owner/solicitudes-taller"
+              className="btn-card btn-highlight reveal"
+              data-delay="880"
+            >
+              <div className="btn-icon">🧾</div>
+              <div className="btn-text">
+                <div className="btn-title">Solicitudes de talleres</div>
+                <div className="btn-sub">
+                  Revisa y aprueba registros de nuevos talleres
+                </div>
               </div>
             </Link>
           )}
