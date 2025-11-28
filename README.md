@@ -92,3 +92,11 @@ Sigue estos pasos para levantar **LlantApp** en tu entorno local:
 | Gabriel Ricardo Satornicio Ramirez        | tornoa1        | Development Team |
 | Héctor Gianmarco Arrasco Juárez           | Hector2812     | Scrum Master     |
 | Manuel Jesús Revilla Robles               | MamelRR        | Product Owner    |
+
+para instalar dependencias de testing:
+
+npm install --save-dev jest @types/jest ts-jest
+
+para correr las pruebas:
+
+npm run test -- citas.service
